@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import type { ExperimentArm } from "@/analytics/events";
 import type { Scenario } from "@/data/types";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 
@@ -34,7 +35,23 @@ export interface StateSwitcherProps {
   shadowMode: boolean;
   onToggleShadowMode: (value: boolean) => void;
   eventCount: number;
+  /** E10: arm, ramp and the kill switch. */
+  arm: ExperimentArm;
+  onArmChange: (arm: ExperimentArm) => void;
+  ramp: number;
+  rampSteps: number[];
+  killed: boolean;
+  onAdvanceRamp: () => void;
+  onToggleKill: () => void;
+  /** Bumped whenever the flag mutates, so this bar re-renders. */
+  flagVersion: number;
 }
+
+const ARM_LABELS: Record<ExperimentArm, string> = {
+  control: "Control",
+  treatment_a: "A · reconnection",
+  treatment_b: "B · + variant",
+};
 
 const LATENCIES = [60, 240, 420, 900];
 
@@ -65,6 +82,12 @@ export function StateSwitcher({
   shadowMode,
   onToggleShadowMode,
   eventCount,
+  arm,
+  onArmChange,
+  ramp,
+  killed,
+  onAdvanceRamp,
+  onToggleKill,
 }: StateSwitcherProps) {
   return (
     <View style={styles.bar} testID="state-switcher">
@@ -182,6 +205,43 @@ export function StateSwitcher({
             {showWishlistInSearch
               ? "Wishlist in search: on"
               : "Wishlist in search: off"}
+          </Text>
+        </Pressable>
+      </ScrollView>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        <Text style={styles.controlLabel}>Arm</Text>
+        {(Object.keys(ARM_LABELS) as ExperimentArm[]).map((candidate) => (
+          <Pressable
+            key={candidate}
+            accessibilityRole="button"
+            accessibilityLabel={`Show the ${ARM_LABELS[candidate]} arm`}
+            accessibilityState={{ selected: arm === candidate }}
+            onPress={() => onArmChange(candidate)}
+            style={[styles.chip, arm === candidate && styles.chipActive]}
+          >
+            <Text style={[styles.chipText, arm === candidate && styles.chipTextActive]}>
+              {ARM_LABELS[candidate]}
+            </Text>
+          </Pressable>
+        ))}
+        <Text style={styles.controlLabel}>Ramp {(ramp * 100).toFixed(0)}%</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Advance the ramp one step"
+          onPress={onAdvanceRamp}
+          style={styles.chip}
+        >
+          <Text style={styles.chipText}>Advance ramp</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={killed ? "Clear the kill switch" : "Run the kill-switch drill"}
+          onPress={onToggleKill}
+          style={[styles.chip, killed && styles.chipWarn]}
+        >
+          <Text style={[styles.chipText, killed && styles.chipTextActive]}>
+            {killed ? "Killed — clear" : "Kill-switch drill"}
           </Text>
         </Pressable>
       </ScrollView>

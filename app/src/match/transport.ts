@@ -160,9 +160,13 @@ export class MatchClient {
 
     const capped = this.applyFrequencyCaps(response);
 
-    // Shadow mode withholds the result *after* the work is done and logged.
-    // Suppressing earlier would be cheaper and would measure nothing.
-    if (this.shadowMode && capped.matches.length > 0) {
+    // Control withholds exactly the way shadow mode does: the match is still
+    // computed and logged, so control's opportunity volume is measurable and
+    // the treatment has something to be compared against, but nothing renders.
+    // Without this the flag exists and does not gate anything -- assignment
+    // that no code consults is decoration.
+    const withhold = this.shadowMode || this.arm === "control";
+    if (withhold && capped.matches.length > 0) {
       return this.finish(request, true, started, timedOut, false, EMPTY_RESPONSE, capped);
     }
     return this.finish(request, true, started, timedOut, false, capped);

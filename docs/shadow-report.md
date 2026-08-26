@@ -22,9 +22,9 @@ Matching ran 624 times across three modalities and rendered nothing.
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.0559 ms** per query.
-Search with matching in the same tick: **0.0984 ms**.
-Delta: **+0.0425 ms**.
+Search alone: **0.0257 ms** per query.
+Search with matching in the same tick: **0.0324 ms**.
+Delta: **+0.0067 ms**.
 
 The delta is noise, and structurally has to be: `search()` takes no
 wishlist argument and returns synchronously, so there is no ordering in
@@ -76,17 +76,17 @@ buying back transcription and recognition error the score cannot see.
 
 | Metric | Role | Control | Treatment A | Treatment B |
 |---|---|---|---|---|
-| Match exposure rate | Opportunity | 0.0% | 31.0% | 31.0% |
-| Match precision | Quality gate | n/a | 69.0% | 74.7% |
-| Buy-from-Wishlist rate | Mechanism | n/a | 8.5% | 17.4% |
-| Compare-options rate | Mechanism | n/a | 10.8% | 6.2% |
-| Saved-item purchase rate | Direct impact | 7.4% | 8.9% | 9.1% |
-| Search-to-purchase rate | **Guardrail** | 0.0% | 0.4% | 0.9% |
-| Dismissal rate | Relevance | n/a | 8.7% | 8.0% |
-| Duplicate-add rate | Flow integrity | n/a | 3.4% | 2.8% |
-| Variant recovery rate | Fashion quality | n/a | 57.1% | 65.7% |
+| Match exposure rate | Opportunity | 0.0% | 32.1% | 31.4% |
+| Match precision | Quality gate | n/a | 73.7% | 74.8% |
+| Buy-from-Wishlist rate | Mechanism | n/a | 8.8% | 16.2% |
+| Compare-options rate | Mechanism | n/a | 13.4% | 7.3% |
+| Saved-item purchase rate | Direct impact | 5.8% | 9.1% | 9.5% |
+| Search-to-purchase rate | **Guardrail** | 4.2% | 6.5% | 6.6% |
+| Dismissal rate | Relevance | n/a | 7.9% | 7.9% |
+| Duplicate-add rate | Flow integrity | n/a | 1.1% | 0.6% |
+| Variant recovery rate | Fashion quality | n/a | 33.3% | 71.0% |
 
-Latency p50 / p95 / p99: **75.1 / 115.6 / 119.4 ms**. Error rate **0.4%** (timeouts 43 / 10562).
+Latency p50 / p95 / p99: **75.1 / 115.7 / 119.3 ms**. Error rate **0.3%** (timeouts 33 / 10558).
 
 ## 4. Cohort model validation
 
@@ -96,11 +96,11 @@ recovers an effect that was planted.
 
 | Arm | Entered | Converted | Rate | Injected lift | Recovered lift |
 |---|---|---|---|---|---|
-| Control | 512 | 99 | 19.3% | — | — |
-| Treatment A | 485 | 100 | 20.6% | +3.0pp | **+1.3pp** |
-| Treatment B | 493 | 115 | 23.3% | +5.0pp | **+4.0pp** |
+| Control | 496 | 73 | 14.7% | — | — |
+| Treatment A | 506 | 127 | 25.1% | +3.0pp | **+10.4pp** |
+| Treatment B | 494 | 111 | 22.5% | +5.0pp | **+7.8pp** |
 
-1510 users were censored — their 30-day window had not closed by 2026-08-15. Counting them as non-conversions would depress the rate and then let it drift upward for a month, which is indistinguishable from a real effect.
+1504 users were censored — their 30-day window had not closed by 2026-08-15. Counting them as non-conversions would depress the rate and then let it drift upward for a month, which is indistinguishable from a real effect.
 
 ## What this report is not evidence for
 

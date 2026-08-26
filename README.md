@@ -18,6 +18,7 @@ cd app && npm install
 npm test                                            # everything, including the gates
 npm run gates                                       # acceptance gates → docs/gate-report.md
 npm run shadow                                      # Phase 3 read-out → docs/shadow-report.md
+npm run experiment                                  # E10 read-out → docs/experiment-report.md
 npm run web                                         # open the prototype
 ```
 
@@ -91,6 +92,41 @@ The τ sweep currently **declines to recommend a change**. Precision is already
 work; the hard predicates absorb the false positives this eval set contains.
 Reading that as "τ can safely come down" would treat an absence of evidence as
 evidence of absence.
+
+## The experiment harness (E10)
+
+`npm run experiment` writes [`docs/experiment-report.md`](docs/experiment-report.md).
+The harness bar carries an arm selector, the ramp, and a kill-switch drill.
+
+**Assignment** is a pure function of user id and salt — no storage, no session
+state. Two properties carry the experiment and both fail silently:
+
+- *Stability.* A user who saw the module on Monday sees it on Tuesday.
+- *Monotonicity.* Raising the ramp from 5% to 20% only ever **adds** users.
+  Exposure and arm are hashed independently, so nobody already assigned can
+  move. The obvious implementation — bucket into arms, then take the first N%
+  of each — looks right and reshuffles at every step, restarting the experiment
+  with no visible symptom. The report measures it: **0 of 13,182** exposed users
+  moved across the full ramp.
+
+**The three guardrails** from §7 flip the flag with no human in the loop:
+search-to-purchase rate, latency p95, error rate. The switch is *sticky* — it
+stays tripped once numbers recover, because a treatment that recovers on its own
+would flap in and out of the population. Clearing it restores the arms users
+already had. A minimum sample applies to every guardrail: a switch that fires on
+nine sessions gets disabled by the first person it wakes.
+
+**Sequential inference**, because a staged ramp means looking repeatedly and a
+fixed-horizon test is valid only if you look once. The report measures the cost
+on data with no effect at all: peeked 40 times, a fixed-horizon test declares
+significance **33.7%** of the time against a nominal 5%. The confidence sequence
+holds at 2.3%. Its intervals are wider at every moment, and that width is the
+price of being allowed to stop whenever you like — cheaper than the alternative,
+which is not a narrower interval but an invalid one.
+
+**Control is gated in the service**, not in the view: it runs the match and logs
+it, so the counterfactual is measurable, and renders nothing. Assignment that no
+code consults is decoration.
 
 ## Two-phase freshness
 

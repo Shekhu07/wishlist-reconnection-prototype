@@ -6,7 +6,9 @@ import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
-import { EventLog } from "@/analytics/events";
+import { EventLog, type ExperimentArm } from "@/analytics/events";
+import { RAMP_STEPS } from "@/experiment/assignment";
+import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
 import { revalidate } from "@/revalidation/revalidate";
 import { CompareScreen } from "@/screens/CompareScreen";
@@ -19,6 +21,36 @@ import { useWishlistMatch, type SuppressionReason } from "@/state/useWishlistMat
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
 const scenarios = scenariosJson as unknown as Scenario[];
+
+/**
+ * A synthetic breach for the kill-switch drill: control converts, the treatment
+ * barely does. In production the same `flag.check` runs against live events and
+ * needs nobody to press anything.
+ */
+const BREACHING_EVENTS = [
+  ...Array.from({ length: 600 }, (_, i) => ({
+    event_id: `drill_${i}`,
+    type: "search_performed" as const,
+    ts: "2026-08-26",
+    user_id: `drill_${i}`,
+    session_id: `drill_s${i}`,
+    arm: (i % 2 === 0 ? "control" : "treatment_b") as ExperimentArm,
+    query: "shirt",
+    modality: "text" as const,
+    result_count: 10,
+  })),
+  ...Array.from({ length: 120 }, (_, i) => ({
+    event_id: `drill_order_${i}`,
+    type: "order_placed" as const,
+    ts: "2026-08-26",
+    user_id: `drill_${i * 2}`,
+    session_id: `drill_s${i * 2}`,
+    arm: "control" as ExperimentArm,
+    skus: ["sku"],
+    saved_skus: [] as string[],
+    via_wishlist_module: false,
+  })),
+];
 
 /**
  * A three-screen stack rather than a router: search, the saved product, and
@@ -37,6 +69,8 @@ export default function App() {
   const [swapFills, setSwapFills] = useState(false);
   const [showWishlistInSearch, setShowWishlistInSearch] = useState(true);
   const [shadowMode, setShadowMode] = useState(false);
+  const [arm, setArm] = useState<ExperimentArm>("treatment_b");
+  const [flagVersion, setFlagVersion] = useState(0);
   const [eventCount, setEventCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>({ name: "search" });
@@ -52,6 +86,10 @@ export default function App() {
   // pipeline filling up as they drive the harness.
   const events = useMemo(() => new EventLog(), []);
   const client = useMemo(() => new MatchClient({ catalog, wishlist, events }), [events]);
+  // The flag owns the ramp and the kill switch. The harness overrides the arm
+  // directly so a researcher can see each treatment without waiting to be
+  // bucketed into it.
+  const flag = useMemo(() => new ExperimentFlag(), []);
   const note = useCallback(() => setEventCount(events.size), [events]);
   const inventory = useMemo(() => new InventorySimulator(catalog), []);
 
@@ -205,6 +243,40 @@ export default function App() {
           restage();
         }}
         eventCount={eventCount}
+        arm={arm}
+        onArmChange={(next) => {
+          client.arm = next;
+          setArm(next);
+          restage();
+        }}
+        ramp={flag.ramp}
+        killed={flag.killed}
+        rampSteps={[...RAMP_STEPS]}
+        flagVersion={flagVersion}
+        onAdvanceRamp={() => {
+          const moved = flag.advance(catalog.today);
+          setFlagVersion((version) => version + 1);
+          setToast(
+            moved
+              ? `Ramp at ${(flag.ramp * 100).toFixed(0)}%`
+              : flag.killed
+                ? "Killed — clear the switch before ramping again"
+                : "Already at the final ramp step"
+          );
+        }}
+        onToggleKill={() => {
+          if (flag.killed) {
+            flag.clearKill(catalog.today, "researcher");
+            setToast("Kill switch cleared — users return to their original arms");
+          } else {
+            flag.check(BREACHING_EVENTS as never, catalog.today);
+            client.arm = "control";
+            setArm("control");
+            setToast(`Killed: ${flag.killedReason ?? "guardrail breach"}`);
+          }
+          setFlagVersion((version) => version + 1);
+          restage();
+        }}
         showWishlistInSearch={showWishlistInSearch}
         onToggleWishlistInSearch={(value) => {
           // Set on the client, not on the view: section 4.16 is enforced
@@ -249,7 +321,27 @@ export default function App() {
                 sku,
               });
               note();
-              setSelectedSize(item.size);
+              // Treatment A is reconnection without variant continuity: the
+              // module still remembers, but the Buy path opens the product the
+              // way any other listing would, without carrying the saved size
+              // through. B minus A is what isolates the mechanism.
+              //
+              // Null will not do it -- the screen falls back to the saved size,
+              // which makes A and B identical.
+              if (arm === "treatment_a") {
+                const parent = catalog.parents.find(
+                  (candidate) => candidate.parent_product_id === item.parent_product_id
+                );
+                const colourway = parent?.colourways.find(
+                  (candidate) => candidate.product_id === item.product_id
+                );
+                const firstStocked = colourway?.skus.find((sku) =>
+                  inventory.isInStock(sku.sku)
+                );
+                setSelectedSize(firstStocked?.size ?? parent?.sizes[0] ?? item.size);
+              } else {
+                setSelectedSize(item.size);
+              }
               setRoute(
                 action === "primary"
                   ? { name: "saved", itemId: item.item_id }

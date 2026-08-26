@@ -22,6 +22,8 @@ export interface SimulationConfig {
   users: number;
   /** Days of activity to generate. */
   days: number;
+  /** The cohort window sessions must fall inside. See the note in simulate(). */
+  windowDays: number;
   startDate: string;
   /** Probability a control user buys something they saved, within the window. */
   baseConversion: number;
@@ -43,6 +45,7 @@ export interface SimulationConfig {
 export const DEFAULT_SIMULATION: SimulationConfig = {
   users: 600,
   days: 45,
+  windowDays: 30,
   startDate: "2026-07-01",
   baseConversion: 0.18,
   liftTreatmentA: 0.03,
@@ -80,10 +83,18 @@ export interface SimulationResult {
 
 export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationResult {
   const config = { ...DEFAULT_SIMULATION, ...overrides };
-  const random = seeded(config.seed);
   const log = new EventLog();
 
   for (let u = 0; u < config.users; u += 1) {
+    // A stream per user, not one shared stream.
+    //
+    // Arm is assigned by index while each user consumes a variable number of
+    // draws, so with a shared stream the arm correlates with the phase of the
+    // generator. That manufactured a 5.7-point difference between arms in a
+    // run with no lift planted at all -- an artifact indistinguishable from
+    // the effect the model is supposed to detect. Per-user streams make one
+    // user's consumption independent of every other's.
+    const random = seeded((config.seed ^ Math.imul(u + 1, 0x9e3779b1)) >>> 0);
     const userId = `u_sim_${u}`;
     // Even, deterministic assignment. Real assignment is a hash of the user id
     // against the flag salt; the property that matters here is only that arms
@@ -121,11 +132,29 @@ export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationR
     const willConvert = random() < config.baseConversion + lift;
     const sessions = 1 + Math.floor(random() * 6);
     let converted = false;
+    // Search-to-purchase is a per-session funnel, so an order has to land in a
+    // session that actually searched. Attaching every non-module conversion to
+    // a separate "organic" session left control converting in sessions with no
+    // search event at all, which pinned control's funnel rate near zero and
+    // made the guardrail comparison meaningless.
+    const searchedSessions: string[] = [];
 
     for (let s = 0; s < sessions; s += 1) {
-      const dayOffset = Math.floor(random() * (config.days - entryDay));
+      // Sessions stay inside the cohort window.
+      //
+      // Letting them run to the end of the simulation created an artifact that
+      // penalised exactly the arm being measured: a module-driven conversion
+      // carries its session's timestamp, so it could land past day 30 and go
+      // uncounted, while an organic conversion never did. Treatment B buys
+      // through the module most, so B's lift read low and shrank as the arm
+      // engaged more -- an artifact that looks precisely like "variant
+      // continuity does not help".
+      const dayOffset = Math.floor(
+        random() * Math.min(config.days - entryDay, config.windowDays)
+      );
       const ts = addDays(entryDate, dayOffset);
       const sessionId = `${sessionBase}_${s}`;
+      searchedSessions.push(sessionId);
       const query = QUERIES[Math.floor(random() * QUERIES.length)];
 
       log.emit({
@@ -276,11 +305,15 @@ export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationR
     if (willConvert && !converted) {
       const ts = addDays(entryDate, 1 + Math.floor(random() * 28));
       const sku = savedSkus[Math.floor(random() * savedSkus.length)];
+      const sessionId =
+        searchedSessions.length > 0
+          ? searchedSessions[Math.floor(random() * searchedSessions.length)]
+          : `${sessionBase}_organic`;
       log.emit({
         type: "order_placed",
         ts,
         user_id: userId,
-        session_id: `${sessionBase}_organic`,
+        session_id: sessionId,
         arm,
         skus: [sku],
         saved_skus: [sku],

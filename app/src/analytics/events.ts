@@ -133,7 +133,10 @@ export type EventType = AnalyticsEvent["type"];
  * `Omit<AnalyticsEvent, "event_id">` collapses to the keys every member shares
  * and emit() silently accepts an event missing half its fields.
  */
-type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+export type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+/** An event as callers construct it, before the log stamps an id on it. */
+export type NewEvent = DistributiveOmit<AnalyticsEvent, "event_id">;
 
 /**
  * Append-only, in-order, and never mutated after the fact.
@@ -146,7 +149,7 @@ export class EventLog {
   private readonly events: AnalyticsEvent[] = [];
   private sequence = 0;
 
-  emit(event: DistributiveOmit<AnalyticsEvent, "event_id">): void {
+  emit(event: NewEvent): void {
     this.sequence += 1;
     this.events.push({ ...event, event_id: `ev_${this.sequence}` } as AnalyticsEvent);
   }

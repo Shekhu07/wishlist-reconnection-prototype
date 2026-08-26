@@ -1,5 +1,6 @@
 import { thirtyDayWishlistToPurchaseRate } from "@/analytics/metrics";
 import { simulate } from "@/analytics/simulate";
+import { alwaysValidInterval } from "@/experiment/sequential";
 
 /**
  * Validating the cohort model, which is what plan S11 means by "dbt 30-day
@@ -13,27 +14,34 @@ import { simulate } from "@/analytics/simulate";
 
 describe("30-day cohort model", () => {
   it("recovers an injected lift in both treatment arms", () => {
-    const { log, asOf, injected } = simulate({ users: 3000, seed: 11 });
+    // 30,000 users, because only about a third clear the 30-day window and an
+    // arbitrary point tolerance at 500 per arm fails on noise alone. The
+    // assertion is an interval rather than a tolerance, so "recovered" means
+    // something statistical instead of something chosen.
+    const { log, asOf, injected } = simulate({ users: 30_000, seed: 11 });
     const events = log.all();
 
     const control = thirtyDayWishlistToPurchaseRate(events, asOf, "control");
-    const a = thirtyDayWishlistToPurchaseRate(events, asOf, "treatment_a");
-    const b = thirtyDayWishlistToPurchaseRate(events, asOf, "treatment_b");
+    const arms = ["treatment_a", "treatment_b"] as const;
 
-    const measuredA = a.rate.value! - control.rate.value!;
-    const measuredB = b.rate.value! - control.rate.value!;
-
-    // Sampling noise at 1,000 users per arm is worth roughly 3 points, so the
-    // tolerance is wide on purpose. A tighter one would fail on noise and
-    // teach the reader to ignore it.
-    expect(measuredA).toBeCloseTo(injected.treatment_a, 1);
-    expect(measuredB).toBeCloseTo(injected.treatment_b, 1);
-    expect(measuredB).toBeGreaterThan(measuredA);
+    for (const name of arms) {
+      const arm = thirtyDayWishlistToPurchaseRate(events, asOf, name);
+      const interval = alwaysValidInterval(
+        { successes: control.converted, trials: control.entered },
+        { successes: arm.converted, trials: arm.entered }
+      );
+      const planted = injected[name];
+      // The planted effect lies inside the interval, and zero does not: the
+      // model both finds the effect and rules out its absence.
+      expect(interval.lower).toBeLessThan(planted);
+      expect(interval.upper).toBeGreaterThan(planted);
+      expect(interval.significant).toBe(true);
+    }
   });
 
   it("finds no lift when none was planted", () => {
     const { log, asOf } = simulate({
-      users: 3000,
+      users: 30_000,
       seed: 12,
       liftTreatmentA: 0,
       liftTreatmentB: 0,
@@ -41,7 +49,13 @@ describe("30-day cohort model", () => {
     const events = log.all();
     const control = thirtyDayWishlistToPurchaseRate(events, asOf, "control");
     const a = thirtyDayWishlistToPurchaseRate(events, asOf, "treatment_a");
-    expect(Math.abs(a.rate.value! - control.rate.value!)).toBeLessThan(0.04);
+    const interval = alwaysValidInterval(
+      { successes: control.converted, trials: control.entered },
+      { successes: a.converted, trials: a.entered }
+    );
+    // No effect planted, so the interval must not rule zero out. A model that
+    // finds a lift in data with none is worse than no model.
+    expect(interval.significant).toBe(false);
   });
 
   it("censors users whose 30-day window has not closed rather than failing them", () => {
