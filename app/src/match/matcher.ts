@@ -234,6 +234,35 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
     // the same uncertain product through tier 2 (constraint C-4).
     if (saved.identity_confidence < config.minIdentityConfidence) continue;
 
+    // A colour named in the query is a statement of intent. If it is not the
+    // colour they saved, the saved colourway is not an exact match to what
+    // they just asked for -- calling it one is the false positive constraint
+    // C-4 exists to prevent, and it contradicts the tier taxonomy, where a
+    // different colour is tier 2 by definition.
+    //
+    // The useful answer is not silence, though: if the product comes in the
+    // colour they asked for, offer that, labelled as the colour variant it is.
+    const requestedColour = intent.colour?.value;
+    const savedIsWrongColour =
+      requestedColour !== undefined &&
+      normalise(requestedColour) !== normalise(saved.colour);
+
+    if (savedIsWrongColour) {
+      const requested = parent.colourways.find(
+        (candidate) =>
+          normalise(candidate.colour) === normalise(requestedColour) &&
+          candidate.skus.some((sku) => sku.size === item.size && sku.in_stock)
+      );
+      if (!requested) continue;
+      if (requested.identity_confidence < config.minIdentityConfidence) continue;
+      if (!passesPriceFilter(requested, filters)) continue;
+
+      const classified = classify(item, requested, parent);
+      const partial = { item, parent, colourway: requested, tier: 2 as MatchTier, ...classified };
+      candidates.push({ ...partial, score: score(partial, index, intent, config) });
+      continue;
+    }
+
     // Tier 1: the saved colourway itself.
     const tierOptions: { colourway: Colourway; tier: MatchTier }[] = [
       { colourway: saved, tier: 1 },

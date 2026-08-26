@@ -14,29 +14,41 @@ import type { Catalog, Colourway, ParentProduct, Wishlist } from "@/data/types";
  * Every gate carries that caveat into the report rather than burying it here.
  */
 
-/** Deterministic PRNG, so a failing run can be reproduced exactly. */
-export function seeded(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import { seeded } from "./random";
+
+export { seeded };
 
 export function pick<T>(items: T[], random: () => number): T {
   return items[Math.floor(random() * items.length)];
 }
 
+/**
+ * What the module is allowed to do for a pair.
+ *
+ * Three values rather than two, because "must not render as an exact match"
+ * and "must not render at all" are different requirements, and collapsing them
+ * makes a correct answer score as a false positive. A query naming a colour the
+ * user did not save must not produce a tier 1 card -- but offering that colour
+ * as a labelled tier 2 variant is exactly right.
+ */
+export type PairExpectation = "tier1" | "tier2_or_none" | "none";
+
 export interface LabelledPair {
   id: string;
   savedProductId: number;
   savedParentId: string;
+  /** Chosen with stock in mind, so the expectation below is reachable. */
+  savedSize: string;
   query: string;
-  /** Ground truth: should the module render this saved item for this query? */
+  expect: PairExpectation;
+  /** Convenience for the positive case. */
   shouldMatch: boolean;
-  kind: "positive" | "negative_brand" | "negative_category" | "negative_unrelated";
+  kind:
+    | "positive"
+    | "negative_brand"
+    | "negative_category"
+    | "negative_colour"
+    | "negative_unrelated";
 }
 
 interface Entry {
@@ -66,9 +78,15 @@ export function buildLabelledPairs(catalog: Catalog, count = 500): LabelledPair[
   while (pairs.length < count) {
     const saved = pick(all, random);
     const index = pairs.length;
-    const kind = (["positive", "negative_brand", "negative_category", "negative_unrelated"] as const)[
-      index % 4
-    ];
+    const kind = (
+      [
+        "positive",
+        "negative_brand",
+        "negative_category",
+        "negative_colour",
+        "negative_unrelated",
+      ] as const
+    )[index % 5];
 
     let query: string;
     if (kind === "positive") {
@@ -83,6 +101,18 @@ export function buildLabelledPairs(catalog: Catalog, count = 500): LabelledPair[
       );
       if (!other) continue;
       query = `${other.parent.brand} ${other.parent.articleType}`.toLowerCase();
+    } else if (kind === "negative_colour") {
+      // The right brand and category, the wrong colour. This is the only
+      // negative that the hard predicates cannot catch: a colour in the query
+      // text is parsed into intent and priced through variant alignment, so
+      // rejecting it is tau's job and nothing else's. Without a case like this
+      // the sweep has nothing to discriminate and will happily recommend the
+      // lowest threshold on the table.
+      const otherColour = saved.parent.colourways.find(
+        (candidate) => candidate.colour !== saved.colourway.colour
+      );
+      if (!otherColour) continue;
+      query = `${saved.parent.brand} ${otherColour.colour} ${saved.parent.articleType}`.toLowerCase();
     } else if (kind === "negative_category") {
       // The saved brand, a category the user did not save in it.
       const other = all.find(
@@ -97,11 +127,29 @@ export function buildLabelledPairs(catalog: Catalog, count = 500): LabelledPair[
       );
     }
 
+    // Prefer a size actually in stock in the saved colourway. About a fifth of
+    // the seeded catalog is out of stock, and a positive whose saved variant
+    // cannot be bought is a tier 2 case by design -- labelling it tier 1 would
+    // measure the fixture rather than the matcher.
+    const stockedSku = saved.colourway.skus.find((sku) => sku.in_stock);
+    const savedSize = (stockedSku ?? saved.colourway.skus[0]).size;
+
+    const expect: PairExpectation =
+      kind === "positive"
+        ? stockedSku
+          ? "tier1"
+          : "tier2_or_none"
+        : kind === "negative_colour"
+          ? "tier2_or_none"
+          : "none";
+
     pairs.push({
       id: `pair_${index}`,
       savedProductId: saved.colourway.product_id,
       savedParentId: saved.parent.parent_product_id,
+      savedSize,
       query,
+      expect,
       shouldMatch: kind === "positive",
       kind,
     });
@@ -109,13 +157,40 @@ export function buildLabelledPairs(catalog: Catalog, count = 500): LabelledPair[
   return pairs;
 }
 
+/**
+ * Whether a rendered result satisfies a pair's expectation.
+ *
+ * Shared by the E1 gate and the threshold sweep on purpose. When they each
+ * had their own copy of this rule the sweep silently kept the older, binary
+ * version and reported 53% precision for a matcher measuring 100%.
+ */
+export function isAcceptable(
+  pair: LabelledPair,
+  rendered: { sku: string; tier: number; parent_product_id: string } | undefined,
+  savedSku: string
+): boolean {
+  const rightItem =
+    rendered !== undefined &&
+    rendered.sku === savedSku &&
+    rendered.parent_product_id === pair.savedParentId;
+
+  switch (pair.expect) {
+    case "tier1":
+      return rightItem && rendered!.tier === 1;
+    case "tier2_or_none":
+      return rendered === undefined || (rightItem && rendered.tier === 2);
+    case "none":
+      return rendered === undefined;
+  }
+}
+
 /** A one-item wishlist for a pair, so the measurement isolates one decision. */
 export function wishlistFor(pair: LabelledPair, catalog: Catalog): Wishlist | null {
   const parent = catalog.parents.find((p) => p.parent_product_id === pair.savedParentId);
   const colourway = parent?.colourways.find((c) => c.product_id === pair.savedProductId);
   if (!parent || !colourway) return null;
-  const size = parent.sizes[Math.floor(parent.sizes.length / 2)];
-  const sku = colourway.skus.find((s) => s.size === size) ?? colourway.skus[0];
+  const sku =
+    colourway.skus.find((candidate) => candidate.size === pair.savedSize) ?? colourway.skus[0];
   return {
     user_id: "u_eval",
     pincode: "560034",

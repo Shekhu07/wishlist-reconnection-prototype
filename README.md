@@ -16,7 +16,8 @@ python3 -m venv .venv && .venv/bin/pip install pyarrow pillow
 
 cd app && npm install
 npm test                                            # everything, including the gates
-npm run gates                                       # just the acceptance gates, writes docs/gate-report.md
+npm run gates                                       # acceptance gates → docs/gate-report.md
+npm run shadow                                      # Phase 3 read-out → docs/shadow-report.md
 npm run web                                         # open the prototype
 ```
 
@@ -61,6 +62,35 @@ Two of the three P0 gaps the gates exposed were invisible to every unit test:
 tier 2 matching never fired at all (dead code behind a passing suite), and the
 identity floor gated the colourway being drawn rather than the saved one, so an
 item too untrustworthy to show could still surface a sibling colour.
+
+## Shadow mode and the metric pipeline (E9)
+
+`npm run shadow` writes [`docs/shadow-report.md`](docs/shadow-report.md): the
+Phase 3 read-out the plan's S8–S9 ask for. In the app, the harness has a
+**Shadow mode** toggle — matching runs in full and is logged in full, and the
+user sees nothing. That is the only way to measure opportunity volume before
+launch, and the distinction the implementation cares about is between "found
+nothing" and "found something and withheld it".
+
+All eleven metrics from §7 are pure functions of one append-only event log
+(`analytics/metrics.ts`), including the primary 30-day **user-level** cohort
+rate. Users whose window has not closed are censored rather than counted as
+failures — counting them would depress the rate and then let it drift upward
+for a month, which is indistinguishable from a real effect.
+
+The report keeps its two halves apart, because conflating them is the easiest
+way to mislead someone with it. **The shadow run is real** — the actual matcher
+over the committed catalog, producing genuine opportunity volume and a genuine
+τ sweep. **The metric read-out is simulated**, because a greenfield prototype
+has no users; the population is synthetic and its lift was planted by hand. The
+cohort model is validated by checking it recovers that planted lift — a model
+that cannot find an effect you planted will not find one you did not.
+
+The τ sweep currently **declines to recommend a change**. Precision is already
+100% at the lowest threshold tested, so the sweep never observes τ doing any
+work; the hard predicates absorb the false positives this eval set contains.
+Reading that as "τ can safely come down" would treat an absence of evidence as
+evidence of absence.
 
 ## Two-phase freshness
 

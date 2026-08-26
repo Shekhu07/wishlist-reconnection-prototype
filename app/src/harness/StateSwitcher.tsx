@@ -30,6 +30,10 @@ export interface StateSwitcherProps {
   /** Section 4.16: the per-user control, so it can be shown working. */
   showWishlistInSearch: boolean;
   onToggleWishlistInSearch: (value: boolean) => void;
+  /** Phase 3: matching runs, nothing renders. */
+  shadowMode: boolean;
+  onToggleShadowMode: (value: boolean) => void;
+  eventCount: number;
 }
 
 const LATENCIES = [60, 240, 420, 900];
@@ -58,6 +62,9 @@ export function StateSwitcher({
   stockChanged,
   showWishlistInSearch,
   onToggleWishlistInSearch,
+  shadowMode,
+  onToggleShadowMode,
+  eventCount,
 }: StateSwitcherProps) {
   return (
     <View style={styles.bar} testID="state-switcher">
@@ -150,6 +157,19 @@ export function StateSwitcher({
             {stockChanged ? "Reset stock ●" : "Reset stock"}
           </Text>
         </Pressable>
+        <Text style={styles.controlLabel}>Phase 3</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toggle shadow mode: match but render nothing"
+          accessibilityState={{ checked: shadowMode }}
+          onPress={() => onToggleShadowMode(!shadowMode)}
+          style={[styles.chip, shadowMode && styles.chipWarn]}
+        >
+          <Text style={[styles.chipText, shadowMode && styles.chipTextActive]}>
+            {shadowMode ? "Shadow mode: on" : "Shadow mode: off"}
+          </Text>
+        </Pressable>
+        <Text style={styles.controlLabel}>{eventCount} events</Text>
         <Text style={styles.controlLabel}>Setting</Text>
         <Pressable
           accessibilityRole="button"

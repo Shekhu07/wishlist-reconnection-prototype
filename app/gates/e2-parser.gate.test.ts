@@ -1,7 +1,7 @@
 import catalogJson from "@/data/catalog.json";
 import type { Catalog } from "@/data/types";
 import { buildGazetteers, parseIntent } from "@/match/intent";
-import { buildQueryEvalSet } from "./evalSets";
+import { buildQueryEvalSet } from "@/analytics/evalSets";
 import { recordGate } from "./report";
 
 const catalog = catalogJson as unknown as Catalog;

@@ -9,6 +9,7 @@ import { CircuitBreaker } from "./breaker";
 import { buildIndex, match, type MatchIndex } from "./matcher";
 import { SuppressionStore, queryFamily } from "./suppression";
 import type { Catalog, Wishlist } from "@/data/types";
+import type { EventLog, ExperimentArm } from "@/analytics/events";
 
 /**
  * The boundary the UI talks to.
@@ -53,6 +54,15 @@ export interface MatchClientOptions {
   catalog: Catalog;
   wishlist: Wishlist;
   preferences?: UserPreferences;
+  /** Section 7 event stream. Optional so tests can ignore it. */
+  events?: EventLog;
+  arm?: ExperimentArm;
+  /**
+   * Phase 3. Matching runs in full and is logged in full; the response handed
+   * back is empty. The user sees nothing, and the shadow topic sees everything
+   * -- which is the only way to measure opportunity volume before launch.
+   */
+  shadowMode?: boolean;
   config?: MatchConfig;
   /** Simulated service latency in ms. The harness raises this to force misses. */
   latencyMs?: number;
@@ -67,6 +77,8 @@ export class MatchClient {
   readonly suppression = new SuppressionStore();
   readonly shadow: ShadowRecord[] = [];
   preferences: UserPreferences;
+  shadowMode: boolean;
+  arm: ExperimentArm;
   config: MatchConfig;
   latencyMs: number;
   forceTimeout: boolean;
@@ -74,6 +86,8 @@ export class MatchClient {
   constructor(private readonly options: MatchClientOptions) {
     this.config = options.config ?? DEFAULT_CONFIG;
     this.preferences = options.preferences ?? { ...DEFAULT_PREFERENCES };
+    this.shadowMode = options.shadowMode ?? false;
+    this.arm = options.arm ?? "treatment_b";
     this.latencyMs = options.latencyMs ?? 60;
     this.forceTimeout = options.forceTimeout ?? false;
     this.index = buildIndex(options.catalog, options.wishlist);
@@ -145,6 +159,12 @@ export class MatchClient {
     this.breaker.record(timedOut);
 
     const capped = this.applyFrequencyCaps(response);
+
+    // Shadow mode withholds the result *after* the work is done and logged.
+    // Suppressing earlier would be cheaper and would measure nothing.
+    if (this.shadowMode && capped.matches.length > 0) {
+      return this.finish(request, true, started, timedOut, false, EMPTY_RESPONSE, capped);
+    }
     return this.finish(request, true, started, timedOut, false, capped);
   }
 
@@ -220,15 +240,57 @@ export class MatchClient {
     started: number,
     timedOut: boolean,
     breakerOpen: boolean,
-    response: MatchResponse
+    response: MatchResponse,
+    /** What the matcher produced before shadow mode withheld it. */
+    withheld?: MatchResponse
   ): MatchResponse {
+    const durationMs = Date.now() - started;
+    const evaluatedMatches = withheld ?? response;
+    // The section 7 stream. Emitted for every evaluation whether or not
+    // anything rendered -- during a shadow run that is the only record there is.
+    this.options.events?.emit({
+      type: "match_evaluated",
+      ts: this.options.catalog.today,
+      user_id: authenticated ? this.options.wishlist.user_id : "anonymous",
+      session_id: request.session_id,
+      arm: this.arm,
+      query: request.query,
+      modality: request.modality,
+      candidates: evaluatedMatches.matches.map((m) => ({
+        sku: m.sku,
+        tier: m.tier,
+        confidence: m.confidence,
+        copy_key: m.copy_key,
+        identity_confidence: m.identity_confidence,
+      })),
+      rendered: response.matches.length > 0,
+      shadow: this.shadowMode,
+      duration_ms: durationMs,
+      timed_out: timedOut,
+      breaker_open: breakerOpen,
+    });
+
+    if (response.matches.length > 0) {
+      this.options.events?.emit({
+        type: "module_rendered",
+        ts: this.options.catalog.today,
+        user_id: this.options.wishlist.user_id,
+        session_id: request.session_id,
+        arm: this.arm,
+        query: request.query,
+        skus: response.matches.map((m) => m.sku),
+        copy_keys: response.matches.map((m) => m.copy_key),
+        tiers: response.matches.map((m) => m.tier),
+      });
+    }
+
     // E8's gate covers log lines as well as responses. An empty response has
     // nothing to log anyway, but writing that down here is what stops a future
     // change from quietly adding the item id "just for debugging".
     this.shadow.push({
       request,
       authenticated,
-      durationMs: Date.now() - started,
+      durationMs,
       timedOut,
       breakerOpen,
       suppressed: response.suppressed,

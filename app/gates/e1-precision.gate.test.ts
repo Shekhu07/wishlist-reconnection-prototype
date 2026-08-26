@@ -2,7 +2,7 @@ import catalogJson from "@/data/catalog.json";
 import type { Catalog } from "@/data/types";
 import { DEFAULT_CONFIG } from "@/match/contract";
 import { buildIndex, match } from "@/match/matcher";
-import { buildLabelledPairs, wishlistFor } from "./evalSets";
+import { buildLabelledPairs, isAcceptable, wishlistFor } from "@/analytics/evalSets";
 import { recordGate } from "./report";
 
 const catalog = catalogJson as unknown as Catalog;
@@ -38,20 +38,22 @@ describe("E1 gate — exact-match precision", () => {
         DEFAULT_CONFIG
       );
 
-      const rendered = response.matches.length > 0;
-      // Correctness is "did it surface the right saved item", not "did it show
-      // that exact photo": a tier 2 card legitimately pictures another colour
-      // while still reporting the user's own saved variant.
-      const correctItem =
-        rendered &&
-        response.matches[0].sku === wishlist.items[0].sku &&
-        response.matches[0].parent_product_id === pair.savedParentId;
+      const top = response.matches[0];
+      const rendered = top !== undefined;
+      // Correctness is "the right saved item at the right tier", not "that
+      // exact photo": a tier 2 card legitimately pictures another colour while
+      // still reporting the user's own saved variant.
+      const acceptable = isAcceptable(pair, top, wishlist.items[0].sku);
 
-      if (rendered && pair.shouldMatch && correctItem) truePositives += 1;
+      if (rendered && acceptable) truePositives += 1;
       else if (rendered) {
         falsePositives += 1;
-        if (failures.length < 5) failures.push(`${pair.kind}: "${pair.query}"`);
-      } else if (pair.shouldMatch) falseNegatives += 1;
+        if (failures.length < 5) {
+          failures.push(
+            `${pair.kind} (expected ${pair.expect}): "${pair.query}" -> tier ${top!.tier}`
+          );
+        }
+      } else if (pair.expect === "tier1") falseNegatives += 1;
     }
 
     const rendered = truePositives + falsePositives;

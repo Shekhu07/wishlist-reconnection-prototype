@@ -3,7 +3,7 @@ import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Wishlist } from "@/data/types";
 import { DEFAULT_CONFIG } from "@/match/contract";
 import { buildIndex, match } from "@/match/matcher";
-import { pick, seeded } from "./evalSets";
+import { pick, seeded } from "@/analytics/evalSets";
 import { recordGate } from "./report";
 
 const catalog = catalogJson as unknown as Catalog;

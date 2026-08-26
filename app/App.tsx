@@ -6,6 +6,7 @@ import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
+import { EventLog } from "@/analytics/events";
 import { InventorySimulator } from "@/revalidation/inventory";
 import { revalidate } from "@/revalidation/revalidate";
 import { CompareScreen } from "@/screens/CompareScreen";
@@ -35,6 +36,8 @@ export default function App() {
   const [latencyMs, setLatencyMs] = useState(60);
   const [swapFills, setSwapFills] = useState(false);
   const [showWishlistInSearch, setShowWishlistInSearch] = useState(true);
+  const [shadowMode, setShadowMode] = useState(false);
+  const [eventCount, setEventCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>({ name: "search" });
   const [pincode, setPincode] = useState(wishlist.pincode);
@@ -45,7 +48,11 @@ export default function App() {
   // One client and one inventory for the session. Suppression, frequency caps,
   // the breaker and live stock are all session state; rebuilding either per
   // render would erase them.
-  const client = useMemo(() => new MatchClient({ catalog, wishlist }), []);
+  // The section 7 stream. One log for the session, so a researcher can see the
+  // pipeline filling up as they drive the harness.
+  const events = useMemo(() => new EventLog(), []);
+  const client = useMemo(() => new MatchClient({ catalog, wishlist, events }), [events]);
+  const note = useCallback(() => setEventCount(events.size), [events]);
   const inventory = useMemo(() => new InventorySimulator(catalog), []);
 
   const request: MatchRequest = useMemo(
@@ -87,6 +94,30 @@ export default function App() {
     rerun();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario.id]);
+
+  // Section 7's search funnel. Emitted per view of a scenario, which is what a
+  // search is in this harness.
+  useEffect(() => {
+    events.emit({
+      type: "search_performed",
+      ts: catalog.today,
+      user_id: wishlist.user_id,
+      session_id: `sess_${scenario.id}`,
+      arm: client.arm,
+      query: scenario.query,
+      modality: scenario.modality,
+      result_count: 0,
+    });
+    note();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenario.id]);
+
+  // MatchClient writes match_evaluated and module_rendered straight to the log
+  // without going through React, so the counter has to be refreshed whenever a
+  // match resolves. Without this it freezes and reads as a broken pipeline.
+  useEffect(() => {
+    note();
+  }, [response, note]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -167,6 +198,13 @@ export default function App() {
           setToast("Stock reset to the seeded catalog");
         }}
         stockChanged={inventory.changes.length > 0}
+        shadowMode={shadowMode}
+        onToggleShadowMode={(value) => {
+          client.shadowMode = value;
+          setShadowMode(value);
+          restage();
+        }}
+        eventCount={eventCount}
         showWishlistInSearch={showWishlistInSearch}
         onToggleWishlistInSearch={(value) => {
           // Set on the client, not on the view: section 4.16 is enforced
@@ -185,12 +223,32 @@ export default function App() {
             matchResponse={response}
             onDismiss={() => {
               dismiss();
+              events.emit({
+                type: "module_dismissed",
+                ts: catalog.today,
+                user_id: wishlist.user_id,
+                session_id: request.session_id,
+                arm: client.arm,
+                query_family: client.familyOf(scenario.query),
+                skus: response?.matches.map((m) => m.sku) ?? [],
+              });
+              note();
               setToast("Dismissal logged as a relevance signal");
             }}
             onUndo={undo}
             onAction={(action, sku) => {
               const item = itemFor(sku);
               if (!item) return setToast("No saved item behind that action");
+              events.emit({
+                type: "module_action",
+                ts: catalog.today,
+                user_id: wishlist.user_id,
+                session_id: request.session_id,
+                arm: client.arm,
+                action: action === "primary" ? "buy_from_wishlist" : "compare_options",
+                sku,
+              });
+              note();
               setSelectedSize(item.size);
               setRoute(
                 action === "primary"
@@ -207,11 +265,24 @@ export default function App() {
             selectedSize={selectedSize ?? activeItem.size}
             onBack={goBack}
             onChooseSize={setSelectedSize}
-            onMoveToBag={() =>
+            onMoveToBag={() => {
+              const size = selectedSize ?? activeItem.size;
+              events.emit({
+                type: "moved_to_bag",
+                ts: catalog.today,
+                user_id: wishlist.user_id,
+                session_id: request.session_id,
+                arm: client.arm,
+                sku: activeItem.sku,
+                via_wishlist_module: true,
+                size_deviated: size !== activeItem.size,
+                duplicate: activeItem.state === "in_bag",
+              });
+              note();
               setToast(
-                `Moved to Bag: ${activeItem.colour} · ${selectedSize ?? activeItem.size}, revalidated at the boundary`
-              )
-            }
+                `Moved to Bag: ${activeItem.colour} · ${size}, revalidated at the boundary`
+              );
+            }}
             onRecoveryPrimary={() => {
               if (revalidation.blocking === "variant_unavailable") {
                 const available = revalidation.current.sizesInStock[0];
