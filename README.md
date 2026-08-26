@@ -93,6 +93,32 @@ work; the hard predicates absorb the false positives this eval set contains.
 Reading that as "τ can safely come down" would treat an absence of evidence as
 evidence of absence.
 
+## Multi-match ranking (E13)
+
+Matching and ranking answer different questions, and the prototype had been
+using one answer for both. The match score asks *is this the right item*.
+Ranking asks *which of the right items is most useful to show now* — and the
+dominant signal there is not confidence, it is whether the thing can actually
+be bought. Sorting by raw score put an unbuyable item above a buyable one
+whenever it happened to score higher.
+
+So `match/ranking.ts` deliberately does **not** re-weight the scoring signals —
+recency and confidence are already priced into the score, and re-applying them
+would double-count. What ranking adds is actionability, diversity and a total
+order:
+
+- A buyable item leads. In-bag and previously-purchased rank below it but above
+  nothing, because "you already have this" is the duplicate purchase FR-11
+  exists to prevent. An unavailable variant ranks last and is still shown —
+  the user saved it, and learning it is gone beats silence.
+- **One slot per product.** Two colourways of the same shirt are the same
+  memory twice, and FR-3's cap of three is too small to spend that way.
+- A per-brand cap that applies only while a different brand is waiting, so a
+  wishlist that genuinely is all one brand still fills its slots.
+- Deterministic to the last comparison. A module that reshuffles between two
+  identical searches is disorienting on its own, and during an experiment it
+  would add variance to every interaction metric for nothing.
+
 ## The experiment harness (E10)
 
 `npm run experiment` writes [`docs/experiment-report.md`](docs/experiment-report.md).

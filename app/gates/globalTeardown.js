@@ -7,6 +7,7 @@ const ALL_GATES = [
   ["E2-parser", "Query field accuracy"],
   ["E3-latency", "Match latency"],
   ["E8-privacy", "Wishlist leakage"],
+  ["E13-ranking", "Multi-match ranking"],
 ];
 
 module.exports = () => {

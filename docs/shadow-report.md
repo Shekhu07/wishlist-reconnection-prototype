@@ -22,9 +22,9 @@ Matching ran 624 times across three modalities and rendered nothing.
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.0257 ms** per query.
-Search with matching in the same tick: **0.0324 ms**.
-Delta: **+0.0067 ms**.
+Search alone: **0.0267 ms** per query.
+Search with matching in the same tick: **0.0346 ms**.
+Delta: **+0.0079 ms**.
 
 The delta is noise, and structurally has to be: `search()` takes no
 wishlist argument and returns synchronously, so there is no ordering in

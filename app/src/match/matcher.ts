@@ -11,6 +11,7 @@ import {
   type SearchFilters,
 } from "./contract";
 import { buildGazetteers, mergeFilters, normalise, parseIntent, type Gazetteers } from "./intent";
+import { DEFAULT_RANKING, selectForModule, type Rankable } from "./ranking";
 import type { Catalog, Colourway, ParentProduct, Wishlist, WishlistItem } from "@/data/types";
 
 /**
@@ -309,18 +310,35 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
     else byItem.set(candidate.item.item_id, [candidate]);
   }
 
-  const deduped = [...byItem.values()]
-    .map((candidates) => {
-      const tierOne = candidates.find((c) => c.tier === 1);
-      if (tierOne && tierOne.itemState !== "variant_unavailable") return tierOne;
-      const colourway = candidates.find((c) => c.tier === 2 && c.sizeInStock);
-      return colourway ?? tierOne ?? candidates[0];
-    })
-    .sort((a, b) => b.score - a.score || a.item.item_id.localeCompare(b.item.item_id));
+  const perItem = [...byItem.values()].map((candidates) => {
+    const tierOne = candidates.find((c) => c.tier === 1);
+    if (tierOne && tierOne.itemState !== "variant_unavailable") return tierOne;
+    const colourway = candidates.find((c) => c.tier === 2 && c.sizeInStock);
+    return colourway ?? tierOne ?? candidates[0];
+  });
 
-  if (deduped.length === 0) return EMPTY_RESPONSE;
+  if (perItem.length === 0) return EMPTY_RESPONSE;
 
-  const capped = deduped.slice(0, config.maxMatches);
+  // E13. Ranking is a separate question from scoring: the score says which
+  // items are right, this says which of them is worth a slot. Sorting by raw
+  // score put an unbuyable item above a buyable one whenever it happened to
+  // score higher, and would happily spend all three slots on one product.
+  const rankable: (Rankable & { candidate: Candidate })[] = perItem.map((candidate) => ({
+    candidate,
+    itemId: candidate.item.item_id,
+    parentProductId: candidate.parent.parent_product_id,
+    brandKey: candidate.parent.brand_key,
+    tier: candidate.tier,
+    itemState: candidate.itemState,
+    score: candidate.score,
+    savedAt: candidate.item.saved_at,
+  }));
+
+  const capped = selectForModule(rankable, {
+    ...DEFAULT_RANKING,
+    maxMatches: config.maxMatches,
+  }).map((row) => row.candidate);
+  const deduped = perItem;
   const matches: Match[] = capped.map((c) => ({
     parent_product_id: c.parent.parent_product_id,
     sku: c.item.sku,
