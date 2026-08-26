@@ -19,6 +19,18 @@ export interface Colourway {
   usage: string | null;
   price: number;
   seller: string;
+  /**
+   * Comparison axes for E6. The dataset carries none of these, so they are
+   * synthesised deterministically by tools/catalog/synthesize.py. Real enough
+   * to exercise the comparison, not real enough to draw conclusions from.
+   */
+  rating: number;
+  review_count: number;
+  material: string;
+  /** Apparel only; null for footwear and accessories. */
+  fit: string | null;
+  /** 0 means not returnable. */
+  returns_days: number;
   skus: Sku[];
 }
 
@@ -58,6 +70,8 @@ export interface WishlistItem {
   size: string;
   saved_at: string;
   price_at_save: number;
+  /** The E1 record persists seller too, so a seller change is detectable. */
+  seller_at_save: string;
   state: "normal" | "in_bag" | "purchased";
 }
 

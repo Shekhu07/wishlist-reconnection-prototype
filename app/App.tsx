@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
 import catalogJson from "@/data/catalog.json";
 import scenariosJson from "@/data/scenarios.json";
@@ -6,6 +6,10 @@ import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
+import { InventorySimulator } from "@/revalidation/inventory";
+import { revalidate } from "@/revalidation/revalidate";
+import { CompareScreen } from "@/screens/CompareScreen";
+import { SavedProductScreen } from "@/screens/SavedProductScreen";
 import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScreen";
 import { StateSwitcher } from "@/harness/StateSwitcher";
 import { color, space, type } from "@/design/tokens";
@@ -15,25 +19,43 @@ const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
 const scenarios = scenariosJson as unknown as Scenario[];
 
+/**
+ * A three-screen stack rather than a router: search, the saved product, and
+ * compare. It stays this small on purpose -- the E5 gate is that search
+ * context survives back-navigation, and the surest way to guarantee that is
+ * for search never to unmount its state in the first place.
+ */
+type Route =
+  | { name: "search" }
+  | { name: "saved"; itemId: string }
+  | { name: "compare"; itemId: string };
+
 export default function App() {
   const [scenario, setScenario] = useState<Scenario>(scenarios[1] ?? scenarios[0]);
   const [latencyMs, setLatencyMs] = useState(60);
   const [swapFills, setSwapFills] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [route, setRoute] = useState<Route>({ name: "search" });
+  const [pincode, setPincode] = useState(wishlist.pincode);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  // Stock lives outside React, so a change has to be announced to re-render.
+  const [stockVersion, setStockVersion] = useState(0);
 
-  // One client for the session: suppression, frequency caps and the breaker
-  // are all session state, so rebuilding it per render would erase them.
+  // One client and one inventory for the session. Suppression, frequency caps,
+  // the breaker and live stock are all session state; rebuilding either per
+  // render would erase them.
   const client = useMemo(() => new MatchClient({ catalog, wishlist }), []);
+  const inventory = useMemo(() => new InventorySimulator(catalog), []);
 
   const request: MatchRequest = useMemo(
     () => ({
       query: scenario.query,
       modality: scenario.modality,
       filters: scenario.filters as MatchRequest["filters"],
-      delivery_pincode: wishlist.pincode,
+      delivery_pincode: pincode,
       session_id: `sess_${scenario.id}`,
     }),
-    [scenario]
+    [scenario, pincode]
   );
 
   const { response, suppressionReason, dismiss, undo, rerun } = useWishlistMatch(
@@ -42,8 +64,6 @@ export default function App() {
     scenario.authenticated
   );
 
-  // Changing the simulated latency has to re-run the match, otherwise the
-  // control does nothing until the researcher also changes scenario.
   useEffect(() => {
     client.latencyMs = latencyMs;
     rerun();
@@ -61,9 +81,38 @@ export default function App() {
 
   useEffect(() => {
     if (!toast) return undefined;
-    const timer = setTimeout(() => setToast(null), 2200);
+    const timer = setTimeout(() => setToast(null), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  const itemFor = useCallback(
+    (sku: string) => wishlist.items.find((candidate) => candidate.sku === sku),
+    []
+  );
+
+  const activeItem =
+    route.name === "search"
+      ? undefined
+      : wishlist.items.find((candidate) => candidate.item_id === route.itemId);
+
+  // Recomputed on every visit, because the whole point is that it may now
+  // disagree with what the module rendered. stockVersion and pincode are
+  // dependencies for exactly that reason.
+  const revalidation = useMemo(
+    () => (activeItem ? revalidate(activeItem, catalog, inventory, pincode) : null),
+    [activeItem, inventory, pincode, stockVersion]
+  );
+
+  const goBack = useCallback(() => {
+    setRoute({ name: "search" });
+    setSelectedSize(null);
+  }, []);
+
+  const noteStockChange = () => setStockVersion((version) => version + 1);
+
+  const firstMatchItem = response?.matches.length
+    ? itemFor(response.matches[0].sku)
+    : undefined;
 
   return (
     <SafeAreaView style={styles.root}>
@@ -74,36 +123,115 @@ export default function App() {
         onSelect={(next) => {
           client.suppression.reset();
           setScenario(next);
+          goBack();
         }}
         latencyMs={latencyMs}
         onLatencyChange={setLatencyMs}
         swapFills={swapFills}
         onSwapFills={setSwapFills}
         note={scenario.note}
+        pincode={pincode}
+        onPincodeChange={setPincode}
+        onSellOutSize={() => {
+          const target = activeItem ?? firstMatchItem;
+          if (!target) return setToast("No saved item in view to sell out");
+          inventory.sellOut(target.sku);
+          noteStockChange();
+          setToast(`Size ${target.size} is now out of stock. Tap Buy from Wishlist.`);
+        }}
+        onSellOutProduct={() => {
+          const target = activeItem ?? firstMatchItem;
+          if (!target) return setToast("No saved item in view to sell out");
+          inventory.sellOutProduct(target.parent_product_id);
+          noteStockChange();
+          setToast("Product withdrawn in every variant. Tap Buy from Wishlist.");
+        }}
+        onResetStock={() => {
+          inventory.reset();
+          noteStockChange();
+          setToast("Stock reset to the seeded catalog");
+        }}
+        stockChanged={inventory.changes.length > 0}
       />
 
       <View style={styles.frame}>
-        <SearchResultsScreen
-          catalog={catalog}
-          query={scenario.query}
-          matchResponse={response}
-          onDismiss={() => {
-            dismiss();
-            setToast("Dismissal logged as a relevance signal");
-          }}
-          onUndo={undo}
-          onAction={(action, sku) =>
-            setToast(
-              action === "primary"
-                ? `Buy path is Slice 2 — would open ${sku} with the saved variant preselected`
-                : `Compare view is Slice 2 — would open alternatives for ${sku}`
-            )
-          }
-          swapFills={swapFills}
-        />
+        {route.name === "search" || !activeItem || !revalidation ? (
+          <SearchResultsScreen
+            catalog={catalog}
+            query={scenario.query}
+            matchResponse={response}
+            onDismiss={() => {
+              dismiss();
+              setToast("Dismissal logged as a relevance signal");
+            }}
+            onUndo={undo}
+            onAction={(action, sku) => {
+              const item = itemFor(sku);
+              if (!item) return setToast("No saved item behind that action");
+              setSelectedSize(item.size);
+              setRoute(
+                action === "primary"
+                  ? { name: "saved", itemId: item.item_id }
+                  : { name: "compare", itemId: item.item_id }
+              );
+            }}
+            swapFills={swapFills}
+          />
+        ) : route.name === "saved" ? (
+          <SavedProductScreen
+            result={revalidation}
+            pincode={pincode}
+            selectedSize={selectedSize ?? activeItem.size}
+            onBack={goBack}
+            onChooseSize={setSelectedSize}
+            onMoveToBag={() =>
+              setToast(
+                `Moved to Bag: ${activeItem.colour} · ${selectedSize ?? activeItem.size}, revalidated at the boundary`
+              )
+            }
+            onRecoveryPrimary={() => {
+              if (revalidation.blocking === "variant_unavailable") {
+                const available = revalidation.current.sizesInStock[0];
+                if (available) {
+                  setSelectedSize(available);
+                  return setToast(`Size ${available} selected. Your saved size is unchanged.`);
+                }
+                return setRoute({ name: "compare", itemId: activeItem.item_id });
+              }
+              if (revalidation.blocking === "product_unavailable") {
+                return setRoute({ name: "compare", itemId: activeItem.item_id });
+              }
+              setToast("Pick a different delivery pincode in the harness bar above");
+            }}
+            onRecoverySecondary={() => {
+              setToast(
+                revalidation.blocking === "product_unavailable"
+                  ? "Removed from Wishlist"
+                  : "Kept in your Wishlist"
+              );
+              goBack();
+            }}
+          />
+        ) : (
+          <CompareScreen
+            catalog={catalog}
+            item={activeItem}
+            parent={revalidation.parent}
+            colourway={revalidation.colourway}
+            query={scenario.query}
+            pincode={pincode}
+            inventory={inventory}
+            onBack={goBack}
+            onChoose={(productId) =>
+              productId === activeItem.product_id
+                ? setRoute({ name: "saved", itemId: activeItem.item_id })
+                : setToast("Opening an alternative is outside the reconnection flow")
+            }
+          />
+        )}
       </View>
 
-      {suppressionReason ? (
+      {route.name === "search" && suppressionReason ? (
         <View style={styles.footer}>
           <Text style={styles.footerText}>{SUPPRESSION_COPY[suppressionReason]}</Text>
         </View>

@@ -46,6 +46,28 @@ PRICE_BANDS = {
 DEFAULT_BAND = (399, 2499)
 BRAND_TIER_MULTIPLIER = (0.75, 1.0, 1.45)
 
+# E6 compares on price, rating, review count, material, fit, size availability,
+# delivery and returns. The dataset carries none of rating, review count,
+# material, fit or returns, so five of the eight axes are synthesised here.
+# They are deterministic and plausible, and the harness labels them as
+# synthetic -- a Compare view is decision-support, and a participant must not
+# form a judgement from numbers nobody should trust.
+MATERIALS = {
+    "Topwear": ["Cotton", "Cotton Blend", "Linen Blend", "Viscose", "Polyester"],
+    "Bottomwear": ["Denim", "Cotton", "Cotton Stretch", "Polyester Blend"],
+    "Innerwear": ["Cotton", "Modal", "Cotton Blend"],
+    "Shoes": ["Leather", "Synthetic", "Canvas", "Mesh"],
+    "Bags": ["Leatherette", "Canvas", "Nylon"],
+    "Watches": ["Stainless Steel", "Leather Strap", "Silicone"],
+}
+DEFAULT_MATERIALS = ["Cotton Blend", "Synthetic", "Mixed"]
+
+APPAREL_FITS = ["Regular Fit", "Slim Fit", "Relaxed Fit", "Tailored Fit"]
+
+# 0 means not returnable, which has to be one of the options: a comparison
+# where every row returns the same answer teaches the user nothing.
+RETURN_WINDOWS = [0, 7, 14, 30, 30]
+
 SELLERS = [
     "Myntra Retail",
     "Fashnear Technologies",
@@ -107,6 +129,35 @@ def sku_id(parent, product_id, size):
 
 def in_stock(sku, out_of_stock_rate=0.18):
     return _unit(sku, "stock") >= out_of_stock_rate
+
+
+def rating_for(product_id):
+    """3.2 to 4.8, one decimal. Nothing sits below 3.2: a real catalog page
+    rarely surfaces a 1-star item, and a fake outlier would dominate the
+    comparison."""
+    return round(3.2 + _unit(product_id, "rating") * 1.6, 1)
+
+
+def review_count_for(product_id):
+    """Skewed low, because most listings have few reviews and a handful have
+    thousands. A uniform draw would make every row look equally established."""
+    unit = _unit(product_id, "reviews")
+    return int(12 + (unit ** 3) * 4800)
+
+
+def material_for(product_id, sub_category, article_type):
+    pool = MATERIALS.get(article_type) or MATERIALS.get(sub_category) or DEFAULT_MATERIALS
+    return pool[int(_digest(product_id, "material")[:4], 16) % len(pool)]
+
+
+def fit_for(product_id, master_category):
+    if master_category != "Apparel":
+        return None
+    return APPAREL_FITS[int(_digest(product_id, "fit")[:4], 16) % len(APPAREL_FITS)]
+
+
+def returns_days_for(product_id):
+    return RETURN_WINDOWS[int(_digest(product_id, "returns")[:4], 16) % len(RETURN_WINDOWS)]
 
 
 def display_name(row, drop_colour=True):
@@ -182,6 +233,13 @@ def build_parents(rows):
             "usage": row.get("usage"),
             "price": price_for(row["id"], row.get("masterCategory"), row["brand_key"]),
             "seller": seller_for(str(row["id"])),
+            "rating": rating_for(row["id"]),
+            "review_count": review_count_for(row["id"]),
+            "material": material_for(
+                row["id"], row.get("subCategory"), row.get("articleType")
+            ),
+            "fit": fit_for(row["id"], row.get("masterCategory")),
+            "returns_days": returns_days_for(row["id"]),
             "skus": [],
         }
         for size in parent["sizes"]:

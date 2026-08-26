@@ -8,6 +8,7 @@
       "product_id": 8847,
       "role": "exact_available",
       "saved_at": "2026-07-14",
+      "seller_at_save": "Vector Lifestyle",
       "size": "L",
       "sku": "sku_749cd31a32d75c",
       "state": "normal"
@@ -20,6 +21,7 @@
       "product_id": 11384,
       "role": "multi_a",
       "saved_at": "2026-08-14",
+      "seller_at_save": "Trendsetter Distributors",
       "size": "L",
       "sku": "sku_68da470e2ee6f8",
       "state": "normal"
@@ -32,6 +34,7 @@
       "product_id": 5956,
       "role": "multi_b",
       "saved_at": "2026-07-30",
+      "seller_at_save": "Trendsetter Distributors",
       "size": "L",
       "sku": "sku_b8f672dc446947",
       "state": "normal"
@@ -44,6 +47,7 @@
       "product_id": 7156,
       "role": "multi_c",
       "saved_at": "2026-06-26",
+      "seller_at_save": "Omnitech Retail",
       "size": "L",
       "sku": "sku_9d7b27097cc9a7",
       "state": "normal"
@@ -56,6 +60,7 @@
       "product_id": 16504,
       "role": "colour_variant",
       "saved_at": "2026-08-07",
+      "seller_at_save": "Fashnear Technologies",
       "size": "34",
       "sku": "sku_7e3f148e142b44",
       "state": "normal"
@@ -68,6 +73,7 @@
       "product_id": 7434,
       "role": "variant_unavailable",
       "saved_at": "2026-07-23",
+      "seller_at_save": "Vector Lifestyle",
       "size": "L",
       "sku": "sku_61848c8baaa466",
       "state": "normal"
@@ -80,6 +86,7 @@
       "product_id": 11534,
       "role": "in_bag",
       "saved_at": "2026-08-18",
+      "seller_at_save": "Bluestone Apparel",
       "size": "L",
       "sku": "sku_37200148b26b45",
       "state": "in_bag"
@@ -92,6 +99,7 @@
       "product_id": 2505,
       "role": "purchased",
       "saved_at": "2026-05-22",
+      "seller_at_save": "Vector Lifestyle",
       "size": "UK9",
       "sku": "sku_5e986a907f43ee",
       "state": "purchased"
@@ -104,6 +112,7 @@
       "product_id": 16458,
       "role": "low_identity",
       "saved_at": "2026-08-04",
+      "seller_at_save": "Trendsetter Distributors",
       "size": "L",
       "sku": "sku_0bec0c56088319",
       "state": "normal"

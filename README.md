@@ -3,10 +3,10 @@
 A buildable prototype of the "From your Wishlist" search-reconnection module
 specified in [`Wishlist_Reconnection_MVP_Prototype_Plan.md`](./Wishlist_Reconnection_MVP_Prototype_Plan.md).
 
-This repository is **Slice 1** of that plan: the catalog pipeline, the identity
-and variant graph, the match layer, and the module UI in all ten of its states.
-The Buy-from-Wishlist revalidation flow (E5) and the Compare view (E6) are
-Slice 2 — both buttons render and emit their events, and route to a stub.
+This repository covers **Slice 1** (the catalog pipeline, the identity and
+variant graph, the match layer, and the module UI in all ten of its states) and
+**Slice 2** (the Buy-from-Wishlist revalidation flow, E5, and the Compare view,
+E6).
 
 ## Running it
 
@@ -29,6 +29,25 @@ render grace — so an intentional suppression is never mistaken for a broken bu
 |---|---|
 | ![One exact match](docs/state2-one-exact-match.png) | ![Variant unavailable](docs/state5-variant-unavailable.png) |
 | **State 2** — one exact match | **State 5** — saved size gone. The primary action becomes "See available sizes": no dead-end Buy, no silent substitution. |
+| ![Saved product](docs/e5-saved-product.png) | ![Recovery](docs/e5-recovery-sold-out.png) |
+| **E5** — the saved product, colour and size preselected, all five facts revalidated at the boundary | **E5 recovery** — stock moved between the module render and the tap. Named state, saved variant untouched. |
+| ![Compare](docs/e6-compare.png) | |
+| **E6** — the saved item first and labelled, against four query-relevant alternatives on eight axes. No discount column. | |
+
+## Two-phase freshness
+
+The availability the module renders is **advisory** — true when the match
+resolved, possibly not true now. The binding read happens at the action
+boundary, in `revalidation/revalidate.ts`, and is allowed to contradict the
+card the user just tapped. That disagreement is the point, so the harness can
+force it: **Sell out saved size**, **Sell out product** and the delivery
+address selector each drive a different named recovery state.
+
+Blocking reasons are named rather than generic, because each has a different
+next step: a sold-out size, a withdrawn product, and an unservable address are
+not the same conversation. Advisories (price or seller changed) are stated as
+facts with no direction of travel — "it went down" would be an incentive, which
+constraint C-1 rules out.
 
 ## Where the data comes from
 
@@ -44,6 +63,11 @@ assumed:
   from a SHA-1 of the SKU id, so the catalog is byte-identical on every machine.
 - **The images are 60×80**, far too small for the 96×128 pt card. A mirror of
   the same 44,072 rows at 384×512 supplies the images instead.
+
+Five of E6's eight comparison axes — rating, review count, material, fit and
+returns — are also absent from the dataset and are synthesised. The Compare
+screen says so on itself: a comparison invites a judgement, and a judgement
+built on invented numbers is worth nothing unless the reader knows.
 
 The dataset's own noise is kept on purpose. 1,122 rows have a colour in their
 title that contradicts `baseColour` — "Carlton London Women **Black** Heels"
@@ -71,4 +95,5 @@ app/src/data/      generated — never hand-edit
 | C-5 no semantic similarity | Tier 3/4 are absent, not stubbed |
 | C-6 no cross-account leak | Logged-out callers take the same path to the same frozen empty response |
 | C-7 accessibility | Labels, focus order and ≥44×44 targets asserted in `__tests__/module.test.tsx` |
+| FR-7 no silent substitution | An alternative is only ever offered once the saved variant is blocked, and buying a different size relabels the button with the size it is actually buying |
 | C-8 higher bar for voice/image | Per-modality τ in `match/contract.ts` |

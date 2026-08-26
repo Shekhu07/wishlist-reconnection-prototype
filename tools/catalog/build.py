@@ -86,6 +86,7 @@ def build_wishlist(chosen, roles):
                 "size": size,
                 "saved_at": _saved_at(days_ago),
                 "price_at_save": colourway["price"],
+                "seller_at_save": colourway["seller"],
                 "state": state,
             }
         )

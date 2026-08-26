@@ -114,3 +114,95 @@ export function formatDelivery(isoDate: string): string {
   const rest = date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   return `Delivery by ${day}, ${rest}`;
 }
+
+/* ------------------------------------------------------------------ *
+ * E5 -- recovery at the action boundary (section 4.14)
+ * ------------------------------------------------------------------ */
+
+export interface RecoveryCopy {
+  title: string;
+  body: string;
+  /** Moves the user forward. Never a Buy button that cannot buy (FR-7). */
+  primaryAction: string;
+  secondaryAction: string;
+}
+
+export interface RecoveryContext {
+  size: string;
+  colour: string;
+  seller: string;
+  pincode: string;
+}
+
+/**
+ * One named state per blocking reason. Section 4.14 rules out a generic error,
+ * and the reason a generic error is wrong here is that every one of these has
+ * a different next step -- pick another size, pick another colour, change the
+ * address, or let the item go.
+ */
+export const RECOVERY_COPY: Record<string, (ctx: RecoveryContext) => RecoveryCopy> = {
+  variant_unavailable: (ctx) => ({
+    title: `Size ${ctx.size} sold out`,
+    body: `Your saved ${ctx.colour} in size ${ctx.size} went out of stock after you searched. Nothing has been changed for you.`,
+    primaryAction: "See what's in stock",
+    secondaryAction: "Keep in Wishlist",
+  }),
+  product_unavailable: () => ({
+    title: "No longer available",
+    body: "This product has been withdrawn in every colour and size. It stays in your Wishlist until you remove it.",
+    // Section 4.2: identity plus similar styles, and never a dead-end Buy.
+    primaryAction: "See similar styles",
+    secondaryAction: "Remove from Wishlist",
+  }),
+  delivery_unavailable: (ctx) => ({
+    title: `No delivery to ${ctx.pincode}`,
+    body: `${ctx.seller} does not currently ship to this address. The item is still available elsewhere.`,
+    primaryAction: "Change delivery address",
+    secondaryAction: "Keep in Wishlist",
+  }),
+};
+
+/**
+ * Advisories do not block the purchase; they are facts the user should see
+ * before committing. Stated without a direction of travel: "it went down" is
+ * an incentive, and constraint C-1 rules incentives out entirely.
+ */
+export const ADVISORY_COPY: Record<string, string> = {
+  price_changed: "The price has changed since you saved this",
+  seller_changed: "This is now sold by a different seller",
+};
+
+export function formatReturns(days: number): string {
+  return days === 0 ? "Not returnable" : `${days}-day returns`;
+}
+
+/* ------------------------------------------------------------------ *
+ * E6 -- compare options
+ * ------------------------------------------------------------------ */
+
+export const COMPARE_TITLE = "Compare options";
+export const COMPARE_SAVED_LABEL = "Your saved item";
+
+/**
+ * The comparison axes named in the plan's E6, in order.
+ *
+ * There is deliberately no discount, offer or savings axis. Constraint C-1
+ * bans monetary incentive, and a comparison table is exactly where one would
+ * creep back in disguised as a column.
+ */
+export const COMPARE_AXES = [
+  { key: "price", label: "Price" },
+  { key: "rating", label: "Rating" },
+  { key: "review_count", label: "Reviews" },
+  { key: "material", label: "Material" },
+  { key: "fit", label: "Fit" },
+  { key: "sizes", label: "Your size" },
+  { key: "delivery", label: "Delivery" },
+  { key: "returns", label: "Returns" },
+] as const;
+
+export type CompareAxisKey = (typeof COMPARE_AXES)[number]["key"];
+
+/** Shown once above the table, because five of the eight axes are invented. */
+export const COMPARE_SYNTHETIC_NOTE =
+  "Prototype data: rating, reviews, material, fit and returns are generated, not real.";
