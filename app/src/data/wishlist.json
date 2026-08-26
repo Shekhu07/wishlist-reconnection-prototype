@@ -1,0 +1,114 @@
+{
+  "items": [
+    {
+      "colour": "White",
+      "item_id": "wi_exact_available",
+      "parent_product_id": "pp_8ac0c84c5506",
+      "price_at_save": 599,
+      "product_id": 8847,
+      "role": "exact_available",
+      "saved_at": "2026-07-14",
+      "size": "L",
+      "sku": "sku_749cd31a32d75c",
+      "state": "normal"
+    },
+    {
+      "colour": "Red",
+      "item_id": "wi_multi_a",
+      "parent_product_id": "pp_d3ff3da2e2f3",
+      "price_at_save": 4039,
+      "product_id": 11384,
+      "role": "multi_a",
+      "saved_at": "2026-08-14",
+      "size": "L",
+      "sku": "sku_68da470e2ee6f8",
+      "state": "normal"
+    },
+    {
+      "colour": "Blue",
+      "item_id": "wi_multi_b",
+      "parent_product_id": "pp_1a745936b61b",
+      "price_at_save": 2639,
+      "product_id": 5956,
+      "role": "multi_b",
+      "saved_at": "2026-07-30",
+      "size": "L",
+      "sku": "sku_b8f672dc446947",
+      "state": "normal"
+    },
+    {
+      "colour": "Black",
+      "item_id": "wi_multi_c",
+      "parent_product_id": "pp_3689cc0cd94b",
+      "price_at_save": 669,
+      "product_id": 7156,
+      "role": "multi_c",
+      "saved_at": "2026-06-26",
+      "size": "L",
+      "sku": "sku_9d7b27097cc9a7",
+      "state": "normal"
+    },
+    {
+      "colour": "Blue",
+      "item_id": "wi_colour_variant",
+      "parent_product_id": "pp_f8a46eb7e03b",
+      "price_at_save": 989,
+      "product_id": 16504,
+      "role": "colour_variant",
+      "saved_at": "2026-08-07",
+      "size": "34",
+      "sku": "sku_7e3f148e142b44",
+      "state": "normal"
+    },
+    {
+      "colour": "Olive",
+      "item_id": "wi_variant_unavailable",
+      "parent_product_id": "pp_a4e5dd91705f",
+      "price_at_save": 3309,
+      "product_id": 7434,
+      "role": "variant_unavailable",
+      "saved_at": "2026-07-23",
+      "size": "L",
+      "sku": "sku_61848c8baaa466",
+      "state": "normal"
+    },
+    {
+      "colour": "Purple",
+      "item_id": "wi_in_bag",
+      "parent_product_id": "pp_84cfbdea9cae",
+      "price_at_save": 939,
+      "product_id": 11534,
+      "role": "in_bag",
+      "saved_at": "2026-08-18",
+      "size": "L",
+      "sku": "sku_37200148b26b45",
+      "state": "in_bag"
+    },
+    {
+      "colour": "Black",
+      "item_id": "wi_purchased",
+      "parent_product_id": "pp_4d81966e788a",
+      "price_at_save": 5559,
+      "product_id": 2505,
+      "role": "purchased",
+      "saved_at": "2026-05-22",
+      "size": "UK9",
+      "sku": "sku_5e986a907f43ee",
+      "state": "purchased"
+    },
+    {
+      "colour": "Blue",
+      "item_id": "wi_low_identity",
+      "parent_product_id": "pp_57d51adebd7b",
+      "price_at_save": 979,
+      "product_id": 16458,
+      "role": "low_identity",
+      "saved_at": "2026-08-04",
+      "size": "L",
+      "sku": "sku_0bec0c56088319",
+      "state": "normal"
+    }
+  ],
+  "pincode": "560034",
+  "user_id": "u_demo"
+}

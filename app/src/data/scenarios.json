@@ -1,0 +1,163 @@
+[
+  {
+    "authenticated": true,
+    "expect": {
+      "matchCount": 0,
+      "moduleVisible": false
+    },
+    "filters": {},
+    "id": "state_1_no_match",
+    "label": "No match",
+    "modality": "text",
+    "note": "Validates that search is unchanged when nothing matches.",
+    "query": "formal blazer",
+    "state": 1
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "exact_variant_available",
+      "matchCount": 1,
+      "moduleVisible": true
+    },
+    "filters": {},
+    "id": "state_2_one_exact",
+    "label": "One exact match",
+    "modality": "text",
+    "query": "mark taylor shirts",
+    "state": 2
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "multiple_matches",
+      "matchCount": 3,
+      "moduleVisible": true
+    },
+    "filters": {},
+    "id": "state_3_multiple",
+    "label": "Multiple exact matches",
+    "modality": "text",
+    "query": "check shirt",
+    "state": 3
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "saved_size_available",
+      "matchCount": 1,
+      "moduleVisible": true
+    },
+    "filters": {
+      "size": [
+        "34"
+      ]
+    },
+    "id": "state_4_variant_available",
+    "label": "Variant available",
+    "modality": "text",
+    "query": "jeans",
+    "state": 4
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "exact_variant_unavailable",
+      "matchCount": 1,
+      "moduleVisible": true
+    },
+    "filters": {},
+    "id": "state_5_variant_unavailable",
+    "label": "Variant unavailable",
+    "modality": "text",
+    "query": "proline tshirts",
+    "state": 5
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "matchCount": 0,
+      "moduleVisible": false
+    },
+    "filters": {},
+    "id": "state_6_similar_not_exact",
+    "label": "Similar not exact (Phase 5)",
+    "modality": "text",
+    "note": "Tier 3 semantic similarity is excluded from v1 by constraint C-5. The harness shows this state so the exclusion is visible rather than forgotten.",
+    "outOfScope": true,
+    "query": "heels",
+    "state": 6
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "already_in_bag",
+      "matchCount": 1,
+      "moduleVisible": true
+    },
+    "filters": {},
+    "id": "state_7_already_in_bag",
+    "label": "Already in Bag",
+    "modality": "text",
+    "query": "kurtas",
+    "state": 7
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "purchased_before",
+      "matchCount": 1,
+      "moduleVisible": true
+    },
+    "filters": {},
+    "id": "state_8_purchased_before",
+    "label": "Purchased before",
+    "modality": "text",
+    "query": "casual shoes",
+    "state": 8
+  },
+  {
+    "authenticated": true,
+    "dismissFirst": true,
+    "expect": {
+      "matchCount": 0,
+      "moduleVisible": false,
+      "suppressed": true
+    },
+    "filters": {},
+    "id": "state_9_dismissed",
+    "label": "Dismissed",
+    "modality": "text",
+    "note": "Dismissal suppresses the query family for the session.",
+    "query": "check shirt",
+    "state": 9
+  },
+  {
+    "authenticated": false,
+    "expect": {
+      "matchCount": 0,
+      "moduleVisible": false
+    },
+    "filters": {},
+    "id": "state_10_logged_out",
+    "label": "Logged out",
+    "modality": "text",
+    "note": "Identical empty shape to any other miss. Nothing in the response may reveal that a wishlist exists (constraint C-6).",
+    "query": "check shirt",
+    "state": 10
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "matchCount": 0,
+      "moduleVisible": false
+    },
+    "filters": {},
+    "id": "state_low_identity",
+    "label": "Below identity floor (renders nothing)",
+    "modality": "text",
+    "note": "A saved item does match this query, but its identity confidence is below the floor, so precision wins and the module renders nothing (constraint C-4).",
+    "query": "locomotive shirts",
+    "state": 1
+  }
+]

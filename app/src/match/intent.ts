@@ -1,0 +1,163 @@
+import type { Modality, SearchFilters } from "./contract";
+
+/**
+ * E2: rules-based query intent extraction. No model, no embeddings.
+ *
+ * The gazetteers are built from the catalog itself at load time, so the parser
+ * can never claim a brand or colour the catalog does not contain. Fields it
+ * cannot parse degrade to "unconstrained" -- never to a guess (source doc 2.2).
+ */
+
+export interface IntentField<T> {
+  value: T;
+  confidence: number;
+}
+
+export interface SearchIntent {
+  raw: string;
+  tokens: string[];
+  modality: Modality;
+  brand?: IntentField<string>;
+  articleType?: IntentField<string>;
+  colour?: IntentField<string>;
+  gender?: IntentField<string>;
+  /** Terms left over after the structured fields were claimed. */
+  residual: string[];
+}
+
+export interface Gazetteers {
+  /** normalised brand key -> canonical brand name */
+  brands: Map<string, string>;
+  /** normalised article term -> canonical articleType */
+  articleTypes: Map<string, string>;
+  colours: Map<string, string>;
+  genders: Map<string, string>;
+}
+
+const GENDER_TERMS: Record<string, string> = {
+  men: "Men",
+  mens: "Men",
+  man: "Men",
+  male: "Men",
+  women: "Women",
+  womens: "Women",
+  woman: "Women",
+  female: "Women",
+  boys: "Boys",
+  girls: "Girls",
+  unisex: "Unisex",
+  kids: "Boys",
+};
+
+export function normalise(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** "T-shirt", "tshirts" and "t shirt" must all reach the same articleType. */
+function articleVariants(articleType: string): string[] {
+  const base = normalise(articleType);
+  const collapsed = base.replace(/\s+/g, "");
+  const singular = base.endsWith("s") ? base.slice(0, -1) : base;
+  const singularCollapsed = collapsed.endsWith("s")
+    ? collapsed.slice(0, -1)
+    : collapsed;
+  return Array.from(new Set([base, collapsed, singular, singularCollapsed]));
+}
+
+export function buildGazetteers(
+  parents: { brand: string; articleType: string; colourways: { colour: string }[] }[]
+): Gazetteers {
+  const brands = new Map<string, string>();
+  const articleTypes = new Map<string, string>();
+  const colours = new Map<string, string>();
+  const genders = new Map<string, string>();
+
+  for (const [term, canonical] of Object.entries(GENDER_TERMS)) {
+    genders.set(term, canonical);
+  }
+  for (const parent of parents) {
+    brands.set(normalise(parent.brand).replace(/\s+/g, ""), parent.brand);
+    for (const variant of articleVariants(parent.articleType)) {
+      articleTypes.set(variant, parent.articleType);
+    }
+    for (const colourway of parent.colourways) {
+      colours.set(normalise(colourway.colour), colourway.colour);
+    }
+  }
+  return { brands, articleTypes, colours, genders };
+}
+
+/** Longest-span match so "navy blue" never degrades to "blue". */
+function claimSpan<T>(
+  tokens: string[],
+  claimed: boolean[],
+  lookup: Map<string, T>,
+  maxSpan: number,
+  collapseSpaces = false
+): { value: T; span: number } | undefined {
+  for (let span = Math.min(maxSpan, tokens.length); span >= 1; span -= 1) {
+    for (let start = 0; start + span <= tokens.length; start += 1) {
+      if (claimed.slice(start, start + span).some(Boolean)) continue;
+      const phrase = tokens.slice(start, start + span).join(" ");
+      const key = collapseSpaces ? phrase.replace(/\s+/g, "") : phrase;
+      const hit = lookup.get(key) ?? (collapseSpaces ? undefined : lookup.get(phrase.replace(/\s+/g, "")));
+      if (hit !== undefined) {
+        for (let i = start; i < start + span; i += 1) claimed[i] = true;
+        return { value: hit, span };
+      }
+    }
+  }
+  return undefined;
+}
+
+export function parseIntent(
+  query: string,
+  modality: Modality,
+  gaz: Gazetteers
+): SearchIntent {
+  const tokens = normalise(query).split(" ").filter(Boolean);
+  const claimed = tokens.map(() => false);
+
+  // Order matters: multi-word brands are claimed before article types, so
+  // "Peter England shirt" does not lose "England" to a colour or noise term.
+  const brand = claimSpan(tokens, claimed, gaz.brands, 4, true);
+  const articleType = claimSpan(tokens, claimed, gaz.articleTypes, 3);
+  const colour = claimSpan(tokens, claimed, gaz.colours, 2);
+  const gender = claimSpan(tokens, claimed, gaz.genders, 1);
+
+  // A longer matched span is stronger evidence than a single ambiguous token.
+  const confidenceFor = (span: number) => Math.min(0.6 + 0.2 * span, 1);
+
+  return {
+    raw: query,
+    tokens,
+    modality,
+    brand: brand && { value: brand.value, confidence: confidenceFor(brand.span) },
+    articleType:
+      articleType && {
+        value: articleType.value,
+        confidence: confidenceFor(articleType.span),
+      },
+    colour: colour && { value: colour.value, confidence: confidenceFor(colour.span) },
+    gender: gender && { value: gender.value, confidence: confidenceFor(gender.span) },
+    residual: tokens.filter((_, i) => !claimed[i]),
+  };
+}
+
+/**
+ * FR-9: explicit filters are hard predicates, so they merge into the intent as
+ * constraints rather than as scoring hints.
+ */
+export function mergeFilters(intent: SearchIntent, filters: SearchFilters): SearchFilters {
+  const merged: SearchFilters = { ...filters };
+  if (intent.brand && !merged.brand) merged.brand = [intent.brand.value];
+  if (intent.articleType && !merged.articleType) {
+    merged.articleType = [intent.articleType.value];
+  }
+  if (intent.gender && !merged.gender) merged.gender = [intent.gender.value];
+  return merged;
+}

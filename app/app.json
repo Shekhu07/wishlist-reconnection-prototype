@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Wishlist Reconnection",
+    "slug": "wishlist-reconnection-prototype",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": { "bundler": "metro", "favicon": "./assets/favicon.png" }
+  }
+}
