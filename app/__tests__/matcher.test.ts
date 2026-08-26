@@ -47,15 +47,35 @@ describe("match service (E3, tiers 1 and 2)", () => {
     expect(result.matches.every((m) => m.tier === 1)).toBe(true);
   });
 
-  it("offers a tier 2 colourway only once the saved variant cannot be bought", () => {
+  it("offers another colour once the saved one cannot be bought, and says so", () => {
     const catalog = makeCatalog();
     for (const sku of catalog.parents[0].colourways[0].skus) sku.in_stock = false;
     const result = run("mark taylor shirt", catalog);
+
     expect(result.matches).toHaveLength(1);
-    // The saved colourway still leads; it is reported as unavailable rather
-    // than swapped out from under the user.
-    expect(result.matches[0].current.state).toBe("variant_unavailable");
+    expect(result.matches[0].tier).toBe(2);
+    // Not a silent substitution: the card still reports the user's own saved
+    // colour and size, and the copy names the change explicitly (FR-7).
+    expect(result.matches[0].copy_key).toBe("colour_variant_available");
+    expect(result.matches[0].saved.color).toBe("Blue");
+    expect(result.matches[0].saved.size).toBe("M");
+  });
+
+  it("falls back to the unavailable message when no other colour has the size", () => {
+    const catalog = makeCatalog();
+    // Every colourway of the parent loses the saved size, so there is nothing
+    // to offer and the honest answer is that the size is gone.
+    for (const colourway of catalog.parents[0].colourways) {
+      for (const sku of colourway.skus) if (sku.size === "M") sku.in_stock = false;
+    }
+    const result = run("mark taylor shirt", catalog);
+    expect(result.matches[0].tier).toBe(1);
     expect(result.matches[0].copy_key).toBe("exact_variant_unavailable");
+  });
+
+  it("keeps the saved colour leading while it is still buyable", () => {
+    const result = run("mark taylor shirt");
+    expect(result.matches[0].tier).toBe(1);
   });
 
   it("treats explicit filters as hard predicates, not preferences (FR-9)", () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
 import catalogJson from "@/data/catalog.json";
 import scenariosJson from "@/data/scenarios.json";
@@ -34,6 +34,7 @@ export default function App() {
   const [scenario, setScenario] = useState<Scenario>(scenarios[1] ?? scenarios[0]);
   const [latencyMs, setLatencyMs] = useState(60);
   const [swapFills, setSwapFills] = useState(false);
+  const [showWishlistInSearch, setShowWishlistInSearch] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>({ name: "search" });
   const [pincode, setPincode] = useState(wishlist.pincode);
@@ -64,9 +65,17 @@ export default function App() {
     scenario.authenticated
   );
 
+  // Skip the first pass: on mount the match has already run once, and firing a
+  // second one here spent an impression against the per-item daily cap before
+  // the researcher had touched anything.
+  const latencyMounted = useRef(false);
   useEffect(() => {
     client.latencyMs = latencyMs;
-    rerun();
+    if (!latencyMounted.current) {
+      latencyMounted.current = true;
+      return;
+    }
+    restage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latencyMs]);
 
@@ -102,6 +111,12 @@ export default function App() {
     () => (activeItem ? revalidate(activeItem, catalog, inventory, pincode) : null),
     [activeItem, inventory, pincode, stockVersion]
   );
+
+  /** Re-run the current match without charging it to the user's daily cap. */
+  const restage = useCallback(() => {
+    client.suppression.resetImpressions();
+    rerun();
+  }, [client, rerun]);
 
   const goBack = useCallback(() => {
     setRoute({ name: "search" });
@@ -152,6 +167,14 @@ export default function App() {
           setToast("Stock reset to the seeded catalog");
         }}
         stockChanged={inventory.changes.length > 0}
+        showWishlistInSearch={showWishlistInSearch}
+        onToggleWishlistInSearch={(value) => {
+          // Set on the client, not on the view: section 4.16 is enforced
+          // server-side, so the toggle has to reach the service.
+          client.preferences.showWishlistInSearch = value;
+          setShowWishlistInSearch(value);
+          restage();
+        }}
       />
 
       <View style={styles.frame}>

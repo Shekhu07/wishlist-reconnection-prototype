@@ -15,7 +15,8 @@ python3 -m venv .venv && .venv/bin/pip install pyarrow pillow
 .venv/bin/python tools/catalog/build.py --check     # builds the catalog (~2 GB of transfer, once)
 
 cd app && npm install
-npm test                                            # matcher, transport, copy lint, a11y, fixtures
+npm test                                            # everything, including the gates
+npm run gates                                       # just the acceptance gates, writes docs/gate-report.md
 npm run web                                         # open the prototype
 ```
 
@@ -33,6 +34,33 @@ render grace — so an intentional suppression is never mistaken for a broken bu
 | **E5** — the saved product, colour and size preselected, all five facts revalidated at the boundary | **E5 recovery** — stock moved between the module render and the tap. Named state, saved variant untouched. |
 | ![Compare](docs/e6-compare.png) | |
 | **E6** — the saved item first and labelled, against four query-relevant alternatives on eight axes. No discount column. | |
+
+## Acceptance gates
+
+The plan attaches a `✅ Gate` line to every P0 epic. Five of them are things
+code can measure, and `npm run gates` measures them, writing
+[`docs/gate-report.md`](docs/gate-report.md):
+
+| Epic | Requirement |
+|---|---|
+| E1 | exact-match precision ≥ 99% over a 500-pair set |
+| E1 | zero silent variant substitutions across a 10,000-run fuzz |
+| E2 | ≥ 90% field-level parser accuracy over 1,000 queries |
+| E3 | match p95 ≤ 120 ms |
+| E8 | no wishlist field in any unauthenticated response **or log line** |
+
+The report records what each number **is not evidence for**, alongside the
+number. That column is the point. The E1 labels are generated rather than
+hand-labelled, and the generator derives brand the same way the matcher does,
+so an error shared by both cancels out — a passing precision figure guards
+against regression but is not the Phase 1 exit evidence the plan asks for. The
+latency figure is in-process JavaScript, not the 500 rps load test. A gate
+report that omitted those caveats would be worse than no gate report.
+
+Two of the three P0 gaps the gates exposed were invisible to every unit test:
+tier 2 matching never fired at all (dead code behind a passing suite), and the
+identity floor gated the colourway being drawn rather than the saved one, so an
+item too untrustworthy to show could still surface a sibling colour.
 
 ## Two-phase freshness
 
@@ -97,3 +125,4 @@ app/src/data/      generated — never hand-edit
 | C-7 accessibility | Labels, focus order and ≥44×44 targets asserted in `__tests__/module.test.tsx` |
 | FR-7 no silent substitution | An alternative is only ever offered once the saved variant is blocked, and buying a different size relabels the button with the size it is actually buying |
 | C-8 higher bar for voice/image | Per-modality τ in `match/contract.ts` |
+| §4.16 user control | `preferences.showWishlistInSearch`, enforced in `match/transport.ts` before the matcher runs — a preference the UI honours but the service ignores is not a control |

@@ -27,6 +27,9 @@ export interface StateSwitcherProps {
   onSellOutProduct: () => void;
   onResetStock: () => void;
   stockChanged: boolean;
+  /** Section 4.16: the per-user control, so it can be shown working. */
+  showWishlistInSearch: boolean;
+  onToggleWishlistInSearch: (value: boolean) => void;
 }
 
 const LATENCIES = [60, 240, 420, 900];
@@ -53,6 +56,8 @@ export function StateSwitcher({
   onSellOutProduct,
   onResetStock,
   stockChanged,
+  showWishlistInSearch,
+  onToggleWishlistInSearch,
 }: StateSwitcherProps) {
   return (
     <View style={styles.bar} testID="state-switcher">
@@ -143,6 +148,20 @@ export function StateSwitcher({
         >
           <Text style={[styles.chipText, stockChanged && styles.chipTextActive]}>
             {stockChanged ? "Reset stock ●" : "Reset stock"}
+          </Text>
+        </Pressable>
+        <Text style={styles.controlLabel}>Setting</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Toggle the user setting: show saved items in search"
+          accessibilityState={{ checked: showWishlistInSearch }}
+          onPress={() => onToggleWishlistInSearch(!showWishlistInSearch)}
+          style={[styles.chip, !showWishlistInSearch && styles.chipWarn]}
+        >
+          <Text style={[styles.chipText, !showWishlistInSearch && styles.chipTextActive]}>
+            {showWishlistInSearch
+              ? "Wishlist in search: on"
+              : "Wishlist in search: off"}
           </Text>
         </Pressable>
       </ScrollView>

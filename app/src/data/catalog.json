@@ -2592,9 +2592,10 @@
               "sku": "sku_de27bffecbb6b9"
             },
             {
-              "in_stock": true,
+              "in_stock": false,
               "size": "L",
-              "sku": "sku_c93f297e506ca2"
+              "sku": "sku_c93f297e506ca2",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -2640,9 +2641,10 @@
               "sku": "sku_2fd52a200db395"
             },
             {
-              "in_stock": true,
+              "in_stock": false,
               "size": "L",
-              "sku": "sku_a0c8fa4742049d"
+              "sku": "sku_a0c8fa4742049d",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -2688,9 +2690,10 @@
               "sku": "sku_d780ddad064768"
             },
             {
-              "in_stock": true,
+              "in_stock": false,
               "size": "L",
-              "sku": "sku_3a2fcf0c358528"
+              "sku": "sku_3a2fcf0c358528",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -2736,9 +2739,10 @@
               "sku": "sku_4f31f444b61983"
             },
             {
-              "in_stock": true,
+              "in_stock": false,
               "size": "L",
-              "sku": "sku_3cea02a53ff8c4"
+              "sku": "sku_3cea02a53ff8c4",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -2784,9 +2788,10 @@
               "sku": "sku_f2f24103d0af1c"
             },
             {
-              "in_stock": true,
+              "in_stock": false,
               "size": "L",
-              "sku": "sku_3ed84ed71faf32"
+              "sku": "sku_3ed84ed71faf32",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -7324,7 +7329,7 @@
     },
     {
       "articleType": "Kurtas",
-      "brand": "BIba",
+      "brand": "BIBA",
       "brand_key": "biba",
       "colourways": [
         {
@@ -9006,12 +9011,12 @@
     },
     {
       "articleType": "Casual Shoes",
-      "brand": "Redtape",
+      "brand": "Red Tape",
       "brand_key": "redtape",
       "colourways": [
         {
           "colour": "Brown",
-          "display_name": "Tape Casual Men's Shoe",
+          "display_name": "Casual Men's Shoe",
           "fit": null,
           "identity_confidence": 1.0,
           "identity_flags": [],
@@ -9059,7 +9064,7 @@
         },
         {
           "colour": "Black",
-          "display_name": "Tape Men's Casual Shoe",
+          "display_name": "Men's Casual Shoe",
           "fit": null,
           "identity_confidence": 1.0,
           "identity_flags": [],
@@ -9107,7 +9112,7 @@
         },
         {
           "colour": "Grey",
-          "display_name": "Tape Men's Shoe",
+          "display_name": "Men's Shoe",
           "fit": null,
           "identity_confidence": 1.0,
           "identity_flags": [],
@@ -9154,7 +9159,7 @@
           "usage": "Casual"
         }
       ],
-      "display_name": "Tape Men's casual Shoe",
+      "display_name": "Men's casual Shoe",
       "gender": "Men",
       "masterCategory": "Footwear",
       "name_core": "tape men s shoe",
@@ -10888,9 +10893,10 @@
               "sku": "sku_79f6b29ad1e061"
             },
             {
-              "in_stock": true,
+              "in_stock": false,
               "size": "UK9",
-              "sku": "sku_f8126a91caa0a5"
+              "sku": "sku_f8126a91caa0a5",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -10936,9 +10942,10 @@
               "sku": "sku_0d1c9e456e09a1"
             },
             {
-              "in_stock": false,
+              "in_stock": true,
               "size": "UK9",
-              "sku": "sku_46532eacf1a7f6"
+              "sku": "sku_46532eacf1a7f6",
+              "stock_override": true
             },
             {
               "in_stock": true,
@@ -15763,12 +15770,12 @@
     },
     {
       "articleType": "Track Pants",
-      "brand": "Adidas",
+      "brand": "ADIDAS",
       "brand_key": "adidas",
       "colourways": [
         {
           "colour": "Black",
-          "display_name": "ADIDAS Men's Track Pant",
+          "display_name": "Men's Track Pant",
           "fit": "Regular Fit",
           "identity_confidence": 1.0,
           "identity_flags": [],
@@ -15816,7 +15823,7 @@
         },
         {
           "colour": "Navy Blue",
-          "display_name": "ADIDAS Men's Track Pant",
+          "display_name": "Men's Track Pant",
           "fit": "Relaxed Fit",
           "identity_confidence": 1.0,
           "identity_flags": [],
@@ -15863,7 +15870,7 @@
           "usage": "Sports"
         }
       ],
-      "display_name": "ADIDAS Men's Track Pant",
+      "display_name": "Men's Track Pant",
       "gender": "Men",
       "masterCategory": "Apparel",
       "name_core": "adidas men s",
@@ -16117,6 +16124,7 @@
     }
   ],
   "roles": {
+    "colour_alternative": "pp_c3e538fe11da",
     "colour_variant": "pp_f8a46eb7e03b",
     "exact_available": "pp_8ac0c84c5506",
     "in_bag": "pp_84cfbdea9cae",
@@ -16132,6 +16140,41 @@
       "in_stock": false,
       "role": "variant_unavailable",
       "sku": "sku_61848c8baaa466"
+    },
+    {
+      "in_stock": false,
+      "role": "variant_unavailable",
+      "sku": "sku_c93f297e506ca2"
+    },
+    {
+      "in_stock": false,
+      "role": "variant_unavailable",
+      "sku": "sku_a0c8fa4742049d"
+    },
+    {
+      "in_stock": false,
+      "role": "variant_unavailable",
+      "sku": "sku_3a2fcf0c358528"
+    },
+    {
+      "in_stock": false,
+      "role": "variant_unavailable",
+      "sku": "sku_3cea02a53ff8c4"
+    },
+    {
+      "in_stock": false,
+      "role": "variant_unavailable",
+      "sku": "sku_3ed84ed71faf32"
+    },
+    {
+      "in_stock": false,
+      "role": "colour_alternative",
+      "sku": "sku_f8126a91caa0a5"
+    },
+    {
+      "in_stock": true,
+      "role": "colour_alternative",
+      "sku": "sku_46532eacf1a7f6"
     }
   ],
   "today": "2026-08-26"

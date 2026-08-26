@@ -127,6 +127,9 @@ def select(parents):
     roles["colour_variant"] = family_index[families[2]]["wishlisted"][0]
     roles["in_bag"] = family_index[families[3]]["wishlisted"][0]
     roles["purchased"] = family_index[families[4]]["wishlisted"][0]
+    # Tier 2 needs a parent with several colourways: the saved colour loses the
+    # saved size while another colour keeps it.
+    roles["colour_alternative"] = family_index[families[5]]["wishlisted"][0]
     # Must not reuse a parent another fixture already owns: this function
     # rewrites the parent's colourways, which would push a conflicted colourway
     # into position 0 and break whichever state was relying on it.

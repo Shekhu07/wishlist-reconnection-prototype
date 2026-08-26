@@ -63,6 +63,18 @@ export class SuppressionStore {
     this.impressions.set(key, (this.impressions.get(key) ?? 0) + 1);
   }
 
+  /**
+   * Forget impression counts without forgetting dismissals.
+   *
+   * The harness re-runs the same match when a control changes -- it is
+   * re-staging one moment, not simulating a user who kept searching. Charging
+   * those to the daily cap burns it in a few clicks and makes the feature look
+   * broken to the researcher.
+   */
+  resetImpressions(): void {
+    this.impressions.clear();
+  }
+
   reset(): void {
     this.dismissed.clear();
     this.impressions.clear();

@@ -85,8 +85,23 @@
     "modality": "text",
     "note": "Tier 3 semantic similarity is excluded from v1 by constraint C-5. The harness shows this state so the exclusion is visible rather than forgotten.",
     "outOfScope": true,
-    "query": "heels",
+    "query": "handbag",
     "state": 6
+  },
+  {
+    "authenticated": true,
+    "expect": {
+      "copyKey": "colour_variant_available",
+      "matchCount": 1,
+      "moduleVisible": true
+    },
+    "filters": {},
+    "id": "state_tier2_colour_alternative",
+    "label": "Saved colour gone, another available",
+    "modality": "text",
+    "note": "Tier 2: the same product in a different colour, offered only because the saved colour cannot be bought in this size. The card still reports the colour and size the user saved.",
+    "query": "catwalk heels",
+    "state": 4
   },
   {
     "authenticated": true,

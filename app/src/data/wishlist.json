@@ -105,6 +105,19 @@
       "state": "purchased"
     },
     {
+      "colour": "Black",
+      "item_id": "wi_colour_alternative",
+      "parent_product_id": "pp_c3e538fe11da",
+      "price_at_save": 3119,
+      "product_id": 19018,
+      "role": "colour_alternative",
+      "saved_at": "2026-08-09",
+      "seller_at_save": "Trendsetter Distributors",
+      "size": "UK9",
+      "sku": "sku_f8126a91caa0a5",
+      "state": "normal"
+    },
+    {
       "colour": "Blue",
       "item_id": "wi_low_identity",
       "parent_product_id": "pp_57d51adebd7b",

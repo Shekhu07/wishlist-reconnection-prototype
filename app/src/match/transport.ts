@@ -36,9 +36,23 @@ export interface ShadowRecord {
   matches: { sku: string; tier: number; confidence: number; copyKey: string }[];
 }
 
+/**
+ * Section 4.16 of the plan: a per-user control for whether saved items appear
+ * in search at all. E8 requires it be respected *server-side*, which is why it
+ * lives on the client boundary rather than being a UI toggle -- a preference
+ * the UI honours but the service ignores is not a privacy control, it is a
+ * suggestion.
+ */
+export interface UserPreferences {
+  showWishlistInSearch: boolean;
+}
+
+export const DEFAULT_PREFERENCES: UserPreferences = { showWishlistInSearch: true };
+
 export interface MatchClientOptions {
   catalog: Catalog;
   wishlist: Wishlist;
+  preferences?: UserPreferences;
   config?: MatchConfig;
   /** Simulated service latency in ms. The harness raises this to force misses. */
   latencyMs?: number;
@@ -52,12 +66,14 @@ export class MatchClient {
   private readonly breaker: CircuitBreaker;
   readonly suppression = new SuppressionStore();
   readonly shadow: ShadowRecord[] = [];
+  preferences: UserPreferences;
   config: MatchConfig;
   latencyMs: number;
   forceTimeout: boolean;
 
   constructor(private readonly options: MatchClientOptions) {
     this.config = options.config ?? DEFAULT_CONFIG;
+    this.preferences = options.preferences ?? { ...DEFAULT_PREFERENCES };
     this.latencyMs = options.latencyMs ?? 60;
     this.forceTimeout = options.forceTimeout ?? false;
     this.index = buildIndex(options.catalog, options.wishlist);
@@ -87,6 +103,14 @@ export class MatchClient {
     // same code path, so response timing carries no signal either (C-6).
     if (!authenticated) {
       return this.finish(request, false, started, false, false, EMPTY_RESPONSE);
+    }
+
+    // The user has turned the feature off (section 4.16). Checked before the
+    // matcher runs, on the same path as any other miss, so the response is
+    // indistinguishable from having nothing saved -- opting out must not
+    // become its own signal.
+    if (!this.preferences.showWishlistInSearch) {
+      return this.finish(request, true, started, false, false, EMPTY_RESPONSE);
     }
 
     if (this.breaker.isOpen) {
@@ -198,6 +222,9 @@ export class MatchClient {
     breakerOpen: boolean,
     response: MatchResponse
   ): MatchResponse {
+    // E8's gate covers log lines as well as responses. An empty response has
+    // nothing to log anyway, but writing that down here is what stops a future
+    // change from quietly adding the item id "just for debugging".
     this.shadow.push({
       request,
       authenticated,

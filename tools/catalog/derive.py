@@ -175,6 +175,25 @@ def name_core(row, brand):
     return " ".join(core)
 
 
+def canonical_spellings(rows_with_brand):
+    """One display spelling per brand, chosen by frequency.
+
+    The dataset spells the same brand several ways -- ADIDAS and Adidas, Red
+    Tape and Redtape, four variants of Gini and Jony. brand_key already folds
+    them for matching, but the *display* string was whichever row happened to
+    create the parent, so the same brand rendered two different ways on screen.
+    Frequency picks the house spelling; the alphabetical tie-break keeps the
+    choice stable across runs.
+    """
+    counts = {}
+    for key, brand in rows_with_brand:
+        counts.setdefault(key, Counter())[brand] += 1
+    return {
+        key: sorted(tally.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+        for key, tally in counts.items()
+    }
+
+
 def derive(rows):
     """Attach brand, brand_key, name_core and identity_confidence to every row.
 
@@ -199,4 +218,8 @@ def derive(rows):
         out["name_core"] = name_core(row, brand)
         out["identity_confidence"], out["identity_flags"] = identity_confidence(row)
         kept.append(out)
+
+    canonical = canonical_spellings((r["brand_key"], r["brand"]) for r in kept)
+    for row in kept:
+        row["brand"] = canonical[row["brand_key"]]
     return kept, dropped

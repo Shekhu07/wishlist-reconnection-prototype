@@ -66,7 +66,8 @@ def build_wishlist(chosen, roles):
     overrides = []
 
     def save(role, *, days_ago, colour_index=0, size=None, state="normal",
-             force_stock=None):
+             force_stock=None, size_out_everywhere=False,
+             size_in_stock_elsewhere=False):
         parent = chosen[roles[role]]
         colourway = _colourway(parent, colour_index)
         size = size or _mid_size(parent)
@@ -75,6 +76,35 @@ def build_wishlist(chosen, roles):
             sku["in_stock"] = force_stock
             sku["stock_override"] = True
             overrides.append({"sku": sku["sku"], "in_stock": force_stock, "role": role})
+
+        # State 5 is "your size is gone", which is only true when it is gone in
+        # every colour. Leaving one colourway stocked makes it a tier 2 case
+        # instead, and the fixture would stop testing the state it names.
+        if size_out_everywhere:
+            for other in parent["colourways"]:
+                for candidate in other["skus"]:
+                    if candidate["size"] == size and candidate["in_stock"]:
+                        candidate["in_stock"] = False
+                        candidate["stock_override"] = True
+                        overrides.append(
+                            {"sku": candidate["sku"], "in_stock": False, "role": role}
+                        )
+        # Tier 2's fixture: the saved colour loses this size, another colour of
+        # the same product keeps it. Without both halves pinned the scenario
+        # would drift with the seeded stock.
+        if size_in_stock_elsewhere:
+            for other in parent["colourways"]:
+                if other["product_id"] == colourway["product_id"]:
+                    continue
+                for candidate in other["skus"]:
+                    if candidate["size"] == size and not candidate["in_stock"]:
+                        candidate["in_stock"] = True
+                        candidate["stock_override"] = True
+                        overrides.append(
+                            {"sku": candidate["sku"], "in_stock": True, "role": role}
+                        )
+                break
+
         items.append(
             {
                 "item_id": "wi_%s" % role,
@@ -96,9 +126,15 @@ def build_wishlist(chosen, roles):
     save("multi_b", days_ago=27, force_stock=True)
     save("multi_c", days_ago=61, force_stock=True)
     save("colour_variant", days_ago=19, force_stock=True)
-    save("variant_unavailable", days_ago=34, force_stock=False)
+    save("variant_unavailable", days_ago=34, force_stock=False, size_out_everywhere=True)
     save("in_bag", days_ago=8, state="in_bag", force_stock=True)
     save("purchased", days_ago=96, state="purchased", force_stock=True)
+    save(
+        "colour_alternative",
+        days_ago=17,
+        force_stock=False,
+        size_in_stock_elsewhere=True,
+    )
     # Saved, matching, and deliberately never rendered: its identity confidence
     # is below the floor, so the module stays empty (constraint C-4).
     if "low_identity" in roles:
@@ -203,6 +239,23 @@ def build_scenarios(chosen, roles, wishlist):
                 "Tier 3 semantic similarity is excluded from v1 by constraint "
                 "C-5. The harness shows this state so the exclusion is visible "
                 "rather than forgotten."
+            ),
+        },
+        {
+            "id": "state_tier2_colour_alternative",
+            "state": 4,
+            "label": "Saved colour gone, another available",
+            "query": "%s %s" % (parent_of("colour_alternative")["brand"].lower(),
+                                parent_of("colour_alternative")["articleType"].lower()),
+            "modality": "text",
+            "filters": {},
+            "authenticated": True,
+            "expect": {"moduleVisible": True, "matchCount": 1,
+                       "copyKey": "colour_variant_available"},
+            "note": (
+                "Tier 2: the same product in a different colour, offered only "
+                "because the saved colour cannot be bought in this size. The "
+                "card still reports the colour and size the user saved."
             ),
         },
         {

@@ -101,7 +101,10 @@ function classify(
   colourway: Colourway,
   parent: ParentProduct
 ): { itemState: ItemState; sizeInStock: boolean; anySizeInStock: boolean } {
-  const sku = colourway.skus.find((s) => s.sku === item.sku) ?? colourway.skus[0];
+  // Match on size, not on the saved SKU id: for a tier 2 colourway the saved
+  // SKU belongs to a different colourway and can never be found here, and the
+  // old fallback to skus[0] silently reported stock for an unrelated size.
+  const sku = colourway.skus.find((s) => s.size === item.size);
   const sizeInStock = Boolean(sku?.in_stock);
   const anySizeInStock = parent.colourways.some((c) => c.skus.some((s) => s.in_stock));
 
@@ -167,7 +170,11 @@ export function score(candidate: Omit<Candidate, "score">, index: MatchIndex, in
   const evidence = evidenceFor(intent, parent, colourway);
   if (evidence === 0) return 0;
 
-  const identity = tier === 1 ? 1 : 0.72;
+  // Tier 2 is the same canonical product, so its identity claim is nearly as
+  // strong as tier 1. The colour difference belongs to variant_align; charging
+  // it to identity as well double-counted it and put every tier 2 candidate
+  // under tau, which is why none ever rendered.
+  const identity = tier === 1 ? 1 : 0.92;
   const categoryAlign = intent.articleType
     ? normalise(intent.articleType.value) === normalise(parent.articleType)
       ? intent.articleType.confidence
@@ -220,6 +227,12 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
 
     const saved = parent.colourways.find((c) => c.product_id === item.product_id);
     if (!saved) continue;
+    // The floor gates the *saved* colourway, not merely whichever colourway we
+    // are about to draw. If we cannot trust that this listing is the product
+    // the user saved, we have no business offering its siblings either --
+    // otherwise opting one colourway out on identity grounds quietly readmits
+    // the same uncertain product through tier 2 (constraint C-4).
+    if (saved.identity_confidence < config.minIdentityConfidence) continue;
 
     // Tier 1: the saved colourway itself.
     const tierOptions: { colourway: Colourway; tier: MatchTier }[] = [
@@ -253,14 +266,28 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
     .filter((c) => c.score >= tau)
     .sort((a, b) => b.score - a.score || a.item.item_id.localeCompare(b.item.item_id));
 
-  // One card per saved item: a Tier 2 alternative must not appear beside the
-  // Tier 1 card for the same item.
-  const seen = new Set<string>();
-  const deduped = qualified.filter((c) => {
-    if (seen.has(c.item.item_id)) return false;
-    seen.add(c.item.item_id);
-    return true;
-  });
+  // One card per saved item, and which card is a question of usefulness rather
+  // than of raw score. Tier 1 outscores tier 2 by construction, so picking the
+  // top score meant a saved item whose colour had sold out always rendered as
+  // "your size is unavailable" and never mentioned that the same product was
+  // sitting there in another colour.
+  //
+  // The saved choice still leads whenever it can actually be bought (FR-7).
+  const byItem = new Map<string, Candidate[]>();
+  for (const candidate of qualified) {
+    const bucket = byItem.get(candidate.item.item_id);
+    if (bucket) bucket.push(candidate);
+    else byItem.set(candidate.item.item_id, [candidate]);
+  }
+
+  const deduped = [...byItem.values()]
+    .map((candidates) => {
+      const tierOne = candidates.find((c) => c.tier === 1);
+      if (tierOne && tierOne.itemState !== "variant_unavailable") return tierOne;
+      const colourway = candidates.find((c) => c.tier === 2 && c.sizeInStock);
+      return colourway ?? tierOne ?? candidates[0];
+    })
+    .sort((a, b) => b.score - a.score || a.item.item_id.localeCompare(b.item.item_id));
 
   if (deduped.length === 0) return EMPTY_RESPONSE;
 
