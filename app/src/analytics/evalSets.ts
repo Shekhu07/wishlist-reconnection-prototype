@@ -1,5 +1,5 @@
 import type { Catalog, Colourway, ParentProduct, Wishlist } from "@/data/types";
-import { realParents } from "../../gates/paths";
+import { realParents } from "@/analytics/catalog";
 
 /**
  * Evaluation sets for the E1 and E2 acceptance gates.

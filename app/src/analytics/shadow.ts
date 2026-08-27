@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG, type MatchConfig, type Modality } from "@/match/contrac
 import { buildIndex, match } from "@/match/matcher";
 import { buildSearchIndex, search } from "@/search/localSearch";
 import { buildLabelledPairs, isAcceptable, wishlistFor } from "./evalSets";
-import { realParents } from "../../gates/paths";
+import { realParents } from "@/analytics/catalog";
 
 /**
  * Phase 3 (plan S8-S9): matching runs, nothing renders.
