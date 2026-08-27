@@ -93,7 +93,11 @@ type Route =
 
 export default function App() {
   const [scenario, setScenario] = useState<Scenario>(scenarios[1] ?? scenarios[0]);
-  const [seq, setSeq] = useState(1);
+  // context.seq is the single source of truth for the sequence number --
+  // there is no separate counter to keep in sync. The next value is always
+  // derived from the current context, read via the functional setState form
+  // so a typed search's contextFromQuery bump (Tasks 7/9/10) can never be
+  // raced by a stale closure here.
   const [context, setContext] = useState<SearchContext>(() =>
     contextFromScenario(scenarios[1] ?? scenarios[0], 1)
   );
@@ -250,8 +254,7 @@ export default function App() {
         onSelect={(next) => {
           client.suppression.reset();
           setScenario(next);
-          setSeq((n) => n + 1);
-          setContext(contextFromScenario(next, seq + 1));
+          setContext((prev) => contextFromScenario(next, prev.seq + 1));
           goBack();
         }}
         latencyMs={latencyMs}
