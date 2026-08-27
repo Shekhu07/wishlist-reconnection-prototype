@@ -1,4 +1,7 @@
+import bagJson from "@/data/bag.json";
 import catalogJson from "@/data/catalog.json";
+import ordersJson from "@/data/orders.json";
+import savedForLaterJson from "@/data/saved-for-later.json";
 import scenariosJson from "@/data/scenarios.json";
 import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Scenario, Wishlist } from "@/data/types";
@@ -17,6 +20,14 @@ import { MatchClient } from "@/match/transport";
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
 const scenarios = scenariosJson as unknown as Scenario[];
+
+// The duplicate states are derived from these, so a client without them
+// cannot produce states 7 and 8 at all.
+const commerce = {
+  bag: bagJson,
+  savedForLater: savedForLaterJson,
+  orders: ordersJson,
+} as never;
 
 function requestFor(scenario: Scenario): MatchRequest {
   return {
@@ -37,7 +48,7 @@ describe("prototype state fixtures (section 4.6)", () => {
   });
 
   it.each(scenarios.map((s) => [s.id, s] as const))("%s resolves as specified", async (_id, scenario) => {
-    const client = new MatchClient({ catalog, wishlist, latencyMs: 5 });
+    const client = new MatchClient({ catalog, wishlist, latencyMs: 5, commerce });
     const request = requestFor(scenario);
     if (scenario.dismissFirst) client.dismiss(request);
 
@@ -55,7 +66,7 @@ describe("prototype state fixtures (section 4.6)", () => {
 
   it("reveals nothing about the wishlist to a logged-out session (C-6)", async () => {
     const scenario = scenarios.find((s) => !s.authenticated)!;
-    const client = new MatchClient({ catalog, wishlist, latencyMs: 5 });
+    const client = new MatchClient({ catalog, wishlist, latencyMs: 5, commerce });
     const response = await client.requestMatch(requestFor(scenario), false);
     const payload = JSON.stringify(response);
     for (const item of wishlist.items) {

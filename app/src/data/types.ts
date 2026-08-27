@@ -72,7 +72,6 @@ export interface WishlistItem {
   price_at_save: number;
   /** The E1 record persists seller too, so a seller change is detectable. */
   seller_at_save: string;
-  state: "normal" | "in_bag" | "purchased";
 }
 
 export interface Wishlist {

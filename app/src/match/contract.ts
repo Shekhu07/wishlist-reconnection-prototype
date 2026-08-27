@@ -37,7 +37,9 @@ export type CopyKey =
   | "multiple_matches"
   | "colour_variant_available"
   | "already_in_bag"
-  | "purchased_before";
+  | "saved_for_later"
+  | "purchased_before"
+  | "purchased_other_variant";
 
 /** Availability of the saved item as of the (advisory) module-render read. */
 export type ItemState =
@@ -45,6 +47,7 @@ export type ItemState =
   | "variant_unavailable"
   | "product_unavailable"
   | "in_bag"
+  | "saved_for_later"
   | "purchased";
 
 export interface SavedSnapshot {

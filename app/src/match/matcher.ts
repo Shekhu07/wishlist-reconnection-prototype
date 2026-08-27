@@ -13,6 +13,11 @@ import {
 import { buildGazetteers, mergeFilters, normalise, parseIntent, type Gazetteers } from "./intent";
 import { DEFAULT_RANKING, selectForModule, type Rankable } from "./ranking";
 import type { Catalog, Colourway, ParentProduct, Wishlist, WishlistItem } from "@/data/types";
+import {
+  reconcile,
+  type CommerceState,
+  type DuplicateState,
+} from "@/commerce/reconcile";
 
 /**
  * E3, tiers 1 and 2 only.
@@ -29,9 +34,27 @@ export interface MatchIndex {
   gaz: Gazetteers;
   parents: Map<string, ParentProduct>;
   colourwayByProduct: Map<number, { parent: ParentProduct; colourway: Colourway }>;
+  /**
+   * Bag, Save for Later and orders. Held by reference and read on every match,
+   * never snapshotted: the bag changes *between* calls, and caching the
+   * reconciliation at index-build time reproduced the exact staleness this
+   * derivation exists to remove -- add an item and the module went on saying
+   * "you saved this earlier" until the client was rebuilt.
+   */
+  commerce: CommerceState;
 }
 
-export function buildIndex(catalog: Catalog, wishlist: Wishlist): MatchIndex {
+const EMPTY_COMMERCE: CommerceState = {
+  bag: { items: [] },
+  savedForLater: { items: [] },
+  orders: { orders: [] },
+};
+
+export function buildIndex(
+  catalog: Catalog,
+  wishlist: Wishlist,
+  commerce: CommerceState = EMPTY_COMMERCE
+): MatchIndex {
   const parents = new Map<string, ParentProduct>();
   const colourwayByProduct = new Map<number, { parent: ParentProduct; colourway: Colourway }>();
   for (const parent of catalog.parents) {
@@ -46,6 +69,7 @@ export function buildIndex(catalog: Catalog, wishlist: Wishlist): MatchIndex {
     gaz: buildGazetteers(catalog.parents),
     parents,
     colourwayByProduct,
+    commerce,
   };
 }
 
@@ -100,7 +124,8 @@ interface Candidate {
 function classify(
   item: WishlistItem,
   colourway: Colourway,
-  parent: ParentProduct
+  parent: ParentProduct,
+  duplicate: DuplicateState
 ): { itemState: ItemState; sizeInStock: boolean; anySizeInStock: boolean } {
   // Match on size, not on the saved SKU id: for a tier 2 colourway the saved
   // SKU belongs to a different colourway and can never be found here, and the
@@ -109,15 +134,29 @@ function classify(
   const sizeInStock = Boolean(sku?.in_stock);
   const anySizeInStock = parent.colourways.some((c) => c.skus.some((s) => s.in_stock));
 
-  if (item.state === "in_bag") return { itemState: "in_bag", sizeInStock, anySizeInStock };
-  if (item.state === "purchased") return { itemState: "purchased", sizeInStock, anySizeInStock };
+  // A duplicate state outranks availability: telling someone the item is
+  // already in their bag matters more than telling them it is in stock.
+  if (duplicate === "in_bag") return { itemState: "in_bag", sizeInStock, anySizeInStock };
+  if (duplicate === "saved_for_later") {
+    return { itemState: "saved_for_later", sizeInStock, anySizeInStock };
+  }
+  if (duplicate === "purchased" || duplicate === "purchased_other_variant") {
+    return { itemState: "purchased", sizeInStock, anySizeInStock };
+  }
   if (!anySizeInStock) return { itemState: "product_unavailable", sizeInStock, anySizeInStock };
   if (!sizeInStock) return { itemState: "variant_unavailable", sizeInStock, anySizeInStock };
   return { itemState: "purchasable", sizeInStock, anySizeInStock };
 }
 
-function copyKeyFor(candidate: Candidate, totalMatches: number, filters: SearchFilters): CopyKey {
+function copyKeyFor(
+  candidate: Candidate,
+  totalMatches: number,
+  filters: SearchFilters,
+  duplicate: DuplicateState
+): CopyKey {
   if (candidate.itemState === "in_bag") return "already_in_bag";
+  if (candidate.itemState === "saved_for_later") return "saved_for_later";
+  if (duplicate === "purchased_other_variant") return "purchased_other_variant";
   if (candidate.itemState === "purchased") return "purchased_before";
   if (totalMatches > 1) return "multiple_matches";
   if (candidate.itemState === "variant_unavailable" || candidate.itemState === "product_unavailable") {
@@ -235,6 +274,8 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
     // the same uncertain product through tier 2 (constraint C-4).
     if (saved.identity_confidence < config.minIdentityConfidence) continue;
 
+    const duplicate = reconcile(item, index.commerce).state;
+
     // A colour named in the query is a statement of intent. If it is not the
     // colour they saved, the saved colourway is not an exact match to what
     // they just asked for -- calling it one is the false positive constraint
@@ -258,7 +299,7 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
       if (requested.identity_confidence < config.minIdentityConfidence) continue;
       if (!passesPriceFilter(requested, filters)) continue;
 
-      const classified = classify(item, requested, parent);
+      const classified = classify(item, requested, parent, duplicate);
       const partial = { item, parent, colourway: requested, tier: 2 as MatchTier, ...classified };
       candidates.push({ ...partial, score: score(partial, index, intent, config) });
       continue;
@@ -284,7 +325,7 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
       if (!passesPriceFilter(option.colourway, filters)) continue;
       if (option.colourway.identity_confidence < config.minIdentityConfidence) continue;
 
-      const classified = classify(item, option.colourway, parent);
+      const classified = classify(item, option.colourway, parent, duplicate);
       const partial = { item, parent, colourway: option.colourway, tier: option.tier, ...classified };
       const value = score(partial, index, intent, config);
       candidates.push({ ...partial, score: value });
@@ -358,7 +399,7 @@ export function match(request: MatchRequest, index: MatchIndex, config: MatchCon
       delivery_by: deliveryDate(index.catalog.today, c.colourway.product_id),
       state: c.itemState,
     },
-    copy_key: copyKeyFor(c, deduped.length, filters),
+    copy_key: copyKeyFor(c, deduped.length, filters, reconcile(c.item, index.commerce).state),
     display: {
       brand: c.parent.brand,
       name: c.colourway.display_name,

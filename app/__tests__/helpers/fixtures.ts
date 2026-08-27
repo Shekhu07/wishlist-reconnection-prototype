@@ -121,7 +121,6 @@ export function makeWishlist(overrides: Partial<Wishlist["items"][0]> = {}): Wis
         saved_at: "2026-08-01",
         price_at_save: 1999,
         seller_at_save: "Myntra Retail",
-        state: "normal",
         ...overrides,
       },
     ],

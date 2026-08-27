@@ -206,7 +206,6 @@ export function wishlistFor(pair: LabelledPair, catalog: Catalog): Wishlist | nu
         saved_at: catalog.today,
         price_at_save: colourway.price,
         seller_at_save: colourway.seller,
-        state: "normal",
       },
     ],
   };

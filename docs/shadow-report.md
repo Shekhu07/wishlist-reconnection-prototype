@@ -16,15 +16,15 @@ Matching ran 624 times across three modalities and rendered nothing.
 | | |
 |---|---|
 | Evaluations | 624 |
-| Would have rendered | 297 (**47.6%** opportunity rate) |
-| Tier 1 / tier 2 candidates | 318 / 57 |
-| Saved items ineligible on identity | 1 of 10 |
+| Would have rendered | 342 (**54.8%** opportunity rate) |
+| Tier 1 / tier 2 candidates | 363 / 57 |
+| Saved items ineligible on identity | 1 of 11 |
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.0267 ms** per query.
-Search with matching in the same tick: **0.0346 ms**.
-Delta: **+0.0079 ms**.
+Search alone: **0.0282 ms** per query.
+Search with matching in the same tick: **0.0467 ms**.
+Delta: **+0.0185 ms**.
 
 The delta is noise, and structurally has to be: `search()` takes no
 wishlist argument and returns synchronously, so there is no ordering in
@@ -38,11 +38,11 @@ S9 tuning deliverable.
 
 | τ | Opportunity | Precision | Mean confidence |
 |---|---|---|---|
-| 0.60 | 60.1% | 100.0% | 0.772 |
-| 0.65 | 60.1% | 100.0% | 0.772 |
-| 0.70 | 60.1% | 100.0% | 0.772 |
-| 0.72 | 60.1% | 100.0% | 0.772 |
-| 0.75 | 47.6% | 100.0% | 0.779 |
+| 0.60 | 67.3% | 100.0% | 0.769 |
+| 0.65 | 67.3% | 100.0% | 0.769 |
+| 0.70 | 67.3% | 100.0% | 0.769 |
+| 0.72 | 67.3% | 100.0% | 0.769 |
+| 0.75 | 48.6% | 100.0% | 0.779 |
 | 0.80 | 5.3% | 100.0% | 0.831 |
 | 0.85 | 1.0% | 100.0% | 0.860 |
 

@@ -1,12 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import bagJson from "@/data/bag.json";
 import catalogJson from "@/data/catalog.json";
+import ordersJson from "@/data/orders.json";
+import savedForLaterJson from "@/data/saved-for-later.json";
 import scenariosJson from "@/data/scenarios.json";
 import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
 import { EventLog, type ExperimentArm } from "@/analytics/events";
+import {
+  addToBag,
+  wouldDuplicate,
+  type Bag,
+  type CommerceState,
+  type Orders,
+  type SavedForLater,
+} from "@/commerce/reconcile";
 import { RAMP_STEPS } from "@/experiment/assignment";
 import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
@@ -21,6 +32,17 @@ import { useWishlistMatch, type SuppressionReason } from "@/state/useWishlistMat
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
 const scenarios = scenariosJson as unknown as Scenario[];
+
+/**
+ * Bag, Save for Later and order history as their own records. The module's
+ * duplicate labels are derived from these rather than asserted by the wishlist
+ * item, which is what lets them go stale correctly (E14 / FR-11).
+ */
+const initialCommerce: CommerceState = {
+  bag: bagJson as unknown as Bag,
+  savedForLater: savedForLaterJson as unknown as SavedForLater,
+  orders: ordersJson as unknown as Orders,
+};
 
 /**
  * A synthetic breach for the kill-switch drill: control converts, the treatment
@@ -85,7 +107,18 @@ export default function App() {
   // The section 7 stream. One log for the session, so a researcher can see the
   // pipeline filling up as they drive the harness.
   const events = useMemo(() => new EventLog(), []);
-  const client = useMemo(() => new MatchClient({ catalog, wishlist, events }), [events]);
+  const commerce = useMemo<CommerceState>(
+    () => ({
+      bag: { items: [...initialCommerce.bag.items] },
+      savedForLater: { items: [...initialCommerce.savedForLater.items] },
+      orders: { orders: [...initialCommerce.orders.orders] },
+    }),
+    []
+  );
+  const client = useMemo(
+    () => new MatchClient({ catalog, wishlist, events, commerce }),
+    [events, commerce]
+  );
   // The flag owns the ramp and the kill switch. The harness overrides the arm
   // directly so a researcher can see each treatment without waiting to be
   // bucketed into it.
@@ -359,6 +392,10 @@ export default function App() {
             onChooseSize={setSelectedSize}
             onMoveToBag={() => {
               const size = selectedSize ?? activeItem.size;
+              const duplicate = wouldDuplicate(activeItem, commerce);
+              // FR-11: never silently stack a second copy of something the
+              // module has just told the user is already in their bag.
+              if (!duplicate) addToBag(activeItem, size, commerce);
               events.emit({
                 type: "moved_to_bag",
                 ts: catalog.today,
@@ -368,12 +405,15 @@ export default function App() {
                 sku: activeItem.sku,
                 via_wishlist_module: true,
                 size_deviated: size !== activeItem.size,
-                duplicate: activeItem.state === "in_bag",
+                duplicate,
               });
               note();
               setToast(
-                `Moved to Bag: ${activeItem.colour} · ${size}, revalidated at the boundary`
+                duplicate
+                  ? "Already in your Bag — not added twice"
+                  : `Moved to Bag: ${activeItem.colour} · ${size}, revalidated at the boundary`
               );
+              restage();
             }}
             onRecoveryPrimary={() => {
               if (revalidation.blocking === "variant_unavailable") {

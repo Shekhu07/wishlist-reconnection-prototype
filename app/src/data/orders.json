@@ -1,0 +1,19 @@
+{
+  "orders": [
+    {
+      "delivered_at": "2026-06-18",
+      "lines": [
+        {
+          "colour": "Black",
+          "parent_product_id": "pp_4d81966e788a",
+          "price_paid": 5559,
+          "quantity": 1,
+          "size": "UK9",
+          "sku": "sku_5e986a907f43ee"
+        }
+      ],
+      "order_id": "ord_wi_purchased",
+      "placed_at": "2026-06-13"
+    }
+  ]
+}

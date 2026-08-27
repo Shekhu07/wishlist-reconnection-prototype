@@ -10,8 +10,7 @@
       "saved_at": "2026-07-14",
       "seller_at_save": "Vector Lifestyle",
       "size": "L",
-      "sku": "sku_749cd31a32d75c",
-      "state": "normal"
+      "sku": "sku_749cd31a32d75c"
     },
     {
       "colour": "Red",
@@ -23,8 +22,7 @@
       "saved_at": "2026-08-14",
       "seller_at_save": "Trendsetter Distributors",
       "size": "L",
-      "sku": "sku_68da470e2ee6f8",
-      "state": "normal"
+      "sku": "sku_68da470e2ee6f8"
     },
     {
       "colour": "Blue",
@@ -36,8 +34,7 @@
       "saved_at": "2026-07-30",
       "seller_at_save": "Trendsetter Distributors",
       "size": "L",
-      "sku": "sku_b8f672dc446947",
-      "state": "normal"
+      "sku": "sku_b8f672dc446947"
     },
     {
       "colour": "Black",
@@ -49,8 +46,7 @@
       "saved_at": "2026-06-26",
       "seller_at_save": "Omnitech Retail",
       "size": "L",
-      "sku": "sku_9d7b27097cc9a7",
-      "state": "normal"
+      "sku": "sku_9d7b27097cc9a7"
     },
     {
       "colour": "Blue",
@@ -62,8 +58,7 @@
       "saved_at": "2026-08-07",
       "seller_at_save": "Fashnear Technologies",
       "size": "34",
-      "sku": "sku_7e3f148e142b44",
-      "state": "normal"
+      "sku": "sku_7e3f148e142b44"
     },
     {
       "colour": "Olive",
@@ -75,8 +70,7 @@
       "saved_at": "2026-07-23",
       "seller_at_save": "Vector Lifestyle",
       "size": "L",
-      "sku": "sku_61848c8baaa466",
-      "state": "normal"
+      "sku": "sku_61848c8baaa466"
     },
     {
       "colour": "Purple",
@@ -88,8 +82,7 @@
       "saved_at": "2026-08-18",
       "seller_at_save": "Bluestone Apparel",
       "size": "L",
-      "sku": "sku_37200148b26b45",
-      "state": "in_bag"
+      "sku": "sku_37200148b26b45"
     },
     {
       "colour": "Black",
@@ -101,8 +94,19 @@
       "saved_at": "2026-05-22",
       "seller_at_save": "Vector Lifestyle",
       "size": "UK9",
-      "sku": "sku_5e986a907f43ee",
-      "state": "purchased"
+      "sku": "sku_5e986a907f43ee"
+    },
+    {
+      "colour": "Yellow",
+      "item_id": "wi_saved_for_later",
+      "parent_product_id": "pp_70e29e3545cb",
+      "price_at_save": 1009,
+      "product_id": 21933,
+      "role": "saved_for_later",
+      "saved_at": "2026-07-05",
+      "seller_at_save": "Bluestone Apparel",
+      "size": "Onesize",
+      "sku": "sku_7085bb7e08665d"
     },
     {
       "colour": "Black",
@@ -114,8 +118,7 @@
       "saved_at": "2026-08-09",
       "seller_at_save": "Trendsetter Distributors",
       "size": "UK9",
-      "sku": "sku_f8126a91caa0a5",
-      "state": "normal"
+      "sku": "sku_f8126a91caa0a5"
     },
     {
       "colour": "Blue",
@@ -127,8 +130,7 @@
       "saved_at": "2026-08-04",
       "seller_at_save": "Trendsetter Distributors",
       "size": "L",
-      "sku": "sku_0bec0c56088319",
-      "state": "normal"
+      "sku": "sku_0bec0c56088319"
     }
   ],
   "pincode": "560034",

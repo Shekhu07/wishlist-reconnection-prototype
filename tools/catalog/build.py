@@ -65,7 +65,7 @@ def build_wishlist(chosen, roles):
     items = []
     overrides = []
 
-    def save(role, *, days_ago, colour_index=0, size=None, state="normal",
+    def save(role, *, days_ago, colour_index=0, size=None,
              force_stock=None, size_out_everywhere=False,
              size_in_stock_elsewhere=False):
         parent = chosen[roles[role]]
@@ -117,7 +117,6 @@ def build_wishlist(chosen, roles):
                 "saved_at": _saved_at(days_ago),
                 "price_at_save": colourway["price"],
                 "seller_at_save": colourway["seller"],
-                "state": state,
             }
         )
 
@@ -127,8 +126,12 @@ def build_wishlist(chosen, roles):
     save("multi_c", days_ago=61, force_stock=True)
     save("colour_variant", days_ago=19, force_stock=True)
     save("variant_unavailable", days_ago=34, force_stock=False, size_out_everywhere=True)
-    save("in_bag", days_ago=8, state="in_bag", force_stock=True)
-    save("purchased", days_ago=96, state="purchased", force_stock=True)
+    # E14: in-bag and purchased are no longer flags on the wishlist record.
+    # They are derived from the bag and the order history, which is what makes
+    # them true rather than declared.
+    save("in_bag", days_ago=8, force_stock=True)
+    save("purchased", days_ago=96, force_stock=True)
+    save("saved_for_later", days_ago=52, force_stock=True)
     save(
         "colour_alternative",
         days_ago=17,
@@ -146,6 +149,70 @@ def build_wishlist(chosen, roles):
         save("low_identity", days_ago=22, colour_index=conflicted)
 
     return {"user_id": USER_ID, "pincode": PINCODE, "items": items}, overrides
+
+
+def build_commerce(wishlist):
+    """Bag, Save-for-Later and order history, as their own records.
+
+    FR-11 asks for three duplicate states to be *detected*, which means they
+    have to exist somewhere other than on the wishlist item claiming them. A
+    saved item that says "I am in the bag" is an assertion; a bag that contains
+    it is a fact, and only the second can go out of date correctly.
+    """
+    by_role = {item["role"]: item for item in wishlist["items"]}
+
+    bag = {"items": []}
+    saved_for_later = {"items": []}
+    orders = {"orders": []}
+
+    if "in_bag" in by_role:
+        item = by_role["in_bag"]
+        bag["items"].append(
+            {
+                "sku": item["sku"],
+                "parent_product_id": item["parent_product_id"],
+                "size": item["size"],
+                "colour": item["colour"],
+                "added_at": _saved_at(3),
+                "quantity": 1,
+            }
+        )
+
+    if "saved_for_later" in by_role:
+        item = by_role["saved_for_later"]
+        saved_for_later["items"].append(
+            {
+                "sku": item["sku"],
+                "parent_product_id": item["parent_product_id"],
+                "size": item["size"],
+                "colour": item["colour"],
+                # Moved out of the bag rather than never added: that is what
+                # Save for Later means, and why it is a distinct state.
+                "moved_at": _saved_at(21),
+            }
+        )
+
+    if "purchased" in by_role:
+        item = by_role["purchased"]
+        orders["orders"].append(
+            {
+                "order_id": "ord_%s" % item["item_id"],
+                "placed_at": _saved_at(74),
+                "delivered_at": _saved_at(69),
+                "lines": [
+                    {
+                        "sku": item["sku"],
+                        "parent_product_id": item["parent_product_id"],
+                        "size": item["size"],
+                        "colour": item["colour"],
+                        "quantity": 1,
+                        "price_paid": item["price_at_save"],
+                    }
+                ],
+            }
+        )
+
+    return bag, saved_for_later, orders
 
 
 def unsaved_family(chosen, roles):
@@ -270,6 +337,22 @@ def build_scenarios(chosen, roles, wishlist):
                        "copyKey": "already_in_bag"},
         },
         {
+            "id": "state_saved_for_later",
+            "state": 7,
+            "label": "In Save for Later",
+            "query": parent_of("saved_for_later")["articleType"].lower(),
+            "modality": "text",
+            "filters": {},
+            "authenticated": True,
+            "expect": {"moduleVisible": True, "matchCount": 1,
+                       "copyKey": "saved_for_later"},
+            "note": (
+                "The third duplicate state in FR-11. Derived from the "
+                "Save-for-Later record, not asserted by the wishlist item -- "
+                "the user moved this out of their bag on purpose."
+            ),
+        },
+        {
             "id": "state_8_purchased_before",
             "state": 8,
             "label": "Purchased before",
@@ -374,6 +457,7 @@ def run(force=False, check=False):
     print("curated %d parents" % len(chosen))
 
     wishlist, overrides = build_wishlist(chosen, roles)
+    bag, saved_for_later, orders = build_commerce(wishlist)
     scenarios = build_scenarios(chosen, roles, wishlist)
 
     catalog = {
@@ -398,6 +482,9 @@ def run(force=False, check=False):
         ("catalog.json", catalog),
         ("wishlist.json", wishlist),
         ("scenarios.json", scenarios),
+        ("bag.json", bag),
+        ("saved-for-later.json", saved_for_later),
+        ("orders.json", orders),
     ):
         with open(os.path.join(DATA_DIR, name), "w") as fh:
             json.dump(payload, fh, indent=2, ensure_ascii=False, sort_keys=True)

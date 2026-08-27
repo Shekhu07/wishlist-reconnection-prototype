@@ -10,6 +10,7 @@ import { buildIndex, match, type MatchIndex } from "./matcher";
 import { SuppressionStore, queryFamily } from "./suppression";
 import type { Catalog, Wishlist } from "@/data/types";
 import type { EventLog, ExperimentArm } from "@/analytics/events";
+import type { CommerceState } from "@/commerce/reconcile";
 
 /**
  * The boundary the UI talks to.
@@ -56,6 +57,8 @@ export interface MatchClientOptions {
   preferences?: UserPreferences;
   /** Section 7 event stream. Optional so tests can ignore it. */
   events?: EventLog;
+  /** Bag, Save for Later and orders, for E14 duplicate reconciliation. */
+  commerce?: CommerceState;
   arm?: ExperimentArm;
   /**
    * Phase 3. Matching runs in full and is logged in full; the response handed
@@ -90,7 +93,7 @@ export class MatchClient {
     this.arm = options.arm ?? "treatment_b";
     this.latencyMs = options.latencyMs ?? 60;
     this.forceTimeout = options.forceTimeout ?? false;
-    this.index = buildIndex(options.catalog, options.wishlist);
+    this.index = buildIndex(options.catalog, options.wishlist, options.commerce);
     this.breaker = new CircuitBreaker({
       window: this.config.breakerWindow,
       timeoutRate: this.config.breakerTimeoutRate,

@@ -55,6 +55,7 @@ export function actionability(state: ItemState): number {
     case "purchasable":
       return 1;
     case "in_bag":
+    case "saved_for_later":
     case "purchased":
       return 0.6;
     case "variant_unavailable":

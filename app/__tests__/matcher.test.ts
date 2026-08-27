@@ -113,12 +113,59 @@ describe("match service (E3, tiers 1 and 2)", () => {
   });
 
   it("labels an item already in the bag rather than offering it again (FR-11)", () => {
-    const result = run("mark taylor shirt", makeCatalog(), makeWishlist({ state: "in_bag" }));
+    const wishlist = makeWishlist();
+    const item = wishlist.items[0];
+    const result = match(
+      { ...baseRequest, query: "mark taylor shirt" },
+      buildIndex(makeCatalog(), wishlist, {
+        bag: {
+          items: [
+            {
+              sku: item.sku,
+              parent_product_id: item.parent_product_id,
+              size: item.size,
+              colour: item.colour,
+              added_at: "2026-08-20",
+              quantity: 1,
+            },
+          ],
+        },
+        savedForLater: { items: [] },
+        orders: { orders: [] },
+      })
+    );
     expect(result.matches[0].copy_key).toBe("already_in_bag");
   });
 
   it("labels a previously purchased item (FR-11)", () => {
-    const result = run("mark taylor shirt", makeCatalog(), makeWishlist({ state: "purchased" }));
+    const wishlist = makeWishlist();
+    const item = wishlist.items[0];
+    const result = match(
+      { ...baseRequest, query: "mark taylor shirt" },
+      buildIndex(makeCatalog(), wishlist, {
+        bag: { items: [] },
+        savedForLater: { items: [] },
+        orders: {
+          orders: [
+            {
+              order_id: "ord_1",
+              placed_at: "2026-05-01",
+              delivered_at: "2026-05-05",
+              lines: [
+                {
+                  sku: item.sku,
+                  parent_product_id: item.parent_product_id,
+                  size: item.size,
+                  colour: item.colour,
+                  quantity: 1,
+                  price_paid: 1999,
+                },
+              ],
+            },
+          ],
+        },
+      })
+    );
     expect(result.matches[0].copy_key).toBe("purchased_before");
   });
 

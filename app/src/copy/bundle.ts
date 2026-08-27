@@ -67,10 +67,26 @@ export const COPY: Record<CopyKey, ModuleCopy> = {
     primaryAction: "View Bag",
     secondaryAction: COMPARE,
   },
+  saved_for_later: {
+    title: TITLE,
+    // They moved this out of their bag on purpose. Saying so is more useful
+    // than pretending this is the first time they have seen it today.
+    subtitle: () => "In your Save for Later",
+    primaryAction: "Move to Bag",
+    secondaryAction: "View Save for Later",
+  },
   purchased_before: {
     title: TITLE,
     subtitle: () => "Purchased before",
     primaryAction: "Reorder",
+    secondaryAction: "View order",
+  },
+  purchased_other_variant: {
+    title: TITLE,
+    // For fashion this is usually a sizing story rather than a repeat
+    // purchase, so it gets its own line instead of a generic "bought before".
+    subtitle: (ctx) => `You bought this before in a different ${ctx.savedColour ? "colour or size" : "variant"}`,
+    primaryAction: "Buy from Wishlist",
     secondaryAction: "View order",
   },
 };

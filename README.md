@@ -93,6 +93,33 @@ work; the hard predicates absorb the false positives this eval set contains.
 Reading that as "τ can safely come down" would treat an absence of evidence as
 evidence of absence.
 
+## Duplicate reconciliation (E14)
+
+FR-11 asks for three duplicate states — in Bag, Save for Later, purchased
+before — to be **detected and re-labelled**. Detection is the operative word.
+Until this slice, `in_bag` and `purchased` were fields on the wishlist record,
+which is an item asserting something about itself. An assertion cannot go stale
+correctly: remove something from your bag and the saved item goes on claiming
+to be in it.
+
+So the states are derived from the records that own them (`commerce/reconcile.ts`):
+the wishlist says what you saved, the bag says what you are about to buy, the
+order history says what you already did. Precedence runs in-bag → Save for Later
+→ purchased, because in-bag is the only one where the user is about to do
+something wrong *right now*.
+
+Two distinctions the derivation makes that a flag could not:
+
+- **Purchased in a different size or colour** is its own state. For fashion that
+  is usually a sizing story rather than a repeat purchase, and it deserves
+  different copy.
+- **Duplicate-add** means exactly one thing — the same SKU is already in the bag.
+  Having bought it last year is not a duplicate add, and the §7 duplicate-add
+  metric depends on that being precise.
+
+Adding from the wishlist takes the item out of Save for Later, because leaving
+it in both would make the next reconciliation ambiguous.
+
 ## Multi-match ranking (E13)
 
 Matching and ranking answer different questions, and the prototype had been
