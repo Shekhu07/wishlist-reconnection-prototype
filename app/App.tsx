@@ -25,10 +25,12 @@ import { InventorySimulator } from "@/revalidation/inventory";
 import { revalidate } from "@/revalidation/revalidate";
 import { BagScreen } from "@/screens/BagScreen";
 import { CompareScreen } from "@/screens/CompareScreen";
+import { BrowseScreen } from "@/screens/BrowseScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { SavedProductScreen } from "@/screens/SavedProductScreen";
 import { SearchEntryScreen } from "@/screens/SearchEntryScreen";
 import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScreen";
+import { StubScreen } from "@/screens/StubScreen";
 import { StateSwitcher } from "@/harness/StateSwitcher";
 import { AppShell } from "@/shell/AppShell";
 import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
@@ -276,7 +278,13 @@ export default function App() {
       <AppShell
         nav={nav}
         bagCount={bagCount}
-        onTab={(tab) => setNav(switchTab(nav, tab))}
+        onTab={(tab) =>
+          setNav(
+            tab === "search"
+              ? { tab, stack: [{ name: "stub", reason: "Delivery in 30 minutes is not in this prototype." }] }
+              : switchTab(nav, tab)
+          )
+        }
         onBack={() => setNav(pop(nav))}
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
         harness={
@@ -486,7 +494,20 @@ export default function App() {
               }
             />
           )
-        ) : screen.name === "browse" || screen.name === "stub" ? null : (
+        ) : screen.name === "browse" ? (
+          <BrowseScreen
+            catalog={catalog}
+            filter={screen.filter}
+            onSelectTile={(tile) => {
+              setContext((prev) =>
+                contextFromQuery(`${tile.parent.brand} ${tile.parent.articleType}`, prev, prev.seq + 1)
+              );
+              setNav((current) => push(current, { name: "results" }));
+            }}
+          />
+        ) : screen.name === "stub" ? (
+          <StubScreen reason={screen.reason} />
+        ) : (
           <SearchResultsScreen
             catalog={catalog}
             query={context.query}
