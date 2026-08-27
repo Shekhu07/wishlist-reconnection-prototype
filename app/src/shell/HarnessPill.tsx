@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 import type { SuppressionReason } from "@/state/useWishlistMatch";
 
@@ -69,11 +69,20 @@ export function HarnessPill({ stateNumber, suppression, open, onToggle, children
 // all of it rather than guessing a round number.
 const BOTTOM_NAV_HEIGHT = MIN_TOUCH_TARGET + space.xs * 2 + 1;
 
+// BottomNav's own clearance is `env(safe-area-inset-bottom)` on web (see
+// BottomNav.tsx, Task 14) -- the pill rides on top of the nav, so its offset
+// from the bottom edge needs the same inset added on, via calc(), rather than
+// a second constant that would drift from the nav's real height.
+const PILL_BOTTOM =
+  Platform.OS === "web"
+    ? (`calc(${BOTTOM_NAV_HEIGHT + space.md}px + env(safe-area-inset-bottom))` as unknown as number)
+    : BOTTOM_NAV_HEIGHT + space.md;
+
 const styles = StyleSheet.create({
   pill: {
     position: "absolute",
     right: space.lg,
-    bottom: BOTTOM_NAV_HEIGHT + space.md,
+    bottom: PILL_BOTTOM,
     minHeight: MIN_TOUCH_TARGET,
     minWidth: MIN_TOUCH_TARGET,
     paddingHorizontal: space.md,

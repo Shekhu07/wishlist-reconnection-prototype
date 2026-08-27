@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { MIN_TOUCH_TARGET, color, space, type } from "@/design/tokens";
 import type { Tab } from "./nav";
 import { MyntraMark } from "./MyntraMark";
@@ -67,7 +67,8 @@ const styles = StyleSheet.create({
     borderTopColor: color.borderSubtle,
     backgroundColor: color.surface,
     // Clears the home indicator on a phone browser. See Task 14.
-    paddingBottom: space.sm,
+    paddingBottom:
+      Platform.OS === "web" ? ("env(safe-area-inset-bottom)" as unknown as number) : space.sm,
   },
   item: {
     flex: 1,

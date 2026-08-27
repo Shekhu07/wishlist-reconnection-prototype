@@ -7,6 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "themeColor": "#FF3F6C",
     "ios": { "supportsTablet": true },
     "android": {
       "adaptiveIcon": {
@@ -14,6 +15,6 @@
         "foregroundImage": "./assets/android-icon-foreground.png"
       }
     },
-    "web": { "bundler": "metro", "favicon": "./assets/favicon.png" }
+    "web": { "bundler": "metro", "favicon": "./assets/favicon.png", "output": "single" }
   }
 }
