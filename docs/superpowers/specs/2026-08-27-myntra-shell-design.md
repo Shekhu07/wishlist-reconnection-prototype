@@ -1,7 +1,7 @@
 # The app shell — design
 
 **Date:** 2026-08-27
-**Status:** awaiting review
+**Status:** approved — implementation plan next
 **Scope:** put the module inside the app it is meant to appear in. Two new
 screens (home, search entry), a navigation shell around the three that exist,
 and a deployment target of mobile web on Vercel.
@@ -340,16 +340,23 @@ noticed is what the reports exist to prevent.
   gives it more surfaces to act on, and every one of them stays inert while an
   experiment is running.
 
-## 8. Open question for review
+## 8. Resolved: Under ₹999 and Luxury stay live
 
-The bottom nav's middle three are the least defensible part of this design.
+The bottom nav's middle three were the least defensible part of this design.
 Under ₹999 and Luxury become real price filters because the catalog has prices,
 which makes them honest but also makes them **two more entry points into a
 results screen the module can appear in** — and the module's frequency cap and
-suppression are per session. If a participant browses Luxury, then Under ₹999,
-then searches, the module may be capped before the search that matters.
+suppression are per session. A participant who browses Luxury, then Under ₹999,
+then searches, may reach the search that matters with the module already capped.
 
-Options: leave them live and let the cap be part of what gets observed; or make
-them stubs like From 30 min. The design currently takes the first, and the first
-is the one that could quietly cost a research session. This is the only question
-in the spec still open.
+**Decided on review: they stay live.** The cap firing is then something the
+session can observe rather than something the prototype hid by having fewer
+doors than the real app.
+
+That decision has one consequence the implementation must carry, or it becomes
+a bug rather than a choice: when the module is absent because the cap or the
+suppression window is what stopped it, the harness pill must say so — the same
+requirement §4.5 already places on every other suppression. A capped module and
+a broken module look identical on screen, and this decision makes capping more
+likely, not less. `SuppressionReason` already distinguishes them; the pill has
+to surface it.
