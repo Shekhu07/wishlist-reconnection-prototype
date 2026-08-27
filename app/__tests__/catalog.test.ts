@@ -1,5 +1,6 @@
 import catalogJson from "@/data/catalog.json";
 import type { Catalog } from "@/data/types";
+import { CATALOG_IMAGES } from "@/data/images";
 
 const catalog = catalogJson as unknown as Catalog;
 
@@ -61,4 +62,12 @@ describe("the demo catalog covers the shell's category rail", () => {
       }).toEqual({ role, ...expected });
     }
   );
+
+  it("has an image for every colourway", () => {
+    const missing = catalog.parents
+      .flatMap((parent) => parent.colourways)
+      .filter((colourway) => CATALOG_IMAGES[colourway.product_id] === undefined)
+      .map((colourway) => colourway.product_id);
+    expect(missing).toEqual([]);
+  });
 });
