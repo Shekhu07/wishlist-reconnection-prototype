@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ExperimentArm } from "@/analytics/events";
 import type { Scenario } from "@/data/types";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
@@ -10,6 +11,19 @@ import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
  * seeding data, so every scenario is one tap. The doc suggests Storybook for
  * the same matrix; this covers it inside the app the participants actually
  * use, which is one mechanism instead of two.
+ *
+ * Every row wraps rather than scrolling sideways. Horizontal scrolling put
+ * controls off-screen at *every* width — the scenario row alone wanted 1981 pt
+ * on a 1470 pt window — with the indicator hidden, so a control that had
+ * scrolled away was indistinguishable from one that did not exist. A harness
+ * whose controls can hide is worse than no harness: the researcher concludes
+ * the build is broken.
+ *
+ * Wrapping alone would then cost about fourteen lines at phone width, so the
+ * secondary controls collapse. They start expanded — a control you have to
+ * discover is the problem this is fixing — and collapsing keeps a summary of
+ * everything that suppresses the module, for the same reason the absent-module
+ * note exists.
  */
 
 export interface StateSwitcherProps {
@@ -94,9 +108,11 @@ export function StateSwitcher({
   hiddenCount,
   onUnhideAll,
 }: StateSwitcherProps) {
+  const [expanded, setExpanded] = useState(true);
+
   return (
     <View style={styles.bar} testID="state-switcher">
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <View style={styles.row}>
         {scenarios.map((scenario) => {
           const active = scenario.id === activeId;
           return (
@@ -114,157 +130,220 @@ export function StateSwitcher({
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Text style={styles.controlLabel}>Match latency</Text>
-        {LATENCIES.map((ms) => (
-          <Pressable
-            key={ms}
-            accessibilityRole="button"
-            accessibilityLabel={`Set match latency to ${ms} milliseconds`}
-            onPress={() => onLatencyChange(ms)}
-            style={[styles.chip, latencyMs === ms && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, latencyMs === ms && styles.chipTextActive]}>
-              {ms} ms
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.row}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Swap button fills for the Phase 5 co-equality check"
-          onPress={() => onSwapFills(!swapFills)}
-          style={[styles.chip, swapFills && styles.chipActive]}
-        >
-          <Text style={[styles.chipText, swapFills && styles.chipTextActive]}>
-            Swap fills
-          </Text>
-        </Pressable>
-      </ScrollView>
-
-      {/* Two-phase freshness is only observable if stock can actually move
-          between the advisory read and the binding one. These do that. */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Text style={styles.controlLabel}>Deliver to</Text>
-        {PINCODES.map((pin) => (
-          <Pressable
-            key={pin}
-            accessibilityRole="button"
-            accessibilityLabel={`Set delivery pincode to ${pin}`}
-            onPress={() => onPincodeChange(pin)}
-            style={[styles.chip, pincode === pin && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, pincode === pin && styles.chipTextActive]}>{pin}</Text>
-          </Pressable>
-        ))}
-        <Text style={styles.controlLabel}>Stock</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Sell out the saved size before the next action"
-          onPress={onSellOutSize}
+          accessibilityLabel={
+            expanded ? "Hide the harness controls" : "Show the harness controls"
+          }
+          accessibilityState={{ expanded }}
+          onPress={() => setExpanded(!expanded)}
           style={styles.chip}
         >
-          <Text style={styles.chipText}>Sell out saved size</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Sell out the whole product before the next action"
-          onPress={onSellOutProduct}
-          style={styles.chip}
-        >
-          <Text style={styles.chipText}>Sell out product</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reset stock to the seeded catalog"
-          onPress={onResetStock}
-          style={[styles.chip, stockChanged && styles.chipWarn]}
-        >
-          <Text style={[styles.chipText, stockChanged && styles.chipTextActive]}>
-            {stockChanged ? "Reset stock ●" : "Reset stock"}
+          <Text style={styles.chipText}>
+            {expanded ? "Controls ▲" : "Controls ▼"}
           </Text>
         </Pressable>
-        <Text style={styles.controlLabel}>Phase 3</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Toggle shadow mode: match but render nothing"
-          accessibilityState={{ checked: shadowMode }}
-          onPress={() => onToggleShadowMode(!shadowMode)}
-          style={[styles.chip, shadowMode && styles.chipWarn]}
-        >
-          <Text style={[styles.chipText, shadowMode && styles.chipTextActive]}>
-            {shadowMode ? "Shadow mode: on" : "Shadow mode: off"}
-          </Text>
-        </Pressable>
-        <Text style={styles.controlLabel}>{eventCount} events</Text>
-        <Text style={styles.controlLabel}>Hidden {hiddenCount}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Restore all hidden items"
-          onPress={onUnhideAll}
-          style={[styles.chip, hiddenCount > 0 && styles.chipWarn]}
-        >
-          <Text style={[styles.chipText, hiddenCount > 0 && styles.chipTextActive]}>
-            Unhide all
-          </Text>
-        </Pressable>
-        <Text style={styles.controlLabel}>Setting</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Toggle the user setting: show saved items in search"
-          accessibilityState={{ checked: showWishlistInSearch }}
-          onPress={() => onToggleWishlistInSearch(!showWishlistInSearch)}
-          style={[styles.chip, !showWishlistInSearch && styles.chipWarn]}
-        >
-          <Text style={[styles.chipText, !showWishlistInSearch && styles.chipTextActive]}>
-            {showWishlistInSearch
-              ? "Wishlist in search: on"
-              : "Wishlist in search: off"}
-          </Text>
-        </Pressable>
-      </ScrollView>
+        {expanded ? null : (
+          <Text style={styles.controlLabel}>{summarise()}</Text>
+        )}
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        <Text style={styles.controlLabel}>Arm</Text>
-        {(Object.keys(ARM_LABELS) as ExperimentArm[]).map((candidate) => (
-          <Pressable
-            key={candidate}
-            accessibilityRole="button"
-            accessibilityLabel={`Show the ${ARM_LABELS[candidate]} arm`}
-            accessibilityState={{ selected: arm === candidate }}
-            onPress={() => onArmChange(candidate)}
-            style={[styles.chip, arm === candidate && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, arm === candidate && styles.chipTextActive]}>
-              {ARM_LABELS[candidate]}
-            </Text>
-          </Pressable>
-        ))}
-        <Text style={styles.controlLabel}>Ramp {(ramp * 100).toFixed(0)}%</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Advance the ramp one step"
-          onPress={onAdvanceRamp}
-          style={styles.chip}
-        >
-          <Text style={styles.chipText}>Advance ramp</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={killed ? "Clear the kill switch" : "Run the kill-switch drill"}
-          onPress={onToggleKill}
-          style={[styles.chip, killed && styles.chipWarn]}
-        >
-          <Text style={[styles.chipText, killed && styles.chipTextActive]}>
-            {killed ? "Killed — clear" : "Kill-switch drill"}
-          </Text>
-        </Pressable>
-      </ScrollView>
+      {expanded ? (
+        <>
+          <View style={styles.row}>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Match latency</Text>
+              {LATENCIES.map((ms) => (
+                <Pressable
+                  key={ms}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set match latency to ${ms} milliseconds`}
+                  onPress={() => onLatencyChange(ms)}
+                  style={[styles.chip, latencyMs === ms && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, latencyMs === ms && styles.chipTextActive]}>
+                    {ms} ms
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Swap button fills for the Phase 5 co-equality check"
+              onPress={() => onSwapFills(!swapFills)}
+              style={[styles.chip, swapFills && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, swapFills && styles.chipTextActive]}>
+                Swap fills
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Two-phase freshness is only observable if stock can actually move
+              between the advisory read and the binding one. These do that. */}
+          <View style={styles.row}>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Deliver to</Text>
+              {PINCODES.map((pin) => (
+                <Pressable
+                  key={pin}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Set delivery pincode to ${pin}`}
+                  onPress={() => onPincodeChange(pin)}
+                  style={[styles.chip, pincode === pin && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, pincode === pin && styles.chipTextActive]}>
+                    {pin}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Stock</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sell out the saved size before the next action"
+                onPress={onSellOutSize}
+                style={styles.chip}
+              >
+                <Text style={styles.chipText}>Sell out saved size</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sell out the whole product before the next action"
+                onPress={onSellOutProduct}
+                style={styles.chip}
+              >
+                <Text style={styles.chipText}>Sell out product</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Reset stock to the seeded catalog"
+                onPress={onResetStock}
+                style={[styles.chip, stockChanged && styles.chipWarn]}
+              >
+                <Text style={[styles.chipText, stockChanged && styles.chipTextActive]}>
+                  {stockChanged ? "Reset stock ●" : "Reset stock"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Phase 3</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Toggle shadow mode: match but render nothing"
+                accessibilityState={{ checked: shadowMode }}
+                onPress={() => onToggleShadowMode(!shadowMode)}
+                style={[styles.chip, shadowMode && styles.chipWarn]}
+              >
+                <Text style={[styles.chipText, shadowMode && styles.chipTextActive]}>
+                  {shadowMode ? "Shadow mode: on" : "Shadow mode: off"}
+                </Text>
+              </Pressable>
+              <Text style={styles.controlLabel}>{eventCount} events</Text>
+            </View>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Hidden {hiddenCount}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Restore all hidden items"
+                onPress={onUnhideAll}
+                style={[styles.chip, hiddenCount > 0 && styles.chipWarn]}
+              >
+                <Text style={[styles.chipText, hiddenCount > 0 && styles.chipTextActive]}>
+                  Unhide all
+                </Text>
+              </Pressable>
+            </View>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Setting</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Toggle the user setting: show saved items in search"
+                accessibilityState={{ checked: showWishlistInSearch }}
+                onPress={() => onToggleWishlistInSearch(!showWishlistInSearch)}
+                style={[styles.chip, !showWishlistInSearch && styles.chipWarn]}
+              >
+                <Text style={[styles.chipText, !showWishlistInSearch && styles.chipTextActive]}>
+                  {showWishlistInSearch
+                    ? "Wishlist in search: on"
+                    : "Wishlist in search: off"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Arm</Text>
+              {(Object.keys(ARM_LABELS) as ExperimentArm[]).map((candidate) => (
+                <Pressable
+                  key={candidate}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show the ${ARM_LABELS[candidate]} arm`}
+                  accessibilityState={{ selected: arm === candidate }}
+                  onPress={() => onArmChange(candidate)}
+                  style={[styles.chip, arm === candidate && styles.chipActive]}
+                >
+                  <Text style={[styles.chipText, arm === candidate && styles.chipTextActive]}>
+                    {ARM_LABELS[candidate]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Ramp {(ramp * 100).toFixed(0)}%</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Advance the ramp one step"
+                onPress={onAdvanceRamp}
+                style={styles.chip}
+              >
+                <Text style={styles.chipText}>Advance ramp</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={killed ? "Clear the kill switch" : "Run the kill-switch drill"}
+                onPress={onToggleKill}
+                style={[styles.chip, killed && styles.chipWarn]}
+              >
+                <Text style={[styles.chipText, killed && styles.chipTextActive]}>
+                  {killed ? "Killed — clear" : "Kill-switch drill"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      ) : null}
 
       {note ? <Text style={styles.note}>{note}</Text> : null}
     </View>
   );
+
+  /**
+   * What the collapsed bar still has to say. Anything here can stop the module
+   * rendering or change what it renders, and a researcher who cannot see it
+   * reads a deliberate suppression as a broken build — the same reason the
+   * absent-module note exists. Settings at their defaults are left out: a
+   * summary that lists everything is one nobody reads.
+   */
+  function summarise(): string {
+    const parts = [ARM_LABELS[arm], `ramp ${(ramp * 100).toFixed(0)}%`, `${latencyMs} ms`];
+    if (pincode !== PINCODES[0]) parts.push(`to ${pincode}`);
+    if (stockChanged) parts.push("stock moved");
+    if (shadowMode) parts.push("shadow mode on");
+    if (killed) parts.push("killed");
+    if (!showWishlistInSearch) parts.push("wishlist in search off");
+    if (hiddenCount > 0) parts.push(`${hiddenCount} hidden`);
+    if (swapFills) parts.push("fills swapped");
+    return parts.join(" · ");
+  }
 }
 
 const styles = StyleSheet.create({
@@ -273,12 +352,27 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     gap: space.sm,
   },
-  row: { gap: space.sm, paddingHorizontal: space.md, alignItems: "center" },
-  controlLabel: { ...type.chip, color: "#9A9CA8", marginRight: space.xs },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    alignItems: "center",
+  },
+  /** Keeps a label with the chips it labels when the line breaks. */
+  group: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.sm,
+    alignItems: "center",
+  },
+  controlLabel: { ...type.chip, color: "#9A9CA8" },
   chip: {
     minHeight: MIN_TOUCH_TARGET - 12,
     justifyContent: "center",
-    paddingHorizontal: space.md,
+    /** Never wider than the bar: the point of this row is that nothing leaves it. */
+    maxWidth: "100%",
+    paddingHorizontal: space.sm,
     borderRadius: radius.pill,
     backgroundColor: "#2A2C36",
   },
