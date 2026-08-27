@@ -1,4 +1,8 @@
 import { buildGazetteers, parseIntent } from "@/match/intent";
+import catalogJson from "@/data/catalog.json";
+import type { Catalog } from "@/data/types";
+
+const catalog = catalogJson as unknown as Catalog;
 
 const parents = [
   {
@@ -40,5 +44,31 @@ describe("query intent extraction (E2)", () => {
 
   it("carries the modality through so thresholds can key on it (C-8)", () => {
     expect(parseIntent("shirt", "voice", gaz).modality).toBe("voice");
+  });
+
+  it("claims a multi-word article type by its head noun", () => {
+    const gaz = buildGazetteers(catalog.parents);
+    const intent = parseIntent("nike perfume", "text", gaz);
+    expect(intent.articleType?.value).toBe("Perfume and Body Mist");
+  });
+
+  // The live catalog has no "Lip Gloss" product (its Beauty article types are
+  // only Lipstick, Nail Polish and Perfume and Body Mist), so the guard can't
+  // be exercised against catalog.parents. This synthetic gazetteer puts a
+  // short exact type ("Perfume") alongside the four-token type whose head is
+  // the same word, so a false pass (head noun winning) is actually possible
+  // to observe.
+  it("does not let a head noun shadow an exact article type that owns the term", () => {
+    const synthetic = [
+      { brand: "Sample", articleType: "Perfume", colourways: [{ colour: "Clear" }] },
+      {
+        brand: "Sample",
+        articleType: "Perfume and Body Mist",
+        colourways: [{ colour: "Clear" }],
+      },
+    ];
+    const gaz = buildGazetteers(synthetic as never);
+    const intent = parseIntent("perfume", "text", gaz);
+    expect(intent.articleType?.value).toBe("Perfume");
   });
 });

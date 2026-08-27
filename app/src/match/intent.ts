@@ -57,7 +57,16 @@ export function normalise(text: string): string {
     .trim();
 }
 
-/** "T-shirt", "tshirts" and "t shirt" must all reach the same articleType. */
+/**
+ * "T-shirt", "tshirts" and "t shirt" must all reach the same articleType.
+ *
+ * Multi-word types need their head noun too. claimSpan reads spans of at most
+ * three tokens, and "Perfume and Body Mist" is four -- without this, the one
+ * word a person actually types claims nothing. The head is the first token,
+ * because these read head-first ("Perfume and Body Mist", "Lip Gloss",
+ * "Kajal and Eyeliner"), and a head is only registered if no other article
+ * type has claimed it, so a shorter exact type always wins.
+ */
 function articleVariants(articleType: string): string[] {
   const base = normalise(articleType);
   const collapsed = base.replace(/\s+/g, "");
@@ -65,7 +74,10 @@ function articleVariants(articleType: string): string[] {
   const singularCollapsed = collapsed.endsWith("s")
     ? collapsed.slice(0, -1)
     : collapsed;
-  return Array.from(new Set([base, collapsed, singular, singularCollapsed]));
+  const variants = [base, collapsed, singular, singularCollapsed];
+  const words = base.split(" ");
+  if (words.length > 3) variants.push(words[0]);
+  return Array.from(new Set(variants));
 }
 
 export function buildGazetteers(
@@ -79,14 +91,25 @@ export function buildGazetteers(
   for (const [term, canonical] of Object.entries(GENDER_TERMS)) {
     genders.set(term, canonical);
   }
+  const headTerms: Array<[string, string]> = [];
   for (const parent of parents) {
     brands.set(normalise(parent.brand).replace(/\s+/g, ""), parent.brand);
+    const base = normalise(parent.articleType);
     for (const variant of articleVariants(parent.articleType)) {
+      // A head noun is a fallback, applied only after every exact variant is
+      // in. "Gloss" must not shadow "Lip Gloss".
+      if (base.split(" ").length > 3 && variant === base.split(" ")[0]) {
+        headTerms.push([variant, parent.articleType]);
+        continue;
+      }
       articleTypes.set(variant, parent.articleType);
     }
     for (const colourway of parent.colourways) {
       colours.set(normalise(colourway.colour), colourway.colour);
     }
+  }
+  for (const [term, canonical] of headTerms) {
+    if (!articleTypes.has(term)) articleTypes.set(term, canonical);
   }
   return { brands, articleTypes, colours, genders };
 }

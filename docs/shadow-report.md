@@ -16,15 +16,15 @@ Matching ran 1,092 times across three modalities and rendered nothing.
 | | |
 |---|---|
 | Evaluations | 1,092 |
-| Would have rendered | 420 (**38.5%** opportunity rate) |
-| Tier 1 / tier 2 candidates | 519 / 57 |
+| Would have rendered | 381 (**34.9%** opportunity rate) |
+| Tier 1 / tier 2 candidates | 402 / 57 |
 | Saved items ineligible on identity | 1 of 11 |
 
 ### Search latency delta — the S8 gate
 
 Search alone: **0.08 ms** per query.
-Search with matching in the same tick: **0.06 ms**.
-Delta: **-0.02 ms** per query, against a 120 ms budget.
+Search with matching in the same tick: **0.11 ms**.
+Delta: **+0.03 ms** per query, against a 120 ms budget.
 
 That delta is **not** noise — it is consistently positive across runs, and
 it is the real CPU cost of doing both pieces of work in one loop. What it
