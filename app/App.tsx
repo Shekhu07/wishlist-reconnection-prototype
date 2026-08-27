@@ -10,6 +10,7 @@ import type { Catalog, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
 import { EventLog, type ExperimentArm } from "@/analytics/events";
+import { PreferenceStore } from "@/preferences/store";
 import {
   addToBag,
   wouldDuplicate,
@@ -93,6 +94,7 @@ export default function App() {
   const [shadowMode, setShadowMode] = useState(false);
   const [arm, setArm] = useState<ExperimentArm>("treatment_b");
   const [flagVersion, setFlagVersion] = useState(0);
+  const [hiddenCount, setHiddenCount] = useState(0);
   const [eventCount, setEventCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>({ name: "search" });
@@ -115,9 +117,13 @@ export default function App() {
     }),
     []
   );
+  // One preference store for the session: the per-item hide is durable, so
+  // rebuilding it per render would make it exactly the session-scoped thing
+  // FR-8 says dismissal already is.
+  const preferences = useMemo(() => new PreferenceStore(), []);
   const client = useMemo(
-    () => new MatchClient({ catalog, wishlist, events, commerce }),
-    [events, commerce]
+    () => new MatchClient({ catalog, wishlist, events, commerce, preferences }),
+    [events, commerce, preferences]
   );
   // The flag owns the ramp and the kill switch. The harness overrides the arm
   // directly so a researcher can see each treatment without waiting to be
@@ -276,6 +282,13 @@ export default function App() {
           restage();
         }}
         eventCount={eventCount}
+        hiddenCount={hiddenCount}
+        onUnhideAll={() => {
+          preferences.unhideAll();
+          setHiddenCount(0);
+          setToast("All hidden items restored");
+          restage();
+        }}
         arm={arm}
         onArmChange={(next) => {
           client.arm = next;
@@ -341,6 +354,14 @@ export default function App() {
               setToast("Dismissal logged as a relevance signal");
             }}
             onUndo={undo}
+            onHideForever={(sku) => {
+              const item = itemFor(sku);
+              if (!item) return;
+              preferences.hide(item.item_id);
+              setHiddenCount(preferences.hiddenItemIds.length);
+              setToast("Hidden from search — durable, unlike a dismissal");
+              restage();
+            }}
             onAction={(action, sku) => {
               const item = itemFor(sku);
               if (!item) return setToast("No saved item behind that action");
@@ -353,6 +374,11 @@ export default function App() {
                 action: action === "primary" ? "buy_from_wishlist" : "compare_options",
                 sku,
               });
+              // E16: the evidence is recorded whatever the experiment is
+              // doing. Acting on it is what waits.
+              preferences.recordAction(
+                action === "primary" ? "buy_from_wishlist" : "compare_options"
+              );
               note();
               // Treatment A is reconnection without variant continuity: the
               // module still remembers, but the Buy path opens the product the

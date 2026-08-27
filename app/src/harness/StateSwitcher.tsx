@@ -45,6 +45,9 @@ export interface StateSwitcherProps {
   onToggleKill: () => void;
   /** Bumped whenever the flag mutates, so this bar re-renders. */
   flagVersion: number;
+  /** E16: durable per-item hides, and a way back out of them. */
+  hiddenCount: number;
+  onUnhideAll: () => void;
 }
 
 const ARM_LABELS: Record<ExperimentArm, string> = {
@@ -88,6 +91,8 @@ export function StateSwitcher({
   killed,
   onAdvanceRamp,
   onToggleKill,
+  hiddenCount,
+  onUnhideAll,
 }: StateSwitcherProps) {
   return (
     <View style={styles.bar} testID="state-switcher">
@@ -193,6 +198,17 @@ export function StateSwitcher({
           </Text>
         </Pressable>
         <Text style={styles.controlLabel}>{eventCount} events</Text>
+        <Text style={styles.controlLabel}>Hidden {hiddenCount}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Restore all hidden items"
+          onPress={onUnhideAll}
+          style={[styles.chip, hiddenCount > 0 && styles.chipWarn]}
+        >
+          <Text style={[styles.chipText, hiddenCount > 0 && styles.chipTextActive]}>
+            Unhide all
+          </Text>
+        </Pressable>
         <Text style={styles.controlLabel}>Setting</Text>
         <Pressable
           accessibilityRole="button"

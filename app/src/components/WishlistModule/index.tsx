@@ -5,6 +5,8 @@ import {
   COPY,
   DISMISSED_COPY,
   DISMISS_LABEL,
+  HIDDEN_FOREVER_COPY,
+  HIDE_FOREVER_LABEL,
   UNDO_LABEL,
   VIEW_ALL,
 } from "@/copy/bundle";
@@ -32,6 +34,8 @@ export interface WishlistModuleProps {
   response: MatchResponse;
   onDismiss: () => void;
   onUndo: () => void;
+  /** E16: the durable opt-out, distinct from dismissing (FR-8). */
+  onHideForever?: (sku: string) => void;
   onPrimary: (sku: string) => void;
   onSecondary: (sku: string) => void;
   swapFills?: boolean;
@@ -43,17 +47,20 @@ export function WishlistModule({
   response,
   onDismiss,
   onUndo,
+  onHideForever,
   onPrimary,
   onSecondary,
   swapFills,
 }: WishlistModuleProps) {
   const [dismissed, setDismissed] = useState(false);
   const [undoVisible, setUndoVisible] = useState(false);
+  const [hiddenForever, setHiddenForever] = useState(false);
 
   useEffect(() => {
     // A new result set is a new question; the old dismissal does not carry.
     setDismissed(false);
     setUndoVisible(false);
+    setHiddenForever(false);
   }, [response]);
 
   useEffect(() => {
@@ -64,28 +71,53 @@ export function WishlistModule({
 
   if (response.matches.length === 0) return null;
 
+  // Declared before the dismissed branch because the hide callback closes over
+  // it. TypeScript cannot see the temporal dead zone through a closure, so
+  // leaving it below compiled cleanly and threw the moment anyone tapped.
+  const primary = response.matches[0];
+
   if (dismissed) {
     if (!undoVisible) return null;
     return (
       <View style={styles.undoStrip} testID="wishlist-module-dismissed">
-        <Text style={styles.undoText}>{DISMISSED_COPY}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={UNDO_LABEL}
-          hitSlop={hitSlopFor(24)}
-          onPress={() => {
-            setDismissed(false);
-            setUndoVisible(false);
-            onUndo();
-          }}
-        >
-          <Text style={styles.undoAction}>{UNDO_LABEL}</Text>
-        </Pressable>
+        <Text style={styles.undoText}>
+          {hiddenForever ? HIDDEN_FOREVER_COPY : DISMISSED_COPY}
+        </Text>
+        <View style={styles.undoActions}>
+          {/* Escalation, not a replacement. Dismissing is the light action and
+              stays a relevance signal; this is the deliberate, durable one. */}
+          {!hiddenForever && onHideForever ? (
+            <Pressable
+              testID="wishlist-hide-forever"
+              accessibilityRole="button"
+              accessibilityLabel={HIDE_FOREVER_LABEL}
+              hitSlop={hitSlopFor(24)}
+              onPress={() => {
+                setHiddenForever(true);
+                onHideForever(primary.sku);
+              }}
+            >
+              <Text style={styles.undoSecondary}>{HIDE_FOREVER_LABEL}</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={UNDO_LABEL}
+            hitSlop={hitSlopFor(24)}
+            onPress={() => {
+              setDismissed(false);
+              setUndoVisible(false);
+              setHiddenForever(false);
+              onUndo();
+            }}
+          >
+            <Text style={styles.undoAction}>{UNDO_LABEL}</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
 
-  const primary = response.matches[0];
   const copy = COPY[primary.copy_key];
   const multi = response.matches.length > 1;
   const context = {
@@ -217,5 +249,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
   },
   undoText: { ...type.body, color: color.textSecondary },
+  undoActions: { flexDirection: "row", alignItems: "center", gap: space.md },
+  undoSecondary: { ...type.body, color: color.textSecondary },
   undoAction: { ...type.body, fontWeight: "700", color: color.brandPink },
 });

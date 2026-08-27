@@ -11,6 +11,7 @@ import { SuppressionStore, queryFamily } from "./suppression";
 import type { Catalog, Wishlist } from "@/data/types";
 import type { EventLog, ExperimentArm } from "@/analytics/events";
 import type { CommerceState } from "@/commerce/reconcile";
+import { PreferenceStore } from "@/preferences/store";
 
 /**
  * The boundary the UI talks to.
@@ -39,17 +40,12 @@ export interface ShadowRecord {
 }
 
 /**
- * Section 4.16 of the plan: a per-user control for whether saved items appear
- * in search at all. E8 requires it be respected *server-side*, which is why it
- * lives on the client boundary rather than being a UI toggle -- a preference
- * the UI honours but the service ignores is not a privacy control, it is a
- * suggestion.
+ * Preferences are enforced *server-side* (E8 / section 4.16). A preference the
+ * UI honours but the service ignores is not a control, it is a suggestion --
+ * which is why both the global setting and the per-item hide are checked here,
+ * before the matcher runs, rather than by the view declining to draw.
  */
-export interface UserPreferences {
-  showWishlistInSearch: boolean;
-}
-
-export const DEFAULT_PREFERENCES: UserPreferences = { showWishlistInSearch: true };
+export type UserPreferences = PreferenceStore;
 
 export interface MatchClientOptions {
   catalog: Catalog;
@@ -88,7 +84,7 @@ export class MatchClient {
 
   constructor(private readonly options: MatchClientOptions) {
     this.config = options.config ?? DEFAULT_CONFIG;
-    this.preferences = options.preferences ?? { ...DEFAULT_PREFERENCES };
+    this.preferences = options.preferences ?? new PreferenceStore();
     this.shadowMode = options.shadowMode ?? false;
     this.arm = options.arm ?? "treatment_b";
     this.latencyMs = options.latencyMs ?? 60;
@@ -224,7 +220,11 @@ export class MatchClient {
         settled = true;
         clearTimeout(deadline);
         try {
-          resolve(match(request, this.index, this.config));
+          resolve(
+            match(request, this.index, this.config, (itemId) =>
+              this.preferences.isHidden(itemId)
+            )
+          );
         } catch (error) {
           reject(error);
         }

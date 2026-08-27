@@ -94,6 +94,15 @@ export const COPY: Record<CopyKey, ModuleCopy> = {
 export const DISMISS_LABEL = "Hide items from your Wishlist for this search";
 export const DISMISSED_COPY = "Hidden for now";
 export const UNDO_LABEL = "Undo";
+/**
+ * The durable control, offered alongside undo rather than instead of the
+ * dismiss. FR-8 is explicit that dismissing is a relevance signal and never a
+ * permanent opt-out, so the permanent version has to be its own deliberate
+ * choice -- reachable, but not something you land on by tapping a close box.
+ */
+export const HIDE_FOREVER_LABEL = "Don't show this again";
+export const HIDDEN_FOREVER_COPY = "Hidden from search";
+export const UNHIDE_LABEL = "Unhide";
 export const VIEW_ALL = "View all matching Wishlist items";
 
 /**

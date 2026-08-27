@@ -2,6 +2,7 @@ import catalogJson from "@/data/catalog.json";
 import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Wishlist } from "@/data/types";
 import { MatchClient } from "@/match/transport";
+import { PreferenceStore } from "@/preferences/store";
 import { recordGate } from "./report";
 
 const catalog = catalogJson as unknown as Catalog;
@@ -52,7 +53,7 @@ describe("E8 gate — wishlist leakage", () => {
         catalog,
         wishlist,
         latencyMs: 1,
-        preferences: { showWishlistInSearch: showWishlist },
+        preferences: new PreferenceStore({ showWishlistInSearch: showWishlist }),
       });
 
       for (const query of queries) {
@@ -107,7 +108,7 @@ describe("E8 gate — wishlist leakage", () => {
       catalog,
       wishlist,
       latencyMs: 1,
-      preferences: { showWishlistInSearch: false },
+      preferences: new PreferenceStore({ showWishlistInSearch: false }),
     }).requestMatch(request, true);
 
     expect(loggedOut).toEqual(optedOut);

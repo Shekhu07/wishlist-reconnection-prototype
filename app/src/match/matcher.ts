@@ -250,13 +250,23 @@ export function score(candidate: Omit<Candidate, "score">, index: MatchIndex, in
   return raw * evidence * specificityPenalty * colourway.identity_confidence;
 }
 
-export function match(request: MatchRequest, index: MatchIndex, config: MatchConfig = DEFAULT_CONFIG): MatchResponse {
+export function match(
+  request: MatchRequest,
+  index: MatchIndex,
+  config: MatchConfig = DEFAULT_CONFIG,
+  /** E16: durable per-item hide. Applied here so the view cannot be the only
+   *  thing honouring it. */
+  isHidden: (itemId: string) => boolean = () => false
+): MatchResponse {
   const intent = parseIntent(request.query, request.modality, index.gaz);
   const filters = mergeFilters(intent, request.filters);
   const tau = config.tau[request.modality] ?? config.tau.text;
 
   const candidates: Candidate[] = [];
   for (const item of index.wishlist.items) {
+    // A durable hide is a decision, not a shrug: it survives the session, the
+    // query and the day, unlike a dismissal (FR-8).
+    if (isHidden(item.item_id)) continue;
     const parent = index.parents.get(item.parent_product_id);
     if (!parent) continue;
     if (!passesHardFilters(parent, filters)) continue;

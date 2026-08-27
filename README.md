@@ -93,6 +93,39 @@ work; the hard predicates absorb the false positives this eval set contains.
 Reading that as "τ can safely come down" would treat an absence of evidence as
 evidence of absence.
 
+## User controls and durable personalisation (E16)
+
+Three things, and the third carries a conflict worth naming rather than
+resolving quietly.
+
+**The global setting** (§4.16) — enforced service-side, from Slice 3.
+
+**Per-item hide** — durable, and deliberately *not* the same control as
+dismissal. FR-8 is explicit that dismissing is a relevance signal and "never a
+permanent opt-out": it lasts for the query family and the session. Hiding is the
+permanent one, reached by escalating from a dismissal rather than by tapping a
+close box, and it is enforced in the matcher so the view is not the only thing
+honouring it. Every durable control gets an undo, or it is a trap.
+
+**Preferred-action learning — built, and deliberately not applied.** E16 asks
+for it. FR-5 and §4.4 require the two actions to stay co-equal, with neither
+visually subordinate. Reordering or re-emphasising the buttons cannot honour
+both.
+
+It is worse than a design conflict during the experiment. §7 splits Treatment A
+from B precisely to learn *where* a lift comes from, read off the
+Buy-from-Wishlist and Compare-options rates. Personalising which action leads
+would turn those rates into a measurement of the personaliser. So the preference
+is learned and recorded — durably, and while the experiment runs — but
+`shouldPersonalise()` refuses to apply it whenever an experiment is active, and
+it stays off by default besides. Acting on the learning is a decision for after
+the read-out, not a default.
+
+The learning also refuses to claim a preference on thin evidence: six actions
+minimum, and a 65% margin. Two taps is a coincidence, and a personalisation that
+fires on noise is worse than none because the user cannot tell it from the
+product being erratic.
+
 ## Duplicate reconciliation (E14)
 
 FR-11 asks for three duplicate states — in Bag, Save for Later, purchased

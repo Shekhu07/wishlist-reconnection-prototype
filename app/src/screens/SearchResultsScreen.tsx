@@ -27,6 +27,8 @@ export interface SearchResultsScreenProps {
   matchResponse: MatchResponse | null;
   onDismiss: () => void;
   onUndo: () => void;
+  /** E16: durable per-item hide, offered after a dismissal. */
+  onHideForever?: (sku: string) => void;
   onAction: (action: "primary" | "secondary", sku: string) => void;
   swapFills?: boolean;
 }
@@ -37,6 +39,7 @@ export function SearchResultsScreen({
   matchResponse,
   onDismiss,
   onUndo,
+  onHideForever,
   onAction,
   swapFills,
 }: SearchResultsScreenProps) {
@@ -75,6 +78,7 @@ export function SearchResultsScreen({
           response={matchResponse}
           onDismiss={onDismiss}
           onUndo={onUndo}
+          onHideForever={onHideForever}
           onPrimary={(sku) => onAction("primary", sku)}
           onSecondary={(sku) => onAction("secondary", sku)}
           swapFills={swapFills}
