@@ -27,13 +27,38 @@ describe("the demo catalog covers the shell's category rail", () => {
     expect(beauty.length).toBeGreaterThanOrEqual(39);
   });
 
-  it("keeps every state fixture pointing at the product it always did", () => {
-    // select() assigns roles by families[0..6]. Appending families must not
-    // move them; inserting one would repoint state 2 with every test green.
-    const exact = catalog.parents.find(
-      (parent) => parent.parent_product_id === catalog.roles.exact_available
-    );
-    expect(exact?.brand).toBe("Mark Taylor");
-    expect(exact?.articleType).toBe("Shirts");
-  });
+  // select() assigns every role in catalog.roles from families[0..6] in
+  // QUERY_FAMILIES order. Appending families must not move any of them;
+  // inserting one anywhere from index 0 to 6 would silently repoint the
+  // corresponding role. Each row below pins today's resolved product
+  // (brand + articleType) for one role, so an accidental insertion fails
+  // loudly on whichever role it moved, instead of only on the first one.
+  const expectedRoles: Record<string, { brand: string; articleType: string }> = {
+    colour_alternative: { brand: "Catwalk", articleType: "Heels" },
+    colour_variant: { brand: "Locomotive", articleType: "Jeans" },
+    exact_available: { brand: "Mark Taylor", articleType: "Shirts" },
+    in_bag: { brand: "W", articleType: "Kurtas" },
+    low_identity: { brand: "Locomotive", articleType: "Shirts" },
+    multi_a: { brand: "United Colors of Benetton", articleType: "Shirts" },
+    multi_b: { brand: "Highlander", articleType: "Shirts" },
+    multi_c: { brand: "Scullers", articleType: "Shirts" },
+    purchased: { brand: "Numero Uno", articleType: "Casual Shoes" },
+    saved_for_later: { brand: "Murcia", articleType: "Handbags" },
+    variant_unavailable: { brand: "Proline", articleType: "Tshirts" },
+  };
+
+  it.each(Object.entries(expectedRoles))(
+    "keeps role %s pointing at the product it always did",
+    (role, expected) => {
+      const productId = catalog.roles[role];
+      const product = catalog.parents.find(
+        (parent) => parent.parent_product_id === productId
+      );
+      expect({
+        role,
+        brand: product?.brand,
+        articleType: product?.articleType,
+      }).toEqual({ role, ...expected });
+    }
+  );
 });
