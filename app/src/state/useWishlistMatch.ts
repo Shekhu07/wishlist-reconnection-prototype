@@ -27,6 +27,7 @@ export type SuppressionReason =
   | "dismissed"
   | "too_late"
   | "user_scrolled"
+  | "frequency_cap"
   | null;
 
 export interface UseWishlistMatchResult {
@@ -94,6 +95,7 @@ export function useWishlistMatch(
         if (record?.timedOut) setSuppressionReason("timed_out");
         else if (record?.breakerOpen) setSuppressionReason("breaker_open");
         else if (result.suppressed) setSuppressionReason("dismissed");
+        else if (record?.frequencyCapped) setSuppressionReason("frequency_cap");
       }
       setResponse(result);
     });

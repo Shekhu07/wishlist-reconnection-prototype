@@ -89,6 +89,8 @@ describe("navigation between search, saved product and compare", () => {
 
     // The two-phase boundary: the module has already rendered this item as
     // buyable. Selling it out now is precisely the case section 4.14 covers.
+    // Task 13 moved the harness controls behind a collapsed pill.
+    fireEvent.press(screen.getByLabelText(/Open the state harness/));
     fireEvent.press(screen.getByLabelText("Sell out the saved size before the next action"));
     fireEvent.press(screen.getByTestId("wishlist-action-primary"));
 
@@ -100,6 +102,8 @@ describe("navigation between search, saved product and compare", () => {
     renderAtResults();
     await waitForModule();
 
+    // Task 13 moved the harness controls behind a collapsed pill.
+    fireEvent.press(screen.getByLabelText(/Open the state harness/));
     fireEvent.press(screen.getByLabelText("Sell out the whole product before the next action"));
     fireEvent.press(screen.getByTestId("wishlist-action-primary"));
 

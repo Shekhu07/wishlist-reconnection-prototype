@@ -33,6 +33,7 @@ import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScr
 import { StubScreen } from "@/screens/StubScreen";
 import { StateSwitcher } from "@/harness/StateSwitcher";
 import { AppShell } from "@/shell/AppShell";
+import { HarnessPill } from "@/shell/HarnessPill";
 import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
 import { useSyncedHistory } from "@/shell/useSyncedHistory";
 import { color, space, type } from "@/design/tokens";
@@ -109,6 +110,7 @@ export default function App() {
   const [eventCount, setEventCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>({ tab: "home", stack: [rootFor("home")] });
+  const [harnessOpen, setHarnessOpen] = useState(false);
   const [recents, setRecents] = useState<string[]>([]);
   const [pincode, setPincode] = useState(wishlist.pincode);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -288,6 +290,12 @@ export default function App() {
         onBack={() => setNav(pop(nav))}
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
         harness={
+          <HarnessPill
+            stateNumber={scenarios.indexOf(scenario) + 1}
+            suppression={suppressionReason}
+            open={harnessOpen}
+            onToggle={() => setHarnessOpen((v) => !v)}
+          >
           <StateSwitcher
         scenarios={scenarios}
         activeId={scenario.id}
@@ -381,6 +389,7 @@ export default function App() {
           restage();
         }}
           />
+          </HarnessPill>
         }
       >
       <View style={styles.frame}>
@@ -616,6 +625,8 @@ const SUPPRESSION_COPY: Record<NonNullable<SuppressionReason>, string> = {
     "Match resolved after the 400 ms render grace. Suppressed rather than shifting the grid.",
   user_scrolled:
     "Match resolved after the user had already scrolled. Suppressed rather than moving content.",
+  frequency_cap:
+    "The item already had its two allowed impressions today. The match ran and found it -- this is the per-item daily cap doing its job, not a broken build.",
 };
 
 const styles = StyleSheet.create({

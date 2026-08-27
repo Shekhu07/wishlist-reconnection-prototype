@@ -35,6 +35,8 @@ export interface ShadowRecord {
   suppressed: boolean;
   rendered: number;
   cappedTotal: number;
+  /** True when the matcher found something and frequency capping is the reason nothing rendered. */
+  frequencyCapped: boolean;
   /** Full scoring detail, logged whether or not anything rendered. */
   matches: { sku: string; tier: number; confidence: number; copyKey: string }[];
 }
@@ -81,6 +83,14 @@ export class MatchClient {
   config: MatchConfig;
   latencyMs: number;
   forceTimeout: boolean;
+  /**
+   * Set by `applyFrequencyCaps` when it zeroed a response that actually had
+   * matches, so `finish()` can log it. `applyFrequencyCaps` discards that
+   * distinction from its own return value -- both a genuine miss and a fully
+   * capped result come back as `EMPTY_RESPONSE` -- so this is the only place
+   * left to carry it out to the shadow record.
+   */
+  private lastFrequencyCapped = false;
 
   constructor(private readonly options: MatchClientOptions) {
     this.config = options.config ?? DEFAULT_CONFIG;
@@ -158,6 +168,7 @@ export class MatchClient {
     this.breaker.record(timedOut);
 
     const capped = this.applyFrequencyCaps(response);
+    const frequencyCapped = this.lastFrequencyCapped;
 
     // Control withholds exactly the way shadow mode does: the match is still
     // computed and logged, so control's opportunity volume is measurable and
@@ -166,9 +177,18 @@ export class MatchClient {
     // that no code consults is decoration.
     const withhold = this.shadowMode || this.arm === "control";
     if (withhold && capped.matches.length > 0) {
-      return this.finish(request, true, started, timedOut, false, EMPTY_RESPONSE, capped);
+      return this.finish(
+        request,
+        true,
+        started,
+        timedOut,
+        false,
+        EMPTY_RESPONSE,
+        frequencyCapped,
+        capped
+      );
     }
-    return this.finish(request, true, started, timedOut, false, capped);
+    return this.finish(request, true, started, timedOut, false, capped, frequencyCapped);
   }
 
   /** Dismissal hides the module for this query family and this session only. */
@@ -194,6 +214,7 @@ export class MatchClient {
   }
 
   private applyFrequencyCaps(response: MatchResponse): MatchResponse {
+    this.lastFrequencyCapped = false;
     const userId = this.options.wishlist.user_id;
     const kept = response.matches.filter((m) => {
       const item = this.options.wishlist.items.find((i) => i.sku === m.sku);
@@ -205,7 +226,10 @@ export class MatchClient {
       return true;
     });
     if (kept.length === response.matches.length) return response;
-    if (kept.length === 0) return EMPTY_RESPONSE;
+    if (kept.length === 0) {
+      this.lastFrequencyCapped = response.matches.length > 0;
+      return EMPTY_RESPONSE;
+    }
     return { ...response, matches: kept };
   }
 
@@ -248,6 +272,8 @@ export class MatchClient {
     timedOut: boolean,
     breakerOpen: boolean,
     response: MatchResponse,
+    /** True when frequency capping is why `response` is empty despite a real match. */
+    frequencyCapped: boolean = false,
     /** What the matcher produced before shadow mode withheld it. */
     withheld?: MatchResponse
   ): MatchResponse {
@@ -303,6 +329,7 @@ export class MatchClient {
       suppressed: response.suppressed,
       rendered: response.matches.length,
       cappedTotal: response.capped_total,
+      frequencyCapped,
       matches: response.matches.map((m) => ({
         sku: m.sku,
         tier: m.tier,

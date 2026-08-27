@@ -48,6 +48,8 @@ describe("search_performed logs per search, not per scenario identity", () => {
 
     const emitSpy = jest.spyOn(EventLog.prototype, "emit");
 
+    // Task 13 moved the harness controls behind a collapsed pill.
+    fireEvent.press(screen.getByLabelText(/Open the state harness/));
     fireEvent.press(screen.getByLabelText("State 2: One exact match"));
     await waitForModule();
     fireEvent.press(screen.getByLabelText("State 2: One exact match"));
