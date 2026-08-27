@@ -47,6 +47,12 @@ export interface ParentProduct {
   /** False when the parent groups every plain garment of its type. */
   specific: boolean;
   sizes: string[];
+  /**
+   * True only for the invented home range. Everything else in this catalog is
+   * a real dataset row. Measurement code filters on this -- a precision figure
+   * computed partly over invented products would be measuring the generator.
+   */
+  synthetic?: boolean;
   colourways: Colourway[];
 }
 

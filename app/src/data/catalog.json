@@ -24039,6 +24039,610 @@
       ],
       "specific": true,
       "subCategory": "Nails"
+    },
+    {
+      "articleType": "Cushion Cover",
+      "brand": "Home Centre",
+      "brand_key": "homecentre",
+      "colourways": [
+        {
+          "colour": "Beige",
+          "display_name": "Cushion Cover",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2669,
+          "product_id": 900001,
+          "rating": 3.5,
+          "returns_days": 14,
+          "review_count": 4701,
+          "season": null,
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_14a83f6587954e"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Grey",
+          "display_name": "Cushion Cover",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1699,
+          "product_id": 900002,
+          "rating": 3.8,
+          "returns_days": 14,
+          "review_count": 1649,
+          "season": null,
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_14d912df9a39fc"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Navy Blue",
+          "display_name": "Cushion Cover",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2439,
+          "product_id": 900003,
+          "rating": 3.2,
+          "returns_days": 14,
+          "review_count": 19,
+          "season": null,
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_facfdfdcc6c056"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Mustard",
+          "display_name": "Cushion Cover",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2159,
+          "product_id": 900004,
+          "rating": 3.2,
+          "returns_days": 14,
+          "review_count": 183,
+          "season": null,
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_d43ec9e70f3e4b"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Cushion Cover",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "cushion cover",
+      "parent_product_id": "pp_home_homecentre_cushioncover",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Bedsheet",
+      "brand": "Story@Home",
+      "brand_key": "storyhome",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Bedsheet",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 869,
+          "product_id": 900005,
+          "rating": 3.8,
+          "returns_days": 14,
+          "review_count": 3368,
+          "season": null,
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_fecdccfb0fabdf"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Grey",
+          "display_name": "Bedsheet",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2909,
+          "product_id": 900006,
+          "rating": 3.8,
+          "returns_days": 14,
+          "review_count": 926,
+          "season": null,
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_49b61553b02cc5"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Teal",
+          "display_name": "Bedsheet",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1629,
+          "product_id": 900007,
+          "rating": 3.9,
+          "returns_days": 14,
+          "review_count": 27,
+          "season": null,
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_f26c32ee9ced73"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Bedsheet",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "bedsheet",
+      "parent_product_id": "pp_home_storyhome_bedsheet",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Curtain",
+      "brand": "Raymond Home",
+      "brand_key": "raymondhome",
+      "colourways": [
+        {
+          "colour": "Beige",
+          "display_name": "Curtain",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1639,
+          "product_id": 900008,
+          "rating": 4.4,
+          "returns_days": 14,
+          "review_count": 211,
+          "season": null,
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_90df82edae11fd"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Charcoal",
+          "display_name": "Curtain",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1699,
+          "product_id": 900009,
+          "rating": 4.7,
+          "returns_days": 14,
+          "review_count": 2082,
+          "season": null,
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_69be9ab3f0d474"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Olive",
+          "display_name": "Curtain",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1169,
+          "product_id": 900010,
+          "rating": 4.4,
+          "returns_days": 14,
+          "review_count": 4086,
+          "season": null,
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_b2254c733cc4b8"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Curtain",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "curtain",
+      "parent_product_id": "pp_home_raymondhome_curtain",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Bath Towel",
+      "brand": "Home Centre",
+      "brand_key": "homecentre",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Bath Towel",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2489,
+          "product_id": 900011,
+          "rating": 4.0,
+          "returns_days": 14,
+          "review_count": 2919,
+          "season": null,
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_687b7204f105f5"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Navy Blue",
+          "display_name": "Bath Towel",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1409,
+          "product_id": 900012,
+          "rating": 4.3,
+          "returns_days": 14,
+          "review_count": 350,
+          "season": null,
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_3dd0f472523189"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Grey",
+          "display_name": "Bath Towel",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2909,
+          "product_id": 900013,
+          "rating": 3.5,
+          "returns_days": 14,
+          "review_count": 108,
+          "season": null,
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_ca0e2046dbcc9f"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Bath Towel",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "bath towel",
+      "parent_product_id": "pp_home_homecentre_bathtowel",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Table Runner",
+      "brand": "Story@Home",
+      "brand_key": "storyhome",
+      "colourways": [
+        {
+          "colour": "Mustard",
+          "display_name": "Table Runner",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2839,
+          "product_id": 900014,
+          "rating": 3.7,
+          "returns_days": 14,
+          "review_count": 556,
+          "season": null,
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_0363d51d2b43e1"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Beige",
+          "display_name": "Table Runner",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1169,
+          "product_id": 900015,
+          "rating": 4.1,
+          "returns_days": 14,
+          "review_count": 578,
+          "season": null,
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_2a7ff00525caff"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Table Runner",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "table runner",
+      "parent_product_id": "pp_home_storyhome_tablerunner",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Doormat",
+      "brand": "Raymond Home",
+      "brand_key": "raymondhome",
+      "colourways": [
+        {
+          "colour": "Charcoal",
+          "display_name": "Doormat",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2079,
+          "product_id": 900016,
+          "rating": 3.9,
+          "returns_days": 14,
+          "review_count": 1585,
+          "season": null,
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_3ae5758a955fd1"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Beige",
+          "display_name": "Doormat",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 759,
+          "product_id": 900017,
+          "rating": 4.4,
+          "returns_days": 14,
+          "review_count": 12,
+          "season": null,
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_c1011523a53a60"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Doormat",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "doormat",
+      "parent_product_id": "pp_home_raymondhome_doormat",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Cushion Filler",
+      "brand": "Home Centre",
+      "brand_key": "homecentre",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Cushion Filler",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 2219,
+          "product_id": 900018,
+          "rating": 3.4,
+          "returns_days": 14,
+          "review_count": 21,
+          "season": null,
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_778b72ab019684"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Cushion Filler",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "cushion filler",
+      "parent_product_id": "pp_home_homecentre_cushionfiller",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
+    },
+    {
+      "articleType": "Throw Blanket",
+      "brand": "Story@Home",
+      "brand_key": "storyhome",
+      "colourways": [
+        {
+          "colour": "Grey",
+          "display_name": "Throw Blanket",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 939,
+          "product_id": 900019,
+          "rating": 3.7,
+          "returns_days": 14,
+          "review_count": 4513,
+          "season": null,
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_c55d8cca28daa5"
+            }
+          ],
+          "usage": "Home"
+        },
+        {
+          "colour": "Rust",
+          "display_name": "Throw Blanket",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton",
+          "price": 1609,
+          "product_id": 900020,
+          "rating": 4.5,
+          "returns_days": 14,
+          "review_count": 514,
+          "season": null,
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_e318f21375425c"
+            }
+          ],
+          "usage": "Home"
+        }
+      ],
+      "display_name": "Throw Blanket",
+      "gender": "Unisex",
+      "masterCategory": "Home",
+      "name_core": "throw blanket",
+      "parent_product_id": "pp_home_storyhome_throwblanket",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Home Furnishing",
+      "synthetic": true
     }
   ],
   "roles": {

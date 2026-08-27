@@ -57,9 +57,14 @@ interface Entry {
 }
 
 function entries(catalog: Catalog): Entry[] {
-  return catalog.parents.flatMap((parent) =>
-    parent.colourways.map((colourway) => ({ parent, colourway }))
-  );
+  // The synthetic home range is invented data (see ParentProduct.synthetic).
+  // A precision or recall figure computed partly over invented products would
+  // be measuring the generator, not the matcher, so it is excluded here.
+  return catalog.parents
+    .filter((parent) => !parent.synthetic)
+    .flatMap((parent) =>
+      parent.colourways.map((colourway) => ({ parent, colourway }))
+    );
 }
 
 /**

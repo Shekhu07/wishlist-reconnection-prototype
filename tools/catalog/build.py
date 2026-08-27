@@ -23,6 +23,7 @@ import curate  # noqa: E402
 import derive  # noqa: E402
 import fetch_images  # noqa: E402
 import fetch_metadata  # noqa: E402
+import home_tiles  # noqa: E402
 import synthesize  # noqa: E402
 
 DATA_DIR = os.path.join("app", "src", "data")
@@ -468,6 +469,15 @@ def run(force=False, check=False):
     chosen, families, roles = curate.select(parents)
     print("curated %d parents" % len(chosen))
 
+    # The invented home range, kept out of curate.select() so it can never be
+    # picked as a state fixture. See the spec, section 3.2.
+    home_parents = synthesize.build_home_parents()
+    for parent in home_parents:
+        chosen[parent["parent_product_id"]] = parent
+    home_ids = {
+        c["product_id"] for p in home_parents for c in p["colourways"]
+    }
+
     wishlist, overrides = build_wishlist(chosen, roles)
     bag, saved_for_later, orders = build_commerce(wishlist)
     scenarios = build_scenarios(chosen, roles, wishlist)
@@ -486,7 +496,9 @@ def run(force=False, check=False):
     )
     print("catalog covers %d colourways" % len(product_ids))
 
-    fetch_images.run(product_ids, IMAGE_DIR, force=force)
+    fetch_ids = [pid for pid in product_ids if pid not in home_ids]
+    fetch_images.run(fetch_ids, IMAGE_DIR, force=force)
+    home_tiles.write(home_parents, IMAGE_DIR)
     prune_images(product_ids)
     write_images_module(product_ids)
 

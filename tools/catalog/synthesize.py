@@ -249,3 +249,78 @@ def build_parents(rows):
             )
         parent["colourways"].append(colourway)
     return parents
+
+
+# The dataset has exactly one Home row. One product is not a category, so the
+# home range is invented -- the only invented products in the catalog. Ids
+# start at 900001, above the dataset's own range, so a home product can never
+# collide with a real one.
+HOME_RANGE = [
+    ("Cushion Cover", ["Beige", "Grey", "Navy Blue", "Mustard"]),
+    ("Bedsheet", ["White", "Grey", "Teal"]),
+    ("Curtain", ["Beige", "Charcoal", "Olive"]),
+    ("Bath Towel", ["White", "Navy Blue", "Grey"]),
+    ("Table Runner", ["Mustard", "Beige"]),
+    ("Doormat", ["Charcoal", "Beige"]),
+    ("Cushion Filler", ["White"]),
+    ("Throw Blanket", ["Grey", "Rust"]),
+]
+HOME_BRANDS = ["Home Centre", "Story@Home", "Raymond Home"]
+HOME_ID_BASE = 900001
+
+
+def build_home_parents():
+    """The invented home range. See the spec, section 3.2."""
+    parents = []
+    next_id = HOME_ID_BASE
+    for index, (article, colours) in enumerate(HOME_RANGE):
+        brand = HOME_BRANDS[index % len(HOME_BRANDS)]
+        brand_slug = brand.lower().replace("@", "").replace(" ", "")
+        pid = "pp_home_%s_%s" % (brand_slug, article.lower().replace(" ", ""))
+        colourways = []
+        for colour in colours:
+            product_id = next_id
+            next_id += 1
+            colourways.append(
+                {
+                    "product_id": product_id,
+                    "colour": colour,
+                    "display_name": article,
+                    "identity_confidence": 1.0,
+                    "identity_flags": [],
+                    "season": None,
+                    "usage": "Home",
+                    "price": price_for(product_id, "Home", brand_slug),
+                    "seller": seller_for(str(product_id)),
+                    "rating": rating_for(product_id),
+                    "review_count": review_count_for(product_id),
+                    "material": "Cotton",
+                    "fit": None,
+                    "returns_days": 14,
+                    "skus": [
+                        {
+                            "sku": sku_id(pid, product_id, "Onesize"),
+                            "size": "Onesize",
+                            "in_stock": True,
+                        }
+                    ],
+                }
+            )
+        parents.append(
+            {
+                "parent_product_id": pid,
+                "brand": brand,
+                "brand_key": brand_slug,
+                "gender": "Unisex",
+                "masterCategory": "Home",
+                "subCategory": "Home Furnishing",
+                "articleType": article,
+                "name_core": article.lower(),
+                "display_name": article,
+                "specific": True,
+                "sizes": ["Onesize"],
+                "synthetic": True,
+                "colourways": colourways,
+            }
+        )
+    return parents
