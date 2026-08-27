@@ -67,6 +67,32 @@ describe("shadow-mode report", () => {
           `| ${row.tau.toFixed(2)} | ${(row.opportunityRate * 100).toFixed(1)}% | ${row.precision === null ? "n/a" : `${(row.precision * 100).toFixed(1)}%`} | ${row.meanConfidence.toFixed(3)} |`
       );
 
+    // The S8 latency prose used to assert "consistently positive across
+    // runs" unconditionally -- true or false depending on nothing but which
+    // way a sub-millisecond in-process sample happened to fall. Measure it
+    // instead: run the delta a handful more times and say what fraction
+    // actually shared the primary run's sign.
+    const totalLatencyRuns = shadow.latency.deltaSamplesMs.length + 1;
+    const latencySignStable = shadow.latency.signAgreement === totalLatencyRuns;
+    const signStabilityLine = latencySignStable
+      ? `That delta's sign held across all ${totalLatencyRuns} in-process runs sampled here (${shadow.latency.signAgreement} of ${totalLatencyRuns} ${shadow.latency.deltaMs >= 0 ? "positive" : "negative"}) —`
+      : `That delta's sign was **not** stable across the ${totalLatencyRuns} in-process runs sampled here (only ${shadow.latency.signAgreement} of ${totalLatencyRuns} shared the sign shown above, the rest flipped) — treat only the magnitude, not the sign, as`;
+    const costParagraph = latencySignStable
+      ? [
+          signStabilityLine,
+          "it is the real CPU cost of doing both pieces of work in one loop. What it",
+          "is not is what the architecture does: §3.1 fans search and matching out in",
+          "parallel, and the module renders separately from the grid.",
+        ]
+      : [
+          signStabilityLine,
+          "the finding here: at this scale the delta is indistinguishable from",
+          "measurement noise, which is itself consistent with the architecture --",
+          "§3.1 fans search and matching out in parallel, and the module renders",
+          "separately from the grid, so there is no mechanism for a stable cost to",
+          "come from.",
+        ];
+
     const lines = [
       "# Shadow-mode read-out (Phase 3)",
       "",
@@ -96,10 +122,7 @@ describe("shadow-mode report", () => {
       `Search with matching in the same tick: **${shadow.latency.searchWithMatch.toFixed(2)} ms**.`,
       `Delta: **${shadow.latency.deltaMs >= 0 ? "+" : ""}${shadow.latency.deltaMs.toFixed(2)} ms** per query, against a 120 ms budget.`,
       "",
-      "That delta is **not** noise — it is consistently positive across runs, and",
-      "it is the real CPU cost of doing both pieces of work in one loop. What it",
-      "is not is what the architecture does: §3.1 fans search and matching out in",
-      "parallel, and the module renders separately from the grid.",
+      ...costParagraph,
       "",
       "So read this as an **upper bound** on combined cost, not as the delta a",
       "user would experience. The S8 gate — zero measurable delta to *search",
@@ -191,5 +214,24 @@ describe("shadow-mode report", () => {
     expect(shadow.evaluated).toBeGreaterThan(0);
     expect(Math.abs(shadow.latency.deltaMs)).toBeLessThan(1);
     expect(cohort.b.rate.value! - cohort.control.rate.value!).toBeGreaterThan(0);
+
+    // A magnitude guard alone let the report assert sign stability it had
+    // never measured -- the prose said "consistently positive across runs"
+    // while the single measured delta was negative, and nothing failed.
+    // Assert the emitted prose is consistent with what was actually
+    // observed about the sign, not just that the number is small.
+    expect(shadow.latency.signAgreement).toBeGreaterThanOrEqual(1);
+    expect(shadow.latency.signAgreement).toBeLessThanOrEqual(totalLatencyRuns);
+    if (latencySignStable) {
+      expect(lines).toContain(signStabilityLine);
+      expect(
+        lines.some((line) => /sign held across all/.test(line))
+      ).toBe(true);
+      expect(lines.some((line) => /was \*\*not\*\* stable/.test(line))).toBe(false);
+    } else {
+      expect(lines).toContain(signStabilityLine);
+      expect(lines.some((line) => /was \*\*not\*\* stable/.test(line))).toBe(true);
+      expect(lines.some((line) => /sign held across all/.test(line))).toBe(false);
+    }
   });
 });
