@@ -42,30 +42,88 @@ continues that and draws a hard line in the same place:
 - **The OS chrome in the screenshots is not ours to draw.** The status bar and
   the keyboard belong to the phone. On mobile web the browser supplies both.
 
-## 3. The data is real, or the screen says it is not
+## 3. The catalog widens to cover the shell
 
-Every slot in both screenshots is filled from `catalog.json`, which the build
-pipeline generated and which the matcher reads. Verified against the committed
-catalog:
+The screenshots have a category rail. The committed catalog had rows for three
+of its circles and none for the other two, so the first version of this design
+proposed empty states. That was checked against the source dataset rather than
+assumed, and the check changed the answer:
 
-| Slot | Source | Coverage |
+| Circle | Rows in the cached dataset | Verdict |
 |---|---|---|
-| ALL / MEN / WOMEN / KIDS | `gender` | Men 65, Women 39, **Kids 0** |
-| Category circles | `masterCategory` | Apparel 65, Footwear 26, Accessories 13, **Beauty 0, Home 0** |
-| "CROCS · FLIP FLOPS" cards | `brand` + `articleType` | 8 article types × 13 |
-| Banner, circles, cards, grid | `CATALOG_IMAGES` | **308 of 308 colourways** — nothing falls back |
-| Bag badge and Bag tab | `commerce/reconcile.ts` | the live session bag |
-| Under ₹999 | `price` | 45 of 308 colourways |
+| Fashion (Apparel) | 20,298 | already curated |
+| Footwear | 9,152 | already curated |
+| Accessories | 11,088 | already curated |
+| **Kids** (Boys 589 + Girls 477) | **1,066** | **real — curate it in** |
+| **Beauty** (Personal Care) | **1,759** | **real — curate it in** |
+| **Home** | **1** | not a category. See §3.2 |
 
-Two of those rows are zeros, and they set a rule for the whole build:
+### 3.1 Kids and Beauty are a curation change, not new data
 
-> **A surface with no data says so. It never shows invented products.**
+`tools/catalog/curate.py` selects the demo catalog from `QUERY_FAMILIES`. Kids
+and Beauty were never absent from the dataset; they were absent from that list.
+Families are **appended**, which matters more than it looks: `select()` assigns
+state fixtures by `families[0..6]`, so appending leaves every existing role
+pointing at the same product and the 247 tests keep their ground truth. Inserting
+would silently repoint `exact_available` and rewrite what state 2 means.
 
-KIDS, Beauty and Home render their real chrome and an empty state naming the
-reason ("Nothing in the prototype catalog"). This is the same discipline the
-gate report applies to its own numbers, applied to pixels: a participant who
-taps KIDS and sees plausible children's clothing has been shown a lie, and any
-reaction they have to it is unusable data.
+Each family needs 13 parents (4 wishlisted + 9 filler). Verified against the
+derived parent set:
+
+| New family | gender + articleType | parents available |
+|---|---|---|
+| `kids tshirt` | Boys · Tshirts | 174 |
+| `kids top` | Girls · Tops | 55 |
+| `kids dress` | Girls · Dresses | 29 |
+| `perfume` | Women · Perfume and Body Mist | 217 |
+| `lipstick` | Women · Lipstick | 47 |
+| `nail polish` | Women · Nail Polish | 81 |
+
+Two consequences worth stating rather than discovering later:
+
+- **`QUERY_FAMILIES` needs `genders`, not `gender`.** Kids is Boys *and* Girls,
+  and the current spec shape holds one value.
+- **Beauty is `Onesize`.** `synthesize.size_ladder()` falls through to the
+  default ladder for perfume and lipstick, so beauty items browse correctly and
+  never produce a saved-size state. That is right rather than missing: there is
+  no size to lose, so the variant-unavailable path has nothing to say.
+- **Nail polish is a genuine Tier 2 fixture.** 81 parents across many colours is
+  the "saved colour gone, another colour available" case occurring naturally in
+  a category that is nothing but colour.
+
+Cost: roughly 250 new images at 384×512 (4 wishlisted parents × 6 colourways +
+9 filler × 2, per family), taking the committed set from 308 to about 560. The
+gate, shadow, experiment and panel reports are all regenerated, because the
+catalog they measure has changed.
+
+### 3.2 Home is synthesised, and this is the exception
+
+The dataset has exactly one Home row — a cushion cover. One product is not a
+category, so on review the decision was taken to **invent a home range**: this
+is the first invented product data in the catalog, and it is recorded here
+rather than left for someone to find.
+
+Everything else in `catalog.json` is a real dataset row with price, stock,
+seller and size synthesised on top of it. Home inverts that: the products
+themselves are fabricated. Two safeguards, because the cost of forgetting is
+that a future reader treats a home product as evidence of something:
+
+- Every synthetic home parent carries `"synthetic": true` in `catalog.json`,
+  and `masterCategory: "Home"` implies it. Nothing else in the catalog carries
+  that flag.
+- **Home is excluded from every measurement.** The gate suites, the shadow
+  read-out, the τ sweep and the E1 precision set all filter it out. A precision
+  number computed partly over products that were invented to fill a circle would
+  be measuring the generator.
+
+**Images.** The mirror has no photograph of a product that does not exist, so
+home tiles are generated with Pillow at 384×512: a flat field in the product's
+`baseColour` with the article type set in it. They are deliberately not
+photographic. A borrowed fashion photograph would be the actual lie — a
+participant would read it as a real listing.
+
+Home products are browsable and nothing more. They are not wishlisted, they
+never enter a match, and no state fixture depends on one.
 
 ## 4. Architecture
 
@@ -182,7 +240,8 @@ state with a real badge. Under ₹999 and Luxury as genuine price filters
 (`price < 999`; Luxury is the top price decile, computed from the catalog at
 render). Back.
 
-**Empty, and saying why.** KIDS, Beauty, Home, From 30 min.
+**Empty, and saying why.** From 30 min is the only stub left in the nav; KIDS,
+Beauty and Home are now populated (§3).
 
 **Decorative, and labelled.** The banner carousel rotates catalog images under
 the sale overlay — the overlay text is fixed copy, and it advertises no
@@ -249,7 +308,9 @@ green, the shell has reached into the match layer and the change is wrong.
 
 - No native build, no Expo Go, no EAS. The target is a URL.
 - No navigation library.
-- No new catalog data, no new images, no scraped assets.
+- No scraped assets. New catalog data is limited to what §3 describes:
+  widened curation of rows already in the cached dataset, plus the synthetic
+  home range and its generated tiles.
 - Voice and image search are not implemented, only named.
 - The preferred-action personalisation stays off (E16 §, unchanged): the shell
   gives it more surfaces to act on, and every one of them stays inert while an
