@@ -27,6 +27,12 @@ module.exports = () => {
     return;
   }
 
+  // Gates finish in whatever order the workers happen to complete, which made
+  // every regeneration churn the row order and buried real changes in the diff.
+  // Report order follows the declared list instead.
+  const order = new Map(ALL_GATES.map(([id], i) => [id, i]));
+  results.sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99));
+
   const ran = new Set(results.map((r) => r.id));
   const missing = ALL_GATES.filter(([id]) => !ran.has(id));
 
