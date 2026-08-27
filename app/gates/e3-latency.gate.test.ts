@@ -6,6 +6,7 @@ import { buildIndex, match } from "@/match/matcher";
 import { buildSearchIndex, search } from "@/search/localSearch";
 import { pick, seeded } from "@/analytics/evalSets";
 import { recordGate } from "./report";
+import { realParents } from "./paths";
 
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
@@ -29,7 +30,7 @@ describe("E3 gate — match latency", () => {
   it("computes a match far inside the 120 ms budget", () => {
     const random = seeded(31337);
     const index = buildIndex(catalog, wishlist);
-    const queries = catalog.parents.map((parent) =>
+    const queries = realParents(catalog).map((parent) =>
       `${parent.brand} ${parent.articleType}`.toLowerCase()
     );
 

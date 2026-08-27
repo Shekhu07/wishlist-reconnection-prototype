@@ -1,6 +1,7 @@
 import catalogJson from "@/data/catalog.json";
 import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Wishlist } from "@/data/types";
+import { realParents } from "../gates/paths";
 
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
@@ -35,5 +36,13 @@ describe("the synthetic home range stays quarantined", () => {
     for (const roleId of Object.values(catalog.roles)) {
       expect(homeIds.has(roleId)).toBe(false);
     }
+  });
+
+  it("is excluded from the set every gate measures", () => {
+    const measured = realParents(catalog);
+    expect(measured.some((parent) => parent.synthetic)).toBe(false);
+    expect(measured.length).toBe(
+      catalog.parents.filter((parent) => !parent.synthetic).length
+    );
   });
 });

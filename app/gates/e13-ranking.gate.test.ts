@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG } from "@/match/contract";
 import { buildIndex, match } from "@/match/matcher";
 import { actionability } from "@/match/ranking";
 import { recordGate } from "./report";
+import { realParents } from "./paths";
 
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
@@ -13,12 +14,13 @@ const wishlist = wishlistJson as unknown as Wishlist;
  * E13 has no threshold in the plan -- it is a Phase 5 epic, gated on exact
  * match precision being understood rather than on a number of its own. So this
  * gate asserts the properties the ranking is supposed to guarantee, across
- * every query the catalog can produce, rather than a score.
+ * every real product the catalog can produce a query for -- the invented home
+ * range is excluded, the same as every other measurement.
  */
 describe("E13 gate — multi-match ranking", () => {
-  it("holds its ordering and diversity guarantees across the whole catalog", () => {
+  it("holds its ordering and diversity guarantees across the real catalog", () => {
     const index = buildIndex(catalog, wishlist);
-    const queries = catalog.parents.flatMap((parent) => [
+    const queries = realParents(catalog).flatMap((parent) => [
       parent.articleType.toLowerCase(),
       `${parent.brand} ${parent.articleType}`.toLowerCase(),
       parent.display_name.toLowerCase(),

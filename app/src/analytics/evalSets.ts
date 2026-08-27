@@ -1,4 +1,5 @@
 import type { Catalog, Colourway, ParentProduct, Wishlist } from "@/data/types";
+import { realParents } from "../../gates/paths";
 
 /**
  * Evaluation sets for the E1 and E2 acceptance gates.
@@ -60,11 +61,9 @@ function entries(catalog: Catalog): Entry[] {
   // The synthetic home range is invented data (see ParentProduct.synthetic).
   // A precision or recall figure computed partly over invented products would
   // be measuring the generator, not the matcher, so it is excluded here.
-  return catalog.parents
-    .filter((parent) => !parent.synthetic)
-    .flatMap((parent) =>
-      parent.colourways.map((colourway) => ({ parent, colourway }))
-    );
+  return realParents(catalog).flatMap((parent) =>
+    parent.colourways.map((colourway) => ({ parent, colourway }))
+  );
 }
 
 /**

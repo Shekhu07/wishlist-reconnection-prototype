@@ -5,6 +5,7 @@ import { DEFAULT_CONFIG } from "@/match/contract";
 import { buildIndex, match } from "@/match/matcher";
 import { pick, seeded } from "@/analytics/evalSets";
 import { recordGate } from "./report";
+import { realParents } from "./paths";
 
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
@@ -25,7 +26,7 @@ describe("E1 gate — silent variant substitution", () => {
     const random = seeded(4242);
     const index = buildIndex(catalog, wishlist);
     const itemBySku = new Map(wishlist.items.map((item) => [item.sku, item]));
-    const allSkus = catalog.parents.flatMap((parent) =>
+    const allSkus = realParents(catalog).flatMap((parent) =>
       parent.colourways.flatMap((colourway) => colourway.skus)
     );
     const seededStock = allSkus.map((sku) => sku.in_stock);

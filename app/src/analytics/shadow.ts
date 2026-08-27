@@ -3,6 +3,7 @@ import { DEFAULT_CONFIG, type MatchConfig, type Modality } from "@/match/contrac
 import { buildIndex, match } from "@/match/matcher";
 import { buildSearchIndex, search } from "@/search/localSearch";
 import { buildLabelledPairs, isAcceptable, wishlistFor } from "./evalSets";
+import { realParents } from "../../gates/paths";
 
 /**
  * Phase 3 (plan S8-S9): matching runs, nothing renders.
@@ -68,7 +69,7 @@ export function runShadow(
   const index = buildIndex(catalog, wishlist);
   const searchIndex = buildSearchIndex(catalog);
 
-  const queries = catalog.parents.flatMap((parent) => [
+  const queries = realParents(catalog).flatMap((parent) => [
     `${parent.brand} ${parent.articleType}`.toLowerCase(),
     parent.articleType.toLowerCase(),
   ]);

@@ -3,6 +3,7 @@ import type { Catalog } from "@/data/types";
 import { buildGazetteers, parseIntent } from "@/match/intent";
 import { buildQueryEvalSet } from "@/analytics/evalSets";
 import { recordGate } from "./report";
+import { realParents } from "./paths";
 
 const catalog = catalogJson as unknown as Catalog;
 
@@ -18,7 +19,7 @@ const catalog = catalogJson as unknown as Catalog;
  */
 describe("E2 gate — query field accuracy", () => {
   it("recovers at least 90% of fields across 1,000 queries", () => {
-    const gaz = buildGazetteers(catalog.parents);
+    const gaz = buildGazetteers(realParents(catalog));
     const cases = buildQueryEvalSet(catalog, 1000);
     const fields = ["brand", "articleType", "colour", "gender"] as const;
 
@@ -62,7 +63,7 @@ describe("E2 gate — query field accuracy", () => {
   });
 
   it("degrades an unparsed field to unconstrained rather than to a guess", () => {
-    const gaz = buildGazetteers(catalog.parents);
+    const gaz = buildGazetteers(realParents(catalog));
     const intent = parseIntent("something nobody sells", "text", gaz);
     for (const field of ["brand", "articleType", "colour", "gender"] as const) {
       expect(intent[field]).toBeUndefined();
