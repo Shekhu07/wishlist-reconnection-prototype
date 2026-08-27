@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "gates": "jest gates --runInBand --verbose",
     "shadow": "jest shadow.report --runInBand",
-    "experiment": "jest experiment.report --runInBand"
+    "experiment": "jest experiment.report --runInBand",
+    "panel": "jest panel.report --runInBand"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.13",

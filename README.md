@@ -19,6 +19,7 @@ npm test                                            # everything, including the 
 npm run gates                                       # acceptance gates → docs/gate-report.md
 npm run shadow                                      # Phase 3 read-out → docs/shadow-report.md
 npm run experiment                                  # E10 read-out → docs/experiment-report.md
+npm run panel                                       # panel sizing → docs/panel-sizing.md
 npm run web                                         # open the prototype
 ```
 
@@ -92,6 +93,31 @@ The τ sweep currently **declines to recommend a change**. Precision is already
 work; the hard predicates absorb the false positives this eval set contains.
 Reading that as "τ can safely come down" would treat an absence of evidence as
 evidence of absence.
+
+## Panel sizing — the open decision
+
+The plan guesses 300–500 recruited testers (§7.4) and nothing had checked it.
+[`docs/panel-sizing.md`](docs/panel-sizing.md) does.
+
+**A panel of 400 cannot answer the primary question, and cannot answer the
+B − A question at all.** Detecting a 5pp lift needs ~11,600; establishing
+whether variant continuity is the mechanism needs ~73,700.
+
+The gap is not the sample-size formula. It is three multipliers between a
+recruited person and a usable observation: the panel splits three ways before
+anything happens; a treatment user who never sees the module behaves like
+control, so the observed effect is scaled by exposure and sample size scales
+with its square; and B − A is a *smaller* effect than either arm's lift,
+measured between two treatment groups rather than against the whole control.
+
+The sizing is validated rather than asserted — at the computed size, 2,000
+simulated experiments detected the effect 79.1% of the time against a target of
+80%, and 35.7% at half that size.
+
+**What a 300–500 panel is right for:** whether participants understand why the
+module appeared, whether they recover from an unavailable variant, whether the
+ten states read correctly, and §4.4's swapped-fill check. Those are usability
+questions with usability sample sizes, and this prototype can answer them now.
 
 ## User controls and durable personalisation (E16)
 
