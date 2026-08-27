@@ -444,6 +444,7 @@ def write_images_module(product_ids):
 
     if omitted:
         print("WARNING: %d ids not present in the image directory (omitted from CATALOG_IMAGES): %s" % (len(omitted), omitted))
+    return omitted
 
 
 def prune_images(product_ids):
@@ -500,7 +501,7 @@ def run(force=False, check=False):
     fetch_images.run(fetch_ids, IMAGE_DIR, force=force)
     home_tiles.write(home_parents, IMAGE_DIR)
     prune_images(product_ids)
-    write_images_module(product_ids)
+    omitted_from_images_module = write_images_module(product_ids)
 
     for name, payload in (
         ("catalog.json", catalog),
@@ -515,11 +516,11 @@ def run(force=False, check=False):
         print("wrote %s" % os.path.join(DATA_DIR, name))
 
     if check:
-        validate(catalog, wishlist, scenarios, product_ids)
+        validate(catalog, wishlist, scenarios, product_ids, omitted_from_images_module)
     return catalog
 
 
-def validate(catalog, wishlist, scenarios, product_ids):
+def validate(catalog, wishlist, scenarios, product_ids, omitted_from_images_module=()):
     from PIL import Image
 
     problems = []
@@ -527,6 +528,18 @@ def validate(catalog, wishlist, scenarios, product_ids):
     missing = [p for p in product_ids if not os.path.exists(os.path.join(IMAGE_DIR, "%d.jpg" % p))]
     if missing:
         problems.append("%d catalog images missing on disk" % len(missing))
+
+    # A file existing on disk at validate-time does not prove
+    # write_images_module() saw it: if image generation happens after the
+    # require() map is written, the file check above passes while the map
+    # silently dropped the entry (write_images_module() only prints a
+    # WARNING for that, which nothing enforces). Check the map's own report
+    # of what it left out, independent of what is on disk right now.
+    if omitted_from_images_module:
+        problems.append(
+            "%d colourway(s) missing from CATALOG_IMAGES (images.ts) despite being in the catalog: %s"
+            % (len(omitted_from_images_module), list(omitted_from_images_module))
+        )
 
     for pid in product_ids[:: max(1, len(product_ids) // 25)]:
         path = os.path.join(IMAGE_DIR, "%d.jpg" % pid)
