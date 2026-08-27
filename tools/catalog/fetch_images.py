@@ -14,6 +14,8 @@ extracted JPEGs are committed so nobody has to do it twice.
 import io
 import json
 import os
+import socket
+import urllib.error
 import urllib.request
 
 REPO = "benitomartin/fashion-product-images-small-384x512"
@@ -30,17 +32,43 @@ def _shards():
     paths = sorted(e["path"] for e in tree if e["path"].endswith(".parquet"))
     if not paths:
         raise RuntimeError("no parquet shards found in %s" % REPO)
-    return paths
+    # A resumed run should not re-download shards a previous run already
+    # drained -- their ids are on disk, so they would extract nothing at
+    # 400 MB apiece. SHARD_START skips them.
+    start = int(os.environ.get("SHARD_START", "0"))
+    if start:
+        print("  skipping %d shard(s) already drained (SHARD_START)" % start)
+    return paths[start:]
+
+
+ATTEMPTS = 3
 
 
 def _download(path, dest):
-    req = urllib.request.Request(FILE_URL % path, headers={"User-Agent": "wishlist-proto/1"})
-    with urllib.request.urlopen(req, timeout=600) as resp, open(dest, "wb") as fh:
-        while True:
-            chunk = resp.read(1 << 20)
-            if not chunk:
-                break
-            fh.write(chunk)
+    """Pull one shard, retrying a dropped connection.
+
+    Each shard is ~400 MB and the whole walk moves ~2 GB, so a read timeout
+    partway through is not an exceptional case -- it is the expected failure
+    of a long transfer. Without a retry, one timeout discards every shard
+    already downloaded in that run.
+    """
+    last = None
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            req = urllib.request.Request(
+                FILE_URL % path, headers={"User-Agent": "wishlist-proto/1"}
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp, open(dest, "wb") as fh:
+                while True:
+                    chunk = resp.read(1 << 20)
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+            return
+        except (socket.timeout, urllib.error.URLError, ConnectionError) as exc:
+            last = exc
+            print("    attempt %d/%d failed (%s), retrying" % (attempt, ATTEMPTS, exc), flush=True)
+    raise RuntimeError("could not download %s after %d attempts: %s" % (path, ATTEMPTS, last))
 
 
 def _extract(parquet_path, wanted, out_dir):
