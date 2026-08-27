@@ -22,14 +22,21 @@ Matching ran 624 times across three modalities and rendered nothing.
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.0423 ms** per query.
-Search with matching in the same tick: **0.0548 ms**.
-Delta: **+0.0125 ms**.
+Search alone: **0.03 ms** per query.
+Search with matching in the same tick: **0.07 ms**.
+Delta: **+0.04 ms** per query, against a 120 ms budget.
 
-The delta is noise, and structurally has to be: `search()` takes no
-wishlist argument and returns synchronously, so there is no ordering in
-which it could wait on the match call. This measures that the property
-holds; it does not measure a deployed service under load.
+That delta is **not** noise — it is consistently positive across runs, and
+it is the real CPU cost of doing both pieces of work in one loop. What it
+is not is what the architecture does: §3.1 fans search and matching out in
+parallel, and the module renders separately from the grid.
+
+So read this as an **upper bound** on combined cost, not as the delta a
+user would experience. The S8 gate — zero measurable delta to *search
+render time* — holds for a structural reason rather than a statistical
+one: `search()` takes no wishlist argument and returns synchronously, so
+there is no ordering in which it could wait on the match call. Search
+cannot be slowed by matching because it never observes it.
 
 ## 2. Threshold sweep — real
 

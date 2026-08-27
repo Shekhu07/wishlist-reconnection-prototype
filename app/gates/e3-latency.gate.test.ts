@@ -66,7 +66,11 @@ describe("E3 gate — match latency", () => {
       id: "E3-latency",
       epic: "E3 — match latency",
       requirement: "p95 ≤ 120 ms",
-      measured: `p50 ${p50.toFixed(3)} ms, p95 ${p95.toFixed(3)} ms, p99 ${p99.toFixed(3)} ms over ${ITERATIONS.toLocaleString("en-IN")} calls (budget 120 ms)`,
+      // Two decimals, not three. The figure varies by a factor of two between
+      // runs on an idle machine; reporting it to a microsecond claims a
+      // precision the measurement does not have, and churns the diff on every
+      // regeneration for no information.
+      measured: `p50 ${p50.toFixed(2)} ms, p95 ${p95.toFixed(2)} ms, p99 ${p99.toFixed(2)} ms over ${ITERATIONS.toLocaleString("en-IN")} calls (budget 120 ms)`,
       pass: p95 <= 120,
       caveat:
         "In-process JavaScript on one machine with the catalog already in memory. It is not the 500 rps load test the plan asks for, and excludes network, serialisation, queueing and database access. It shows the matching work is not the bottleneck; it does not show the service meets its SLO.",
