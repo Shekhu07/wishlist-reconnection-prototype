@@ -22,9 +22,9 @@ Matching ran 1,092 times across three modalities and rendered nothing.
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.05 ms** per query.
-Search with matching in the same tick: **0.06 ms**.
-Delta: **+0.01 ms** per query, against a 120 ms budget.
+Search alone: **0.07 ms** per query.
+Search with matching in the same tick: **0.07 ms**.
+Delta: **+0.00 ms** per query, against a 120 ms budget.
 
 At this magnitude the delta is indistinguishable from measurement
 noise -- in-process JavaScript timing at the sub-millisecond scale is
