@@ -15,14 +15,23 @@ from collections import OrderedDict
 # has plenty of, in a size-bearing category so variant states are meaningful.
 QUERY_FAMILIES = OrderedDict(
     [
-        ("shirt", {"articleTypes": ["Shirts"], "gender": "Men"}),
-        ("tshirt", {"articleTypes": ["Tshirts"], "gender": "Men"}),
-        ("jeans", {"articleTypes": ["Jeans"], "gender": "Men"}),
-        ("kurta", {"articleTypes": ["Kurtas"], "gender": "Women"}),
-        ("casual shoes", {"articleTypes": ["Casual Shoes"], "gender": "Men"}),
-        ("heels", {"articleTypes": ["Heels"], "gender": "Women"}),
-        ("handbag", {"articleTypes": ["Handbags"], "gender": "Women"}),
-        ("track pants", {"articleTypes": ["Track Pants"], "gender": "Men"}),
+        ("shirt", {"articleTypes": ["Shirts"], "genders": ["Men"]}),
+        ("tshirt", {"articleTypes": ["Tshirts"], "genders": ["Men"]}),
+        ("jeans", {"articleTypes": ["Jeans"], "genders": ["Men"]}),
+        ("kurta", {"articleTypes": ["Kurtas"], "genders": ["Women"]}),
+        ("casual shoes", {"articleTypes": ["Casual Shoes"], "genders": ["Men"]}),
+        ("heels", {"articleTypes": ["Heels"], "genders": ["Women"]}),
+        ("handbag", {"articleTypes": ["Handbags"], "genders": ["Women"], "onesize_ok": True}),
+        ("track pants", {"articleTypes": ["Track Pants"], "genders": ["Men"]}),
+        # Appended, never inserted: select() assigns state fixtures by
+        # families[0..6], so inserting here would silently repoint what
+        # state 2 means while every test stayed green.
+        ("kids tshirt", {"articleTypes": ["Tshirts"], "genders": ["Boys"]}),
+        ("kids top", {"articleTypes": ["Tops"], "genders": ["Girls"]}),
+        ("kids dress", {"articleTypes": ["Dresses"], "genders": ["Girls"]}),
+        ("perfume", {"articleTypes": ["Perfume and Body Mist"], "genders": ["Women"], "onesize_ok": True}),
+        ("lipstick", {"articleTypes": ["Lipstick"], "genders": ["Women"], "onesize_ok": True}),
+        ("nail polish", {"articleTypes": ["Nail Polish"], "genders": ["Women"], "onesize_ok": True}),
     ]
 )
 
@@ -59,20 +68,26 @@ def trim_colourways(parent, limit):
 
 
 def _candidates(parents, spec, min_colourways=1):
-    out = [
-        p
-        for p in parents.values()
-        if p.get("articleType") in spec["articleTypes"]
-        and p.get("gender") == spec["gender"]
-        and len(p["colourways"]) >= min_colourways
-        and p["sizes"] != ["Onesize"]
-        or (
-            p.get("articleType") in spec["articleTypes"]
-            and p.get("gender") == spec["gender"]
-            and len(p["colourways"]) >= min_colourways
-            and spec["articleTypes"] == ["Handbags"]
-        )
-    ]
+    """Parents that could serve a family, richest in colourways first.
+
+    Onesize parents are excluded because a size ladder of one cannot produce
+    the variant states -- with two exceptions that are genuinely sized in the
+    real world but not in this dataset: handbags, and everything in Personal
+    Care, which has no size to lose. Their families need candidates or the
+    category is empty.
+    """
+    sized_exempt = spec.get("onesize_ok", False)
+    out = []
+    for parent in parents.values():
+        if parent.get("articleType") not in spec["articleTypes"]:
+            continue
+        if parent.get("gender") not in spec["genders"]:
+            continue
+        if len(parent["colourways"]) < min_colourways:
+            continue
+        if parent["sizes"] == ["Onesize"] and not sized_exempt:
+            continue
+        out.append(parent)
     # Most colourways first: those are what make the variant states possible.
     # parent_product_id breaks ties so the order never depends on dict order.
     out.sort(key=lambda p: (-len(p["colourways"]), p["parent_product_id"]))
