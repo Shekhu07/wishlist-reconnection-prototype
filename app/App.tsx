@@ -23,13 +23,20 @@ import { RAMP_STEPS } from "@/experiment/assignment";
 import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
 import { revalidate } from "@/revalidation/revalidate";
+import { BagScreen } from "@/screens/BagScreen";
 import { CompareScreen } from "@/screens/CompareScreen";
+import { HomeScreen } from "@/screens/HomeScreen";
 import { SavedProductScreen } from "@/screens/SavedProductScreen";
+import { SearchEntryScreen } from "@/screens/SearchEntryScreen";
 import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScreen";
 import { StateSwitcher } from "@/harness/StateSwitcher";
+import { AppShell } from "@/shell/AppShell";
+import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
+import { useSyncedHistory } from "@/shell/useSyncedHistory";
 import { color, space, type } from "@/design/tokens";
 import { useWishlistMatch, type SuppressionReason } from "@/state/useWishlistMatch";
 import {
+  contextFromQuery,
   contextFromScenario,
   requestFrom,
   type SearchContext,
@@ -80,17 +87,6 @@ const BREACHING_EVENTS = [
   })),
 ];
 
-/**
- * A three-screen stack rather than a router: search, the saved product, and
- * compare. It stays this small on purpose -- the E5 gate is that search
- * context survives back-navigation, and the surest way to guarantee that is
- * for search never to unmount its state in the first place.
- */
-type Route =
-  | { name: "search" }
-  | { name: "saved"; itemId: string }
-  | { name: "compare"; itemId: string };
-
 export default function App() {
   const [scenario, setScenario] = useState<Scenario>(scenarios[1] ?? scenarios[0]);
   // context.seq is the single source of truth for the sequence number --
@@ -110,11 +106,16 @@ export default function App() {
   const [hiddenCount, setHiddenCount] = useState(0);
   const [eventCount, setEventCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
-  const [route, setRoute] = useState<Route>({ name: "search" });
+  const [nav, setNav] = useState<Nav>({ tab: "home", stack: [rootFor("home")] });
+  const [recents, setRecents] = useState<string[]>([]);
   const [pincode, setPincode] = useState(wishlist.pincode);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   // Stock lives outside React, so a change has to be announced to re-render.
   const [stockVersion, setStockVersion] = useState(0);
+  // commerce.bag.items is mutated in place by addToBag, which is imperative,
+  // not React state, so nothing re-renders when the bag changes unless
+  // something forces it -- same pattern as stockVersion above.
+  const [bagVersion, setBagVersion] = useState(0);
 
   // One client and one inventory for the session. Suppression, frequency caps,
   // the breaker and live stock are all session state; rebuilding either per
@@ -215,10 +216,12 @@ export default function App() {
     []
   );
 
+  const screen = top(nav);
+
   const activeItem =
-    route.name === "search"
-      ? undefined
-      : wishlist.items.find((candidate) => candidate.item_id === route.itemId);
+    screen.name === "saved" || screen.name === "compare"
+      ? wishlist.items.find((candidate) => candidate.item_id === screen.itemId)
+      : undefined;
 
   // Recomputed on every visit, because the whole point is that it may now
   // disagree with what the module rendered. stockVersion and pincode are
@@ -235,7 +238,22 @@ export default function App() {
   }, [client, rerun]);
 
   const goBack = useCallback(() => {
-    setRoute({ name: "search" });
+    setNav((prev) => pop(prev));
+    setSelectedSize(null);
+  }, []);
+
+  // Picking a scenario from the harness has to land on its results
+  // regardless of where the nav stack currently is -- pop() only goes up one
+  // level, which isn't reliably "results" once Home is a real screen the
+  // stack can sit under. This resets the stack to the same shape the real
+  // home -> search -> submit path produces, on the home tab -- "search" is
+  // the bottom nav's unrelated "From 30 min" tab, and landing there would
+  // have BottomNav highlight the wrong destination while results are shown.
+  const resetToResults = useCallback(() => {
+    setNav({
+      tab: "home",
+      stack: [rootFor("home"), { name: "searchEntry" }, { name: "results" }],
+    });
     setSelectedSize(null);
   }, []);
 
@@ -245,17 +263,31 @@ export default function App() {
     ? itemFor(response.matches[0].sku)
     : undefined;
 
+  const bagCount = useMemo(
+    () => commerce.bag.items.reduce((sum, line) => sum + line.quantity, 0),
+    [commerce, bagVersion]
+  );
+
+  useSyncedHistory(nav, context.query, setNav);
+
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" />
-      <StateSwitcher
+      <AppShell
+        nav={nav}
+        bagCount={bagCount}
+        onTab={(tab) => setNav(switchTab(nav, tab))}
+        onBack={() => setNav(pop(nav))}
+        onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
+        harness={
+          <StateSwitcher
         scenarios={scenarios}
         activeId={scenario.id}
         onSelect={(next) => {
           client.suppression.reset();
           setScenario(next);
           setContext((prev) => contextFromScenario(next, prev.seq + 1));
-          goBack();
+          resetToResults();
         }}
         latencyMs={latencyMs}
         onLatencyChange={setLatencyMs}
@@ -340,10 +372,121 @@ export default function App() {
           setShowWishlistInSearch(value);
           restage();
         }}
-      />
-
+          />
+        }
+      >
       <View style={styles.frame}>
-        {route.name === "search" || !activeItem || !revalidation ? (
+        {(screen.name === "home") ? (
+          <HomeScreen
+            catalog={catalog}
+            onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
+            onSelectCategory={() =>
+              setNav(
+                push(nav, {
+                  name: "stub",
+                  reason: "Browsing by category is not in this prototype.",
+                })
+              )
+            }
+            onSelectTile={() =>
+              setNav(
+                push(nav, {
+                  name: "stub",
+                  reason: "Opening a product from Home is not in this prototype.",
+                })
+              )
+            }
+          />
+        ) : screen.name === "searchEntry" ? (
+          <SearchEntryScreen
+            catalog={catalog}
+            recents={recents}
+            onSubmit={(query) => {
+              setContext((prev) => contextFromQuery(query, prev, prev.seq + 1));
+              setRecents((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 8));
+              setNav((prev) => push(prev, { name: "results" }));
+            }}
+            onClearRecents={() => setRecents([])}
+            onBack={() => setNav((prev) => pop(prev))}
+            onNotImplemented={() => setToast("Not available in this prototype.")}
+          />
+        ) : screen.name === "bag" ? (
+          <BagScreen catalog={catalog} commerce={commerce} />
+        ) : (screen.name === "saved" || screen.name === "compare") && activeItem && revalidation ? (
+          screen.name === "saved" ? (
+            <SavedProductScreen
+              result={revalidation}
+              pincode={pincode}
+              selectedSize={selectedSize ?? activeItem.size}
+              onBack={goBack}
+              onChooseSize={setSelectedSize}
+              onMoveToBag={() => {
+                const size = selectedSize ?? activeItem.size;
+                const duplicate = wouldDuplicate(activeItem, commerce);
+                // FR-11: never silently stack a second copy of something the
+                // module has just told the user is already in their bag.
+                if (!duplicate) addToBag(activeItem, size, commerce);
+                setBagVersion((version) => version + 1);
+                events.emit({
+                  type: "moved_to_bag",
+                  ts: catalog.today,
+                  user_id: wishlist.user_id,
+                  session_id: request.session_id,
+                  arm: client.arm,
+                  sku: activeItem.sku,
+                  via_wishlist_module: true,
+                  size_deviated: size !== activeItem.size,
+                  duplicate,
+                });
+                note();
+                setToast(
+                  duplicate
+                    ? "Already in your Bag — not added twice"
+                    : `Moved to Bag: ${activeItem.colour} · ${size}, revalidated at the boundary`
+                );
+                restage();
+              }}
+              onRecoveryPrimary={() => {
+                if (revalidation.blocking === "variant_unavailable") {
+                  const available = revalidation.current.sizesInStock[0];
+                  if (available) {
+                    setSelectedSize(available);
+                    return setToast(`Size ${available} selected. Your saved size is unchanged.`);
+                  }
+                  return setNav((prev) => push(prev, { name: "compare", itemId: activeItem.item_id }));
+                }
+                if (revalidation.blocking === "product_unavailable") {
+                  return setNav((prev) => push(prev, { name: "compare", itemId: activeItem.item_id }));
+                }
+                setToast("Pick a different delivery pincode in the harness bar above");
+              }}
+              onRecoverySecondary={() => {
+                setToast(
+                  revalidation.blocking === "product_unavailable"
+                    ? "Removed from Wishlist"
+                    : "Kept in your Wishlist"
+                );
+                goBack();
+              }}
+            />
+          ) : (
+            <CompareScreen
+              catalog={catalog}
+              item={activeItem}
+              parent={revalidation.parent}
+              colourway={revalidation.colourway}
+              query={context.query}
+              pincode={pincode}
+              inventory={inventory}
+              onBack={goBack}
+              onChoose={(productId) =>
+                productId === activeItem.product_id
+                  ? setNav((prev) => push(prev, { name: "saved", itemId: activeItem.item_id }))
+                  : setToast("Opening an alternative is outside the reconnection flow")
+              }
+            />
+          )
+        ) : screen.name === "browse" || screen.name === "stub" ? null : (
           <SearchResultsScreen
             catalog={catalog}
             query={context.query}
@@ -410,89 +553,19 @@ export default function App() {
               } else {
                 setSelectedSize(item.size);
               }
-              setRoute(
-                action === "primary"
-                  ? { name: "saved", itemId: item.item_id }
-                  : { name: "compare", itemId: item.item_id }
+              setNav((prev) =>
+                push(prev, {
+                  name: action === "primary" ? "saved" : "compare",
+                  itemId: item.item_id,
+                })
               );
             }}
             swapFills={swapFills}
           />
-        ) : route.name === "saved" ? (
-          <SavedProductScreen
-            result={revalidation}
-            pincode={pincode}
-            selectedSize={selectedSize ?? activeItem.size}
-            onBack={goBack}
-            onChooseSize={setSelectedSize}
-            onMoveToBag={() => {
-              const size = selectedSize ?? activeItem.size;
-              const duplicate = wouldDuplicate(activeItem, commerce);
-              // FR-11: never silently stack a second copy of something the
-              // module has just told the user is already in their bag.
-              if (!duplicate) addToBag(activeItem, size, commerce);
-              events.emit({
-                type: "moved_to_bag",
-                ts: catalog.today,
-                user_id: wishlist.user_id,
-                session_id: request.session_id,
-                arm: client.arm,
-                sku: activeItem.sku,
-                via_wishlist_module: true,
-                size_deviated: size !== activeItem.size,
-                duplicate,
-              });
-              note();
-              setToast(
-                duplicate
-                  ? "Already in your Bag — not added twice"
-                  : `Moved to Bag: ${activeItem.colour} · ${size}, revalidated at the boundary`
-              );
-              restage();
-            }}
-            onRecoveryPrimary={() => {
-              if (revalidation.blocking === "variant_unavailable") {
-                const available = revalidation.current.sizesInStock[0];
-                if (available) {
-                  setSelectedSize(available);
-                  return setToast(`Size ${available} selected. Your saved size is unchanged.`);
-                }
-                return setRoute({ name: "compare", itemId: activeItem.item_id });
-              }
-              if (revalidation.blocking === "product_unavailable") {
-                return setRoute({ name: "compare", itemId: activeItem.item_id });
-              }
-              setToast("Pick a different delivery pincode in the harness bar above");
-            }}
-            onRecoverySecondary={() => {
-              setToast(
-                revalidation.blocking === "product_unavailable"
-                  ? "Removed from Wishlist"
-                  : "Kept in your Wishlist"
-              );
-              goBack();
-            }}
-          />
-        ) : (
-          <CompareScreen
-            catalog={catalog}
-            item={activeItem}
-            parent={revalidation.parent}
-            colourway={revalidation.colourway}
-            query={context.query}
-            pincode={pincode}
-            inventory={inventory}
-            onBack={goBack}
-            onChoose={(productId) =>
-              productId === activeItem.product_id
-                ? setRoute({ name: "saved", itemId: activeItem.item_id })
-                : setToast("Opening an alternative is outside the reconnection flow")
-            }
-          />
         )}
       </View>
 
-      {route.name === "search" && suppressionReason ? (
+      {screen.name === "results" && suppressionReason ? (
         <View style={styles.footer}>
           <Text style={styles.footerText}>{SUPPRESSION_COPY[suppressionReason]}</Text>
         </View>
@@ -503,6 +576,7 @@ export default function App() {
           <Text style={styles.toastText}>{toast}</Text>
         </View>
       ) : null}
+      </AppShell>
     </SafeAreaView>
   );
 }

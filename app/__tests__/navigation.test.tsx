@@ -15,9 +15,23 @@ jest.mock("@/data/images", () => ({ CATALOG_IMAGES: new Proxy({}, { get: () => 1
 
 const waitForModule = () => waitFor(() => expect(screen.getByTestId("wishlist-module")).toBeTruthy());
 
+// Home is the entry point now (Task 12): App no longer opens directly on
+// search results, so every test here has to navigate there first, the same
+// way a participant would -- open search, type the scenario's own query,
+// submit. "mark taylor shirts" is scenarios[1].query with empty filters,
+// which is exactly what App initialises to on mount, so this reproduces the
+// same match deterministically.
+function renderAtResults() {
+  render(<App />);
+  fireEvent.press(screen.getByLabelText("Search for products"));
+  const input = screen.getByLabelText("Search for products");
+  fireEvent.changeText(input, "mark taylor shirts");
+  fireEvent(input, "submitEditing");
+}
+
 describe("navigation between search, saved product and compare", () => {
   it("opens the saved product from Buy from Wishlist and comes back intact", async () => {
-    render(<App />);
+    renderAtResults();
     await waitForModule();
     const query = screen.getByText("mark taylor shirts");
     expect(query).toBeTruthy();
@@ -33,7 +47,7 @@ describe("navigation between search, saved product and compare", () => {
   });
 
   it("opens compare from the secondary action and comes back intact", async () => {
-    render(<App />);
+    renderAtResults();
     await waitForModule();
 
     fireEvent.press(screen.getByTestId("wishlist-action-secondary"));
@@ -45,7 +59,7 @@ describe("navigation between search, saved product and compare", () => {
   });
 
   it("keeps the module alive across repeated round trips", async () => {
-    render(<App />);
+    renderAtResults();
     await waitForModule();
 
     // Three trips is past the per-item daily cap of two. If back-navigation
@@ -59,7 +73,7 @@ describe("navigation between search, saved product and compare", () => {
   });
 
   it("carries the saved size into the product screen, preselected", async () => {
-    render(<App />);
+    renderAtResults();
     await waitForModule();
     const savedChip = screen.getByText(/^Saved: /);
     const [, colour, size] = savedChip.props.children.join("").match(/Saved: (.+) · (.+)/)!;
@@ -70,7 +84,7 @@ describe("navigation between search, saved product and compare", () => {
   });
 
   it("reaches the recovery state when stock moves before the action", async () => {
-    render(<App />);
+    renderAtResults();
     await waitForModule();
 
     // The two-phase boundary: the module has already rendered this item as
@@ -83,7 +97,7 @@ describe("navigation between search, saved product and compare", () => {
   });
 
   it("reaches the withdrawn-product state, which offers no Buy at all", async () => {
-    render(<App />);
+    renderAtResults();
     await waitForModule();
 
     fireEvent.press(screen.getByLabelText("Sell out the whole product before the next action"));

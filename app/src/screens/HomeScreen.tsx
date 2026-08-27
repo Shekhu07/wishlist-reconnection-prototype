@@ -32,16 +32,6 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="home-screen">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Search for products"
-        onPress={onOpenSearch}
-        style={styles.searchBar}
-      >
-        <Text style={styles.searchGlyph}>⌕</Text>
-        <Text style={styles.searchPlaceholder}>Search</Text>
-      </Pressable>
-
       <View style={styles.tabRow}>
         {TABS.map((t) => (
           <Pressable
@@ -95,20 +85,6 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.surface },
   content: { paddingBottom: space.xl },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space.sm,
-    margin: space.lg,
-    paddingHorizontal: space.md,
-    height: 40,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: color.borderSubtle,
-    backgroundColor: color.surface,
-  },
-  searchGlyph: { fontSize: 18, color: color.textSecondary },
-  searchPlaceholder: { ...type.body, color: color.textSecondary },
   tabRow: {
     flexDirection: "row",
     gap: space.sm,

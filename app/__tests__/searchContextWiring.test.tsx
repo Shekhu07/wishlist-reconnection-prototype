@@ -6,6 +6,17 @@ jest.mock("@/data/images", () => ({ CATALOG_IMAGES: new Proxy({}, { get: () => 1
 
 const waitForModule = () => waitFor(() => expect(screen.getByTestId("wishlist-module")).toBeTruthy());
 
+// Home is the entry point now (Task 12): App no longer opens directly on
+// search results, so this test has to reach results the same way a
+// participant would first -- same helper as navigation.test.tsx's Ruling B.
+function renderAtResults() {
+  render(<App />);
+  fireEvent.press(screen.getByLabelText("Search for products"));
+  const input = screen.getByLabelText("Search for products");
+  fireEvent.changeText(input, "mark taylor shirts");
+  fireEvent(input, "submitEditing");
+}
+
 /**
  * Task 6 changed the search_performed effect's dependency from [scenario.id]
  * to [context.seq] specifically so that re-picking the same scenario still
@@ -22,14 +33,23 @@ const waitForModule = () => waitFor(() => expect(screen.getByTestId("wishlist-mo
  */
 describe("search_performed logs per search, not per scenario identity", () => {
   it("fires two search_performed events with distinct session_ids when the same scenario is re-picked", async () => {
-    const emitSpy = jest.spyOn(EventLog.prototype, "emit");
-
-    render(<App />);
+    // Home is the entry point now (Task 12), so reach results first -- this
+    // itself fires search_performed events (the initial mount, then the
+    // typed search) that are not what this test is about. The spy is
+    // installed only once we're already on results, so what it observes is
+    // exactly two consecutive re-picks of the currently active scenario
+    // (scenarios[1] = state_2_one_exact, "State 2: One exact match", which
+    // the typed search above does not change), isolating the regression Task
+    // 6 fixed: re-selecting an already-active scenario must still log a
+    // fresh, distinctly-sessioned search rather than being deduped by
+    // scenario identity.
+    renderAtResults();
     await waitForModule();
 
-    // App mounts on scenarios[1] = state_2_one_exact ("State 2: One exact
-    // match"), so re-pressing its own row in the StateSwitcher re-selects
-    // the currently active scenario.
+    const emitSpy = jest.spyOn(EventLog.prototype, "emit");
+
+    fireEvent.press(screen.getByLabelText("State 2: One exact match"));
+    await waitForModule();
     fireEvent.press(screen.getByLabelText("State 2: One exact match"));
     await waitForModule();
 
