@@ -234,8 +234,8 @@ token comment exists to protect.
 
 **Live.** Search field → search entry → submit → results with the module.
 Recent searches (session-scoped, seeded with the plan's demo queries). Brand
-cards → results for that brand and article type. ALL/MEN/WOMEN filtering the
-home grid. Apparel/Footwear/Accessories circles. Bag tab reading reconciled
+cards → results for that brand and article type. ALL/MEN/WOMEN/KIDS filtering
+the home grid. All five category circles. Bag tab reading reconciled
 state with a real badge. Under ₹999 and Luxury as genuine price filters
 (`price < 999`; Luxury is the top price decile, computed from the catalog at
 render). Back.
@@ -286,23 +286,47 @@ applied under `Platform.OS === "web"`. This gets verified in a browser at
 TDD, as the repo does it. New suites:
 
 - `shell.test.tsx` — tab switching, stack push/pop, back at a tab root, and
-  that the bottom nav's five destinations resolve to a screen (including the
-  empty ones, with their reason).
+  that the bottom nav's five destinations resolve to a screen. From 30 min is
+  the only one that resolves to a stub, and it names itself as one.
 - `searchEntry.test.tsx` — typing and submitting produces a new `SearchIntent`
   with `source: "user"`, a fresh `seq`, and a `search_performed` event; recent
   searches accumulate and Clear All empties them.
-- `homeFilters.test.ts` — MEN/WOMEN and the three populated categories filter
-  the grid; KIDS, Beauty and Home return empty **and** the screen reports the
-  reason rather than rendering nothing.
+- `homeFilters.test.ts` — every tab and every circle returns products, Kids
+  and Beauty included. No surface in the rail is empty once §3 lands, so the
+  test asserts a non-empty grid rather than a graceful zero.
+- `syntheticHome.test.ts` — the guard on §3.2. Every Home parent carries
+  `synthetic: true`; no non-Home parent does; no wishlist item, state fixture
+  or match result references one; and the gate, shadow and τ-sweep inputs
+  exclude them. This is the test that stops an invented product becoming
+  evidence.
 - `intent.test.ts` (extend) — a scenario selection and a typed search cannot
   both own the request; the scenario's authentication survives a typed query;
   scenario filters do not.
 - `bagScreen.test.tsx` — the badge equals the reconciled bag count and follows
   an add.
 
-**The regression guard:** all 247 existing tests pass unchanged. If
-`navigation.test.tsx`, `module.test.tsx` or the gate suites need editing to go
-green, the shell has reached into the match layer and the change is wrong.
+**The regression guard, in two halves**, because widening the catalog and
+building a shell are different kinds of risk:
+
+*The shell must not touch the match layer.* All 247 existing tests pass
+unchanged. If `navigation.test.tsx`, `module.test.tsx` or the gate suites need
+editing to go green, the shell has reached somewhere it should not have.
+
+*The catalog change is allowed to move measured numbers, and must be re-measured
+rather than assumed.* The gates measure the catalog, and the catalog is changing:
+`npm run gates`, `shadow`, `experiment` and `panel` are all re-run and their
+reports re-committed. One risk is specific and predictable:
+
+> **E2 (≥90% field-level parser accuracy) is the gate most likely to move.**
+> `intent.ts` builds its gazetteer from `parents` at runtime, so new article
+> types register themselves — but `claimSpan` reads spans of at most three
+> tokens and `"Perfume and Body Mist"` is four. A participant typing "perfume"
+> would fail to claim the field. The fix is head-noun variants in
+> `articleVariants()` ("perfume", "body mist", "deodorant"), and the gate is
+> re-run to confirm it rather than argued from the diff.
+
+A gate that moves for a legible reason is fine. A gate that moves and nobody
+noticed is what the reports exist to prevent.
 
 ## 7. Non-goals
 
@@ -326,5 +350,6 @@ suppression are per session. If a participant browses Luxury, then Under ₹999,
 then searches, the module may be capped before the search that matters.
 
 Options: leave them live and let the cap be part of what gets observed; or make
-them empty states like KIDS. The design currently takes the first, and the
-first is the one that could quietly cost a research session.
+them stubs like From 30 min. The design currently takes the first, and the first
+is the one that could quietly cost a research session. This is the only question
+in the spec still open.
