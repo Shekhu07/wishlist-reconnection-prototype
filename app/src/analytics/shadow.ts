@@ -51,21 +51,7 @@ export interface ShadowRun {
   ineligibleOnIdentity: number;
   tierMix: { tier1: number; tier2: number };
   sweep: TauSweepRow[];
-  latency: {
-    searchAlone: number;
-    searchWithMatch: number;
-    deltaMs: number;
-    /**
-     * Repeated delta measurements (searchWithMatch - searchAlone), one per
-     * extra sampling round, so the report can state what it actually
-     * observed about the delta's sign instead of asserting stability it
-     * never measured. In-process microsecond timings are noisy enough that
-     * a single run's sign is not evidence of anything on its own.
-     */
-    deltaSamplesMs: number[];
-    /** How many of deltaSamplesMs share the sign of deltaMs. */
-    signAgreement: number;
-  };
+  latency: { searchAlone: number; searchWithMatch: number; deltaMs: number };
 }
 
 const QUERY_MODALITIES: Modality[] = ["text", "voice", "image"];
@@ -216,22 +202,14 @@ export function runShadow(
   timeSearch(true);
   const searchAlone = timeSearch(false);
   const searchWithMatch = timeSearch(true);
+  // At this magnitude (sub-millisecond, in-process) the sign of this delta
+  // is dominated by scheduler/JIT noise -- an earlier version of this file
+  // sampled it repeatedly to report "N of M runs positive", which produced a
+  // different, contradictory finding depending on which run got committed.
+  // Repetition can't fix that; it only relocates the coin flip. Report the
+  // magnitude only, which is what the S8 gate (search does not wait on
+  // matching) actually needs.
   const deltaMs = searchWithMatch - searchAlone;
-
-  // The delta above is a single in-process sample, sub-millisecond, and
-  // noisy -- its sign alone is not evidence that the cost is "consistently
-  // positive". Take a handful more rounds so the report can state what was
-  // actually observed about sign stability instead of asserting it.
-  const EXTRA_LATENCY_ROUNDS = 6;
-  const deltaSamplesMs: number[] = [];
-  for (let round = 0; round < EXTRA_LATENCY_ROUNDS; round += 1) {
-    deltaSamplesMs.push(timeSearch(true) - timeSearch(false));
-  }
-  // Count of *all* runs (the primary measurement plus the extra rounds) that
-  // share the primary run's sign, out of the total number of runs -- what
-  // the report prose below actually quotes.
-  const signAgreement =
-    1 + deltaSamplesMs.filter((sample) => Math.sign(sample) === Math.sign(deltaMs)).length;
 
   return {
     evaluated,
@@ -244,8 +222,6 @@ export function runShadow(
       searchAlone,
       searchWithMatch,
       deltaMs,
-      deltaSamplesMs,
-      signAgreement,
     },
   };
 }

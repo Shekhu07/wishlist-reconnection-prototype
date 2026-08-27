@@ -23,15 +23,17 @@ Matching ran 1,092 times across three modalities and rendered nothing.
 ### Search latency delta — the S8 gate
 
 Search alone: **0.06 ms** per query.
-Search with matching in the same tick: **0.09 ms**.
-Delta: **+0.03 ms** per query, against a 120 ms budget.
+Search with matching in the same tick: **0.08 ms**.
+Delta: **+0.01 ms** per query, against a 120 ms budget.
 
-That delta's sign was **not** stable across the 7 in-process runs sampled here (only 5 of 7 shared the sign shown above, the rest flipped) — treat only the magnitude, not the sign, as
-the finding here: at this scale the delta is indistinguishable from
-measurement noise, which is itself consistent with the architecture --
+At this magnitude the delta is indistinguishable from measurement
+noise -- in-process JavaScript timing at the sub-millisecond scale is
+dominated by scheduler and JIT variance, and its sign is not a finding
+regardless of which way a given run happens to fall. What is stable is
+the magnitude: it stays far inside the 120 ms budget, and the
+architecture gives no mechanism for the true cost to be otherwise --
 §3.1 fans search and matching out in parallel, and the module renders
-separately from the grid, so there is no mechanism for a stable cost to
-come from.
+separately from the grid.
 
 So read this as an **upper bound** on combined cost, not as the delta a
 user would experience. The S8 gate — zero measurable delta to *search

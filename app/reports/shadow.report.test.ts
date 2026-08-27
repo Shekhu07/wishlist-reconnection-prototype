@@ -67,31 +67,25 @@ describe("shadow-mode report", () => {
           `| ${row.tau.toFixed(2)} | ${(row.opportunityRate * 100).toFixed(1)}% | ${row.precision === null ? "n/a" : `${(row.precision * 100).toFixed(1)}%`} | ${row.meanConfidence.toFixed(3)} |`
       );
 
-    // The S8 latency prose used to assert "consistently positive across
-    // runs" unconditionally -- true or false depending on nothing but which
-    // way a sub-millisecond in-process sample happened to fall. Measure it
-    // instead: run the delta a handful more times and say what fraction
-    // actually shared the primary run's sign.
-    const totalLatencyRuns = shadow.latency.deltaSamplesMs.length + 1;
-    const latencySignStable = shadow.latency.signAgreement === totalLatencyRuns;
-    const signStabilityLine = latencySignStable
-      ? `That delta's sign held across all ${totalLatencyRuns} in-process runs sampled here (${shadow.latency.signAgreement} of ${totalLatencyRuns} ${shadow.latency.deltaMs >= 0 ? "positive" : "negative"}) —`
-      : `That delta's sign was **not** stable across the ${totalLatencyRuns} in-process runs sampled here (only ${shadow.latency.signAgreement} of ${totalLatencyRuns} shared the sign shown above, the rest flipped) — treat only the magnitude, not the sign, as`;
-    const costParagraph = latencySignStable
-      ? [
-          signStabilityLine,
-          "it is the real CPU cost of doing both pieces of work in one loop. What it",
-          "is not is what the architecture does: §3.1 fans search and matching out in",
-          "parallel, and the module renders separately from the grid.",
-        ]
-      : [
-          signStabilityLine,
-          "the finding here: at this scale the delta is indistinguishable from",
-          "measurement noise, which is itself consistent with the architecture --",
-          "§3.1 fans search and matching out in parallel, and the module renders",
-          "separately from the grid, so there is no mechanism for a stable cost to",
-          "come from.",
-        ];
+    // An earlier version of this paragraph reported "N of 7 runs positive"
+    // by sampling the delta repeatedly and printing what that particular
+    // sample happened to show. At this magnitude (sub-millisecond,
+    // in-process) the sign is dominated by scheduler/JIT noise, so that
+    // number changed -- and reversed its own conclusion -- between
+    // consecutive, code-identical runs. Repetition doesn't fix a
+    // coin flip; it just relocates it. This paragraph is now a fixed
+    // statement about the measurement's resolution, true on every run,
+    // rather than a claim about any one run's sign.
+    const costParagraph = [
+      "At this magnitude the delta is indistinguishable from measurement",
+      "noise -- in-process JavaScript timing at the sub-millisecond scale is",
+      "dominated by scheduler and JIT variance, and its sign is not a finding",
+      "regardless of which way a given run happens to fall. What is stable is",
+      "the magnitude: it stays far inside the 120 ms budget, and the",
+      "architecture gives no mechanism for the true cost to be otherwise --",
+      "§3.1 fans search and matching out in parallel, and the module renders",
+      "separately from the grid.",
+    ];
 
     const lines = [
       "# Shadow-mode read-out (Phase 3)",
@@ -215,23 +209,17 @@ describe("shadow-mode report", () => {
     expect(Math.abs(shadow.latency.deltaMs)).toBeLessThan(1);
     expect(cohort.b.rate.value! - cohort.control.rate.value!).toBeGreaterThan(0);
 
-    // A magnitude guard alone let the report assert sign stability it had
-    // never measured -- the prose said "consistently positive across runs"
-    // while the single measured delta was negative, and nothing failed.
-    // Assert the emitted prose is consistent with what was actually
-    // observed about the sign, not just that the number is small.
-    expect(shadow.latency.signAgreement).toBeGreaterThanOrEqual(1);
-    expect(shadow.latency.signAgreement).toBeLessThanOrEqual(totalLatencyRuns);
-    if (latencySignStable) {
-      expect(lines).toContain(signStabilityLine);
-      expect(
-        lines.some((line) => /sign held across all/.test(line))
-      ).toBe(true);
-      expect(lines.some((line) => /was \*\*not\*\* stable/.test(line))).toBe(false);
-    } else {
-      expect(lines).toContain(signStabilityLine);
-      expect(lines.some((line) => /was \*\*not\*\* stable/.test(line))).toBe(true);
-      expect(lines.some((line) => /sign held across all/.test(line))).toBe(false);
-    }
+    // A magnitude guard alone previously let the report assert sign
+    // stability it had never actually measured -- and a later attempt to
+    // "measure" it by repeated sampling just printed a different,
+    // contradictory finding depending on which run got committed. Neither
+    // failure would trip on |deltaMs| < 1 alone. Assert directly that the
+    // committed prose makes no claim about the delta's direction/stability
+    // in either direction -- only the magnitude, which is what's stable.
+    const latencySection = lines.join(" ").replace(/\s+/g, " ");
+    expect(latencySection).not.toMatch(/consistently positive/i);
+    expect(latencySection).not.toMatch(/sign (held|was)/i);
+    expect(latencySection).not.toMatch(/\d+ of \d+ (runs|positive|negative)/i);
+    expect(latencySection).toMatch(/indistinguishable from measurement noise/i);
   });
 });
