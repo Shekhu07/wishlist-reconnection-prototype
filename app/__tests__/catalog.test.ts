@@ -1,6 +1,8 @@
+import fs from "fs";
+import path from "path";
 import catalogJson from "@/data/catalog.json";
-import type { Catalog } from "@/data/types";
 import { CATALOG_IMAGES } from "@/data/images";
+import type { Catalog } from "@/data/types";
 
 const catalog = catalogJson as unknown as Catalog;
 
@@ -64,9 +66,16 @@ describe("the demo catalog covers the shell's category rail", () => {
   );
 
   it("has an image for every colourway", () => {
+    const imagesDir = path.join(__dirname, "../assets/catalog/images");
     const missing = catalog.parents
       .flatMap((parent) => parent.colourways)
-      .filter((colourway) => CATALOG_IMAGES[colourway.product_id] === undefined)
+      .filter((colourway) => {
+        // Check both that CATALOG_IMAGES key exists and file is present
+        const catalogKey = CATALOG_IMAGES[colourway.product_id] !== undefined;
+        const filePath = path.join(imagesDir, `${colourway.product_id}.jpg`);
+        const fileExists = fs.existsSync(filePath);
+        return !catalogKey || !fileExists;
+      })
       .map((colourway) => colourway.product_id);
     expect(missing).toEqual([]);
   });
