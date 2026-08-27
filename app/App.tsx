@@ -29,6 +29,11 @@ import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScr
 import { StateSwitcher } from "@/harness/StateSwitcher";
 import { color, space, type } from "@/design/tokens";
 import { useWishlistMatch, type SuppressionReason } from "@/state/useWishlistMatch";
+import {
+  contextFromScenario,
+  requestFrom,
+  type SearchContext,
+} from "@/state/searchContext";
 
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
@@ -88,6 +93,10 @@ type Route =
 
 export default function App() {
   const [scenario, setScenario] = useState<Scenario>(scenarios[1] ?? scenarios[0]);
+  const [seq, setSeq] = useState(1);
+  const [context, setContext] = useState<SearchContext>(() =>
+    contextFromScenario(scenarios[1] ?? scenarios[0], 1)
+  );
   const [latencyMs, setLatencyMs] = useState(60);
   const [swapFills, setSwapFills] = useState(false);
   const [showWishlistInSearch, setShowWishlistInSearch] = useState(true);
@@ -133,20 +142,14 @@ export default function App() {
   const inventory = useMemo(() => new InventorySimulator(catalog), []);
 
   const request: MatchRequest = useMemo(
-    () => ({
-      query: scenario.query,
-      modality: scenario.modality,
-      filters: scenario.filters as MatchRequest["filters"],
-      delivery_pincode: pincode,
-      session_id: `sess_${scenario.id}`,
-    }),
-    [scenario, pincode]
+    () => requestFrom(context, pincode),
+    [context, pincode]
   );
 
   const { response, suppressionReason, dismiss, undo, rerun } = useWishlistMatch(
     client,
     request,
-    scenario.authenticated
+    context.authenticated
   );
 
   // Skip the first pass: on mount the match has already run once, and firing a
@@ -170,24 +173,25 @@ export default function App() {
     client.dismiss(request);
     rerun();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenario.id]);
+  }, [context.seq]);
 
-  // Section 7's search funnel. Emitted per view of a scenario, which is what a
-  // search is in this harness.
+  // Section 7's search funnel. Emitted per search -- keyed on context.seq
+  // rather than scenario.id so a typed search (or re-picking the same
+  // scenario) still logs, instead of being silently dropped from the funnel.
   useEffect(() => {
     events.emit({
       type: "search_performed",
       ts: catalog.today,
       user_id: wishlist.user_id,
-      session_id: `sess_${scenario.id}`,
+      session_id: `sess_${context.seq}`,
       arm: client.arm,
-      query: scenario.query,
-      modality: scenario.modality,
+      query: context.query,
+      modality: context.modality,
       result_count: 0,
     });
     note();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenario.id]);
+  }, [context.seq]);
 
   // MatchClient writes match_evaluated and module_rendered straight to the log
   // without going through React, so the counter has to be refreshed whenever a
@@ -246,6 +250,8 @@ export default function App() {
         onSelect={(next) => {
           client.suppression.reset();
           setScenario(next);
+          setSeq((n) => n + 1);
+          setContext(contextFromScenario(next, seq + 1));
           goBack();
         }}
         latencyMs={latencyMs}
@@ -337,7 +343,7 @@ export default function App() {
         {route.name === "search" || !activeItem || !revalidation ? (
           <SearchResultsScreen
             catalog={catalog}
-            query={scenario.query}
+            query={context.query}
             matchResponse={response}
             onDismiss={() => {
               dismiss();
@@ -347,7 +353,7 @@ export default function App() {
                 user_id: wishlist.user_id,
                 session_id: request.session_id,
                 arm: client.arm,
-                query_family: client.familyOf(scenario.query),
+                query_family: client.familyOf(context.query),
                 skus: response?.matches.map((m) => m.sku) ?? [],
               });
               note();
@@ -470,7 +476,7 @@ export default function App() {
             item={activeItem}
             parent={revalidation.parent}
             colourway={revalidation.colourway}
-            query={scenario.query}
+            query={context.query}
             pincode={pincode}
             inventory={inventory}
             onBack={goBack}
