@@ -14,17 +14,19 @@ export function useSyncedHistory(
   query: string,
   onPopState: (nav: Nav) => void
 ) {
-  const latest = useRef(nav);
-  latest.current = nav;
+  // Read from the long-lived popstate listener below (mount effect, [] deps),
+  // which would otherwise close over the first render's onPopState forever.
+  const onPopStateRef = useRef(onPopState);
+  onPopStateRef.current = onPopState;
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return undefined;
     const handler = (event: PopStateEvent) => {
       const state = event.state as { nav?: Nav } | null;
-      if (state?.nav) onPopState(state.nav);
+      if (state?.nav) onPopStateRef.current(state.nav);
     };
     window.addEventListener("popstate", handler);
-    window.history.replaceState({ nav: latest.current }, "", pathFor(latest.current, query));
+    window.history.replaceState({ nav }, "", pathFor(nav, query));
     return () => window.removeEventListener("popstate", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

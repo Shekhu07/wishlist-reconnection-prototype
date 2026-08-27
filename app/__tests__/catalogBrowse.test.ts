@@ -47,13 +47,18 @@ describe("browsing the catalog", () => {
     expect(cheapest).toBeGreaterThan(999);
 
     // The brief's ">999" check alone can't tell a correct top-decile cut from
-    // an off-by-one bucket: with this catalog (190 parents), the true 90th
-    // percentile floor (index 171 of the sorted first-colourway prices) is
-    // 3659, giving 19 tiles; the adjacent bucket (index 169) is 3399, giving
-    // 21. Both satisfy "> 999", so pin the actual boundary values, computed
-    // directly from app/src/data/catalog.json, so a shifted bucket fails.
-    expect(cheapest).toBe(3659);
-    expect(luxe.length).toBe(19);
+    // an off-by-one bucket -- both satisfy "> 999" on this catalog. Recompute
+    // the expected boundary independently here (not pinned literals) so the
+    // test still catches a shifted bucket after a catalog regeneration, as
+    // long as byPrice's maths stays correct.
+    const allPrices = catalog.parents
+      .filter((parent) => parent.colourways.length > 0)
+      .map((parent) => parent.colourways[0].price)
+      .sort((a, b) => a - b);
+    const expectedFloor = allPrices[Math.floor(allPrices.length * 0.9)];
+    const expectedCount = allPrices.filter((price) => price >= expectedFloor).length;
+    expect(cheapest).toBe(expectedFloor);
+    expect(luxe.length).toBe(expectedCount);
   });
 
   it("shows one tile per product in the brand rail", () => {
