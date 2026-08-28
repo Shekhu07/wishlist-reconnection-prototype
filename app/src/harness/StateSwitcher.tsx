@@ -40,6 +40,8 @@ export interface StateSwitcherProps {
   onPincodeChange: (pincode: string) => void;
   onSellOutSize: () => void;
   onSellOutProduct: () => void;
+  /** Sells out without bumping stockVersion, leaving the rendered card stale. */
+  onSellOutSizeSilently: () => void;
   onResetStock: () => void;
   stockChanged: boolean;
   /** Section 4.16: the per-user control, so it can be shown working. */
@@ -92,6 +94,7 @@ export function StateSwitcher({
   onPincodeChange,
   onSellOutSize,
   onSellOutProduct,
+  onSellOutSizeSilently,
   onResetStock,
   stockChanged,
   showWishlistInSearch,
@@ -218,6 +221,21 @@ export function StateSwitcher({
                 style={styles.chip}
               >
                 <Text style={styles.chipText}>Sell out product</Text>
+              </Pressable>
+              {/* The one control that does *not* announce the change to React.
+                  Everything else here bumps stockVersion, so the screen
+                  re-renders into a recovery state before the user can tap --
+                  which means the binding read at the action boundary is never
+                  the thing that catches it, and boundaryBlockRate could only
+                  ever read zero. This leaves the card stale on purpose, so the
+                  two-phase disagreement is reachable and measurable. */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sell out the saved size without refreshing the screen"
+                onPress={onSellOutSizeSilently}
+                style={styles.chip}
+              >
+                <Text style={styles.chipText}>Sell out silently</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"

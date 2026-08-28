@@ -1,5 +1,13 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { ADVISORY_COPY, RECOVERY_COPY } from "@/copy/bundle";
+import {
+  ADDED_DUPLICATE,
+  ADDED_FROM_WISHLIST,
+  ADVISORY_COPY,
+  AFTER_ADD_KEEP_BROWSING,
+  AFTER_ADD_KEEP_COMPARING,
+  AFTER_ADD_VIEW_BAG,
+  RECOVERY_COPY,
+} from "@/copy/bundle";
 import { Button } from "@/components/Button";
 import { ConfidencePanel } from "@/components/ConfidencePanel";
 import { signalsFor } from "@/confidence/signals";
@@ -31,6 +39,13 @@ export interface SavedProductScreenProps {
   selectedColour?: string;
   onConfidenceExpand?: () => void;
   onSignalExpand?: (key: string) => void;
+  /**
+   * Set once the item is in the bag. "duplicate" is its own outcome rather
+   * than a failure -- FR-11 exists to stop a second copy being stacked
+   * silently, and telling the user it was already there is the whole point.
+   */
+  added?: "added" | "duplicate" | null;
+  onAfterAdd?: (next: "bag" | "compare" | "browse") => void;
 }
 
 export function SavedProductScreen({
@@ -46,6 +61,8 @@ export function SavedProductScreen({
   selectedColour,
   onConfidenceExpand,
   onSignalExpand,
+  added = null,
+  onAfterAdd,
 }: SavedProductScreenProps) {
   const { parent, colourway, current, blocking, advisories, item } = result;
   const activeColour = selectedColour ?? item.colour;
@@ -227,9 +244,49 @@ export function SavedProductScreen({
           })}
         </View>
 
-        {/* No dead-end Buy: when nothing can be bought the recovery block above
-            carries the next step and this button is not drawn at all. */}
-        {purchasable ? (
+        {/* Improvement 3, steps 6 and 7. The add is a decision point, not a
+            notification: the user has just committed and now has three
+            genuinely different next moves. A toast that vanishes in 2.6
+            seconds cannot carry those, and cannot be reached at all by
+            someone using a screen reader or reading slowly. */}
+        {added ? (
+          <View
+            style={styles.added}
+            testID="added-confirmation"
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            <Text style={styles.addedTitle}>
+              {added === "duplicate" ? ADDED_DUPLICATE : ADDED_FROM_WISHLIST}
+            </Text>
+            <Text style={styles.addedBody}>{selectedVariant}</Text>
+            <View style={styles.addedActions}>
+              <Button
+                testID="after-add-bag"
+                filled
+                label={AFTER_ADD_VIEW_BAG}
+                onPress={() => onAfterAdd?.("bag")}
+              />
+              <Button
+                testID="after-add-compare"
+                filled={false}
+                label={AFTER_ADD_KEEP_COMPARING}
+                onPress={() => onAfterAdd?.("compare")}
+              />
+            </View>
+            <Pressable
+              testID="after-add-browse"
+              accessibilityRole="button"
+              accessibilityLabel={AFTER_ADD_KEEP_BROWSING}
+              onPress={() => onAfterAdd?.("browse")}
+              style={styles.keepBrowsing}
+            >
+              <Text style={styles.keepBrowsingText}>{AFTER_ADD_KEEP_BROWSING}</Text>
+            </Pressable>
+          </View>
+        ) : /* No dead-end Buy: when nothing can be bought the recovery block
+              above carries the next step and this button is not drawn. */
+        purchasable ? (
           <View style={styles.buyRow}>
             <Button
               testID="move-to-bag"
@@ -320,6 +377,24 @@ const styles = StyleSheet.create({
     borderColor: color.borderSubtle,
   },
   buyRow: { flexDirection: "row", marginTop: space.lg },
+  added: {
+    marginTop: space.lg,
+    padding: space.md,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+    backgroundColor: color.surfaceMuted,
+  },
+  addedTitle: { ...type.body, fontSize: 14, fontWeight: "700", color: color.textPrimary },
+  addedBody: { ...type.body, color: color.textSecondary, marginTop: 2 },
+  addedActions: { flexDirection: "row", gap: space.sm, marginTop: space.md },
+  keepBrowsing: {
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: space.xs,
+  },
+  keepBrowsingText: { ...type.body, fontWeight: "700", color: color.textSecondary },
   size: {
     minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,

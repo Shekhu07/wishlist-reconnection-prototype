@@ -6,6 +6,7 @@ import {
   type ModuleAction,
   type ModuleDismissed,
   type ModuleRendered,
+  type MoveToBagAttempted,
   type MovedToBag,
   type OrderPlaced,
   type SearchPerformed,
@@ -135,6 +136,27 @@ export function dismissalRate(events: readonly AnalyticsEvent[], arm?: Experimen
 export function duplicateAddRate(events: readonly AnalyticsEvent[], arm?: ExperimentArm): Rate {
   const adds = typed<MovedToBag>(events, "moved_to_bag", arm);
   return rate(adds.filter((event) => event.duplicate).length, adds.length);
+}
+
+/**
+ * How often the binding read at the action boundary contradicted the read the
+ * user was shown, and blocked an add the screen had just offered.
+ *
+ * Two-phase freshness (section 1.3) is the reason the revalidation exists at
+ * all, and until this metric there was no way to tell whether it ever fired in
+ * practice -- successes were logged and blocks were not, so the mechanism could
+ * have been dead code and every number would have looked identical.
+ *
+ * A rising rate is not automatically bad: it means stock is genuinely moving
+ * under users, which is what the recovery states are for. A rate of exactly
+ * zero over meaningful volume is the suspicious reading.
+ */
+export function boundaryBlockRate(events: readonly AnalyticsEvent[], arm?: ExperimentArm): Rate {
+  const attempts = typed<MoveToBagAttempted>(events, "move_to_bag_attempted", arm);
+  const blocked = attempts.filter(
+    (event) => event.result === "blocked_variant_unavailable"
+  );
+  return rate(blocked.length, attempts.length);
 }
 
 /** Fashion-specific quality: did a blocked variant end in recovery or in loss? */

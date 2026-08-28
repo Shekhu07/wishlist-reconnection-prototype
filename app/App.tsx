@@ -128,6 +128,14 @@ export default function App() {
   // DC-06. Null means "the colour they saved", which is what the screen opens
   // on -- the saved variant is the default, never a replacement for it.
   const [selectedColour, setSelectedColour] = useState<string | null>(null);
+  // Improvement 3's post-add confirmation, which replaces the Move to Bag
+  // button rather than flashing past as a toast.
+  const [added, setAdded] = useState<"added" | "duplicate" | null>(null);
+  // Improvement 3, step 8: the query survives a return from the saved product
+  // via SearchContext, but the scroll position did not -- the results screen
+  // unmounts on navigation and remounts at the top. Held here so it outlives
+  // the unmount, and reset per search, because a new query is a new page.
+  const resultsOffset = useRef(0);
   // Stock lives outside React, so a change has to be announced to re-render.
   const [stockVersion, setStockVersion] = useState(0);
   // commerce.bag.items is mutated in place by addToBag, which is imperative,
@@ -202,6 +210,10 @@ export default function App() {
   // rather than scenario.id so a typed search (or re-picking the same
   // scenario) still logs, instead of being silently dropped from the funnel.
   useEffect(() => {
+    // A new query is a new page, so the remembered scroll position does not
+    // carry across it -- restoring one search's offset onto another's results
+    // would land the user somewhere arbitrary.
+    resultsOffset.current = 0;
     events.emit({
       type: "search_performed",
       ts: catalog.today,
@@ -358,6 +370,7 @@ export default function App() {
     setNav((prev) => pop(prev));
     setSelectedSize(null);
     setSelectedColour(null);
+    setAdded(null);
   }, []);
 
   // Picking a scenario from the harness has to land on its results
@@ -374,6 +387,7 @@ export default function App() {
     });
     setSelectedSize(null);
     setSelectedColour(null);
+    setAdded(null);
   }, []);
 
   const noteStockChange = () => setStockVersion((version) => version + 1);
@@ -461,6 +475,16 @@ export default function App() {
           inventory.sellOut(target.sku);
           noteStockChange();
           setToast(`Size ${target.size} is now out of stock. Tap Buy from Wishlist.`);
+        }}
+        onSellOutSizeSilently={() => {
+          const target = activeItem ?? firstMatchItem;
+          if (!target) return setToast("No saved item in view to sell out");
+          // Deliberately no noteStockChange(): the point is to leave the
+          // rendered card stale, so the binding read at the tap is what catches
+          // it rather than a re-render beating the user to it. Without this,
+          // boundaryBlockRate could only ever read zero.
+          inventory.sellOut(target.sku);
+          setToast("Sold out silently. The card is stale — now tap Move to Bag.");
         }}
         onSellOutProduct={() => {
           const target = activeItem ?? firstMatchItem;
@@ -597,9 +621,56 @@ export default function App() {
               onSignalExpand={(signal) =>
                 emitConfidence("confidence_signal_expanded", { signal_type: signal })
               }
+              added={added}
+              onAfterAdd={(next) => {
+                setAdded(null);
+                if (next === "bag") return setNav((prev) => switchTab(prev, "bag"));
+                if (next === "compare") {
+                  return setNav((prev) =>
+                    push(prev, { name: "compare", itemId: activeItem.item_id })
+                  );
+                }
+                goBack();
+              }}
               onMoveToBag={() => {
                 const size = selectedSize ?? activeItem.size;
+                emitConfidence("move_to_bag_from_confidence", {});
+                // The binding read is re-taken here, not trusted from render.
+                // Stock can move while the user reads the confidence panel,
+                // and improvement 3 asks for a recovery state rather than a
+                // generic error when it does.
+                const colour = selectedColour ?? activeItem.colour;
+                const fresh = revalidate(activeItem, catalog, inventory, pincode);
+                const freshColourway =
+                  fresh?.parent.colourways.find((c) => c.colour === colour) ?? fresh?.colourway;
+                const stillStocked = freshColourway
+                  ? (fresh?.sizesByColour[freshColourway.product_id] ?? []).includes(size)
+                  : false;
+                const attempt = (
+                  result: "added" | "duplicate" | "blocked_variant_unavailable"
+                ) =>
+                  events.emit({
+                    type: "move_to_bag_attempted",
+                    ts: catalog.today,
+                    user_id: wishlist.user_id,
+                    session_id: request.session_id,
+                    arm: client.arm,
+                    sku: activeItem.sku,
+                    size,
+                    colour,
+                    result,
+                    revalidation_changed: !stillStocked,
+                  });
+
+                if (!stillStocked) {
+                  attempt("blocked_variant_unavailable");
+                  noteStockChange();
+                  note();
+                  setToast("That variant sold out while you were deciding — see the recovery state");
+                  return;
+                }
                 const duplicate = wouldDuplicate(activeItem, commerce);
+                attempt(duplicate ? "duplicate" : "added");
                 // FR-11: never silently stack a second copy of something the
                 // module has just told the user is already in their bag.
                 if (!duplicate) addToBag(activeItem, size, commerce);
@@ -616,11 +687,9 @@ export default function App() {
                   duplicate,
                 });
                 note();
-                setToast(
-                  duplicate
-                    ? "Already in your Bag — not added twice"
-                    : `Moved to Bag: ${activeItem.colour} · ${size}, revalidated at the boundary`
-                );
+                // The confirmation is a surface on the screen now, not a toast:
+                // it carries three real next moves and has to outlive 2.6s.
+                setAdded(duplicate ? "duplicate" : "added");
                 restage();
               }}
               onRecoveryPrimary={() => {
@@ -693,6 +762,10 @@ export default function App() {
             onDismiss={() => dismissModule("Dismissal logged as a relevance signal")}
             onUndo={undo}
             externalDismiss={externalDismiss}
+            scrollOffset={resultsOffset.current}
+            onScrollOffset={(offset) => {
+              resultsOffset.current = offset;
+            }}
             onWhy={() => {
               setWhyOpen(true);
               const item = firstMatchItem;

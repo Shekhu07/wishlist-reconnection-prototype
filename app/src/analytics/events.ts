@@ -109,6 +109,28 @@ export interface ConfidenceInteraction extends BaseEvent {
   to?: string;
 }
 
+/**
+ * Every attempt to move a saved item to the bag, including the ones that do
+ * not get there (improvement 3's `move_to_bag_clicked`, `move_to_bag_result`
+ * and `saved_variant_revalidated`, which describe one moment and so are one
+ * event).
+ *
+ * `moved_to_bag` records successes, which makes it the wrong place to learn
+ * how often two-phase freshness actually catches something: a blocked add
+ * emitted nothing at all, so the binding read's whole reason for existing was
+ * unmeasurable. `boundaryBlockRate` in metrics.ts reads this.
+ */
+export interface MoveToBagAttempted extends BaseEvent {
+  type: "move_to_bag_attempted";
+  sku: string;
+  /** The variant actually being bought, which may deviate from the saved one. */
+  size: string;
+  colour: string;
+  result: "added" | "duplicate" | "blocked_variant_unavailable";
+  /** True when the read at the tap disagreed with the read at render. */
+  revalidation_changed: boolean;
+}
+
 export interface VariantRecoveryShown extends BaseEvent {
   type: "variant_recovery_shown";
   sku: string;
@@ -152,6 +174,7 @@ export type AnalyticsEvent =
   | ModuleDismissed
   | ModuleAction
   | ConfidenceInteraction
+  | MoveToBagAttempted
   | VariantRecoveryShown
   | VariantRecoveryResolved
   | MovedToBag

@@ -254,6 +254,23 @@ export const SIGNAL_SOURCE: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ *
+ * Improvement 3 -- what happens after Move to Bag
+ * ------------------------------------------------------------------ */
+
+/**
+ * The provenance line the edge-case table asks for: "Added to Bag from
+ * Wishlist" and "Added to Bag from comparison" are different sentences,
+ * because where the decision came from is the thing this feature measures.
+ */
+export const ADDED_FROM_WISHLIST = "Added to Bag from Wishlist";
+export const ADDED_FROM_COMPARISON = "Added to Bag from comparison";
+export const ADDED_DUPLICATE = "Already in your Bag — not added twice";
+
+export const AFTER_ADD_VIEW_BAG = "View Bag";
+export const AFTER_ADD_KEEP_COMPARING = "Continue comparing";
+export const AFTER_ADD_KEEP_BROWSING = "Keep browsing";
+
+/* ------------------------------------------------------------------ *
  * DC-02 -- "Why this appeared?"
  * ------------------------------------------------------------------ */
 

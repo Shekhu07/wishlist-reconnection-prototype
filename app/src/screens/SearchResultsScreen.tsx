@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { MatchResponse } from "@/match/contract";
 import { WishlistModule } from "@/components/WishlistModule";
@@ -34,6 +34,17 @@ export interface SearchResultsScreenProps {
   /** Bumped when a dismissal is raised from the DC-02 sheet. */
   externalDismiss?: number;
   onAction: (action: "primary" | "secondary", sku: string) => void;
+  /**
+   * Where the results were scrolled to when the user last left them, and a
+   * setter to record it.
+   *
+   * Improvement 3 asks that the search query *and result position* survive a
+   * return from the saved product. The query already did, via SearchContext;
+   * the position did not, because this screen is unmounted on navigation and
+   * remounts at the top. Owned by App so it outlives the unmount.
+   */
+  scrollOffset?: number;
+  onScrollOffset?: (offset: number) => void;
   swapFills?: boolean;
 }
 
@@ -47,6 +58,8 @@ export function SearchResultsScreen({
   onWhy,
   externalDismiss,
   onAction,
+  scrollOffset = 0,
+  onScrollOffset,
   swapFills,
 }: SearchResultsScreenProps) {
   const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
@@ -59,11 +72,24 @@ export function SearchResultsScreen({
   const columnWidth = Math.min(width, FRAME_MAX_WIDTH) / 2 - space.md - space.xs * 2;
   const tile = { width: columnWidth, height: Math.round((columnWidth * 4) / 3) };
 
+  const scroller = useRef<ScrollView | null>(null);
+
+  // Restored after the content has been laid out, or there is nothing to
+  // scroll to yet and the offset is silently clamped to zero.
+  const restore = useCallback(() => {
+    if (scrollOffset > 0) scroller.current?.scrollTo({ y: scrollOffset, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <ScrollView
+      ref={scroller}
       style={styles.screen}
       contentContainerStyle={styles.content}
       testID="search-results"
+      onContentSizeChange={restore}
+      onScroll={(event) => onScrollOffset?.(event.nativeEvent.contentOffset.y)}
+      scrollEventThrottle={16}
     >
       <View style={styles.searchBar}>
         <Text style={styles.searchGlyph}>⌕</Text>
