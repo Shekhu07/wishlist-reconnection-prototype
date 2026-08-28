@@ -13,6 +13,7 @@ import {
   EventLog,
   type CompareEventName,
   type ConfidenceEventName,
+  type PairingEventName,
   type ExperimentArm,
 } from "@/analytics/events";
 import { PreferenceStore } from "@/preferences/store";
@@ -25,7 +26,7 @@ import {
   type Orders,
   type SavedForLater,
 } from "@/commerce/reconcile";
-import { destinationFor } from "@/match/contract";
+import { destinationFor, type Match } from "@/match/contract";
 import { RAMP_STEPS } from "@/experiment/assignment";
 import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
@@ -39,6 +40,7 @@ import {
 import { TagStore, surfacedCopy, type IntentTag } from "@/wishlist/tags";
 import { completeTheLook } from "@/wishlist/lookCompletion";
 import { LookStrip } from "@/components/LookStrip";
+import { LOOK_HEADING_PDP } from "@/copy/bundle";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ResumeSheet } from "@/components/ResumeSheet";
 import { BagScreen } from "@/screens/BagScreen";
@@ -46,6 +48,7 @@ import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { AlternativeProductScreen } from "@/screens/AlternativeProductScreen";
+import { ProductScreen } from "@/screens/ProductScreen";
 import { SavedProductScreen } from "@/screens/SavedProductScreen";
 import { WhySheet } from "@/components/WishlistModule/WhySheet";
 import { COMPARISON_KEPT, RETURN_TO_COMPARISON, START_FRESH_DONE } from "@/copy/bundle";
@@ -361,6 +364,98 @@ export default function App() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [dismiss, client, context.query, request.session_id, response]
+  );
+
+  /**
+   * The typeahead's saved group.
+   *
+   * Goes through the same MatchClient as the module, so it inherits the auth
+   * gate, the suppression rules, the frequency caps, the circuit breaker and
+   * the 250 ms fail-open. If it does not resolve, `typeaheadSaved` stays empty
+   * and the dropdown simply shows organic suggestions -- which is C-3 applied
+   * to the surface where latency is most visible, between two keystrokes.
+   */
+  const pairingReported = useRef(new Set<string>());
+
+  const [typeaheadQuery, setTypeaheadQuery] = useState("");
+  const [typeaheadSaved, setTypeaheadSaved] = useState<Match[]>([]);
+
+  useEffect(() => {
+    const query = typeaheadQuery.trim();
+    if (query.length < 2) {
+      setTypeaheadSaved([]);
+      return undefined;
+    }
+    let live = true;
+    // Debounced, because a match call per keystroke would burn the frequency
+    // cap on typing rather than on searching.
+    const timer = setTimeout(() => {
+      client
+        .requestMatch(
+          { ...requestFrom(context, pincode), query },
+          context.authenticated
+        )
+        .then((response) => {
+          if (live) setTypeaheadSaved(response.matches.slice(0, 2));
+        });
+    }, 180);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeaheadQuery, pincode]);
+
+  /**
+   * The product the look-completion strip pairs against on Search: whatever the
+   * module surfaced, not a category guessed from the query string.
+   */
+  const lookSeed = useMemo(() => {
+    const sku = response?.matches[0]?.sku;
+    const item = sku ? itemFor(sku) : undefined;
+    if (!item) return null;
+    const parent = catalog.parents.find(
+      (candidate) => candidate.parent_product_id === item.parent_product_id
+    );
+    const colourway = parent?.colourways.find(
+      (candidate) => candidate.product_id === item.product_id
+    );
+    return parent && colourway ? { parent, colourway } : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [response]);
+
+  /**
+   * The pairing surfaces.
+   *
+   * Emitted, not merely declared. An event type that nothing sends is the
+   * defect this session already fixed once, in variant_recovery: the metric
+   * looked healthy because a simulator filled it in while the product sent
+   * nothing at all.
+   */
+  const emitPairing = useCallback(
+    (
+      name: PairingEventName,
+      detail: {
+        product_id?: number;
+        from_saved_group?: boolean;
+        suggestion_count?: number;
+        via?: "search" | "pairing" | "home";
+      } = {}
+    ) => {
+      events.emit({
+        type: "pairing_interaction",
+        ts: catalog.today,
+        user_id: wishlist.user_id,
+        session_id: sessionId,
+        search_id: `search_${context.seq}`,
+        arm: client.arm,
+        name,
+        ...detail,
+      });
+      note();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [client.arm, context.seq, sessionId]
   );
 
   /** The comparison's interactions, including re-entry (wireframes section 21). */
@@ -746,14 +841,15 @@ export default function App() {
                 })
               )
             }
-            onSelectTile={() =>
-              setNav(
-                push(nav, {
-                  name: "stub",
-                  reason: "Opening a product from Home is not in this prototype.",
-                })
-              )
-            }
+            onSelectTile={(tile) => {
+              // This used to discard the tile and route to a stub. There is a
+              // product screen now.
+              setAltSize(null);
+              setAltAdded(false);
+              setNav((prev) =>
+                push(prev, { name: "product", productId: tile.colourway.product_id })
+              );
+            }}
           />
         ) : screen.name === "searchEntry" ? (
           <SearchEntryScreen
@@ -764,12 +860,102 @@ export default function App() {
               setRecents((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 8));
               setNav((prev) => push(prev, { name: "results" }));
             }}
+            savedSuggestions={typeaheadSaved}
+            onQueryChange={setTypeaheadQuery}
+            onOpenSaved={(sku) => {
+              const item = itemFor(sku);
+              if (!item) return;
+              // The field that makes the dropdown falsifiable: without it there
+              // is no way to tell whether the saved group does any work.
+              emitPairing("suggestion_selected", { from_saved_group: true });
+              setNav((prev) => push(prev, { name: "saved", itemId: item.item_id }));
+            }}
+            onOpenProduct={(productId) => {
+              setAltSize(null);
+              setAltAdded(false);
+              emitPairing("suggestion_selected", {
+                product_id: productId,
+                from_saved_group: false,
+              });
+              setNav((prev) => push(prev, { name: "product", productId }));
+            }}
             onClearRecents={() => setRecents([])}
             onBack={() => setNav((prev) => pop(prev))}
             onNotImplemented={() => setToast("Not available in this prototype.")}
           />
         ) : screen.name === "bag" ? (
           <BagScreen catalog={catalog} commerce={commerce} />
+        ) : screen.name === "product" ? (
+          (() => {
+            const found = findProduct(catalog, screen.productId);
+            if (!found) return <StubScreen reason="That product is no longer in the catalog." />;
+            const sizes = inventory.sizesInStock(found.parent, found.colourway.product_id);
+            const pairs = completeTheLook(found.parent, found.colourway, {
+              catalog,
+              wishlist,
+              commerce,
+              inventory,
+            });
+            const deliverable = servesPincode(found.colourway.seller, pincode);
+            const viewKey = `${found.colourway.product_id}|${pairs.length}`;
+            if (!pairingReported.current.has(viewKey)) {
+              pairingReported.current.add(viewKey);
+              // Fired with the count even when it is zero. "The section never
+              // appears" is a finding, and a finding needs a denominator.
+              queueMicrotask(() =>
+                emitPairing("pairing_section_viewed", {
+                  product_id: found.colourway.product_id,
+                  suggestion_count: pairs.length,
+                })
+              );
+            }
+
+            return (
+              <ProductScreen
+                parent={found.parent}
+                colourway={found.colourway}
+                sizesInStock={sizes}
+                deliveryBy={
+                  deliverable ? deliveryDateFor(catalog.today, found.colourway.product_id) : null
+                }
+                selectedSize={altSize ?? sizes[0] ?? null}
+                onChooseSize={setAltSize}
+                onBack={goBack}
+                added={altAdded}
+                pairing={
+                  // The whole point of the feature, and it renders nothing when
+                  // no saved item completes this look.
+                  <LookStrip
+                    heading={LOOK_HEADING_PDP}
+                    note={null}
+                    suggestions={pairs}
+                    onOpen={(itemId) => {
+                      setAltSize(null);
+                      setAltAdded(false);
+                      emitPairing("pairing_item_opened");
+                      setNav((prev) => push(prev, { name: "saved", itemId }));
+                    }}
+                  />
+                }
+                onMoveToBag={(size) => {
+                  const sku = found.colourway.skus.find((entry) => entry.size === size);
+                  if (!sku) return setToast("That size has no listing");
+                  const addedNow = addAlternativeToBag(
+                    {
+                      sku: sku.sku,
+                      parent_product_id: found.parent.parent_product_id,
+                      size,
+                      colour: found.colourway.colour,
+                    },
+                    commerce
+                  );
+                  setBagVersion((version) => version + 1);
+                  setAltAdded(true);
+                  if (!addedNow) setToast("Already in your Bag — not added twice");
+                }}
+              />
+            );
+          })()
         ) : screen.name === "alternative" && activeItem ? (
           (() => {
             const alt = catalog.parents
@@ -1090,6 +1276,12 @@ export default function App() {
             onScrollOffset={(offset) => {
               resultsOffset.current = offset;
             }}
+            onOpenProduct={(productId) => {
+              setAltSize(null);
+              setAltAdded(false);
+              emitPairing("product_view_opened", { product_id: productId, via: "search" });
+              setNav((prev) => push(prev, { name: "product", productId }));
+            }}
             intentFor={
               tagsOn
                 ? (sku: string) => {
@@ -1101,28 +1293,19 @@ export default function App() {
                 : undefined
             }
             lookCompletion={
-              lookCompletion ? (
+              lookCompletion && lookSeed ? (
                 <LookStrip
-                  suggestions={completeTheLook(
-                    // The article type the search actually landed on, so the
-                    // pairing is about what the user is looking at rather than
-                    // about a category guessed from the query string.
-                    response?.matches.length
-                      ? (itemFor(response.matches[0].sku)
-                          ? catalog.parents.find(
-                              (p) =>
-                                p.parent_product_id ===
-                                itemFor(response.matches[0].sku)?.parent_product_id
-                            )?.articleType ?? ""
-                          : "")
-                      : "",
-                    wishlist,
+                  suggestions={completeTheLook(lookSeed.parent, lookSeed.colourway, {
                     catalog,
-                    response?.matches.map((m) => itemFor(m.sku)?.item_id ?? "") ?? []
-                  )}
-                  onOpen={(itemId) =>
-                    setNav((prev) => push(prev, { name: "saved", itemId }))
-                  }
+                    wishlist,
+                    commerce,
+                    inventory,
+                    // Whatever the module is already showing is not a
+                    // suggestion; it is on screen.
+                    excludeItemIds:
+                      response?.matches.map((m) => itemFor(m.sku)?.item_id ?? "") ?? [],
+                  })}
+                  onOpen={(itemId) => setNav((prev) => push(prev, { name: "saved", itemId }))}
                 />
               ) : null
             }

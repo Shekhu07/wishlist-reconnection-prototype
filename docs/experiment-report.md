@@ -12,10 +12,10 @@ where one is needed at all.
 
 | Ramp | Exposed | Treatment A | Treatment B |
 |---|---|---|---|
-| 1% | 0.96% | 164 | 162 |
-| 5% | 5.05% | 841 | 839 |
-| 20% | 20.36% | 3,376 | 3,408 |
-| 50% | 49.94% | 8,312 | 8,341 |
+| 1% | 0.96% | 126 | 131 |
+| 5% | 5.05% | 628 | 639 |
+| 20% | 20.36% | 2,528 | 2,512 |
+| 50% | 49.94% | 6,268 | 6,123 |
 
 ### Monotonicity
 
@@ -34,14 +34,14 @@ independently here, so raising the ramp can only ever add users.
 | Ramp before | 20% |
 | Exposed users in a 5,000 sample | 1,051 |
 | Guardrail breach detected | yes |
-| Reason | Search-to-purchase rate: 69.2% relative change against control |
+| Reason | Search-to-purchase rate: 74.5% relative change against control |
 | Exposed users immediately after | 0 |
 
 | Guardrail | Threshold | Reading | Breached |
 |---|---|---|---|
-| Search-to-purchase rate | no more than 5% relative drop | 69.2% relative change against control | **yes** |
+| Search-to-purchase rate | no more than 5% relative drop | 74.5% relative change against control | **yes** |
 | Match latency p95 | ≤ 120 ms | p95 116.0 ms over 13,790 evaluations | no |
-| Match error rate | ≤ 1.0% | 63 of 13790 evaluations failed or timed out | no |
+| Match error rate | ≤ 1.0% | 62 of 13790 evaluations failed or timed out | no |
 
 The switch is **sticky**: it stays tripped once the numbers recover, and
 only a human can clear it. A treatment that recovers on its own would
@@ -73,8 +73,8 @@ Peeking inflates the fixed-horizon error rate to 33.7% — 6.7× its nominal lev
 
 | Method | Difference (B − control) | Interval | Significant |
 |---|---|---|---|
-| Fixed-horizon | 4.65pp | 0.66 to 8.64pp | yes |
-| Always-valid | 4.65pp | -2.04 to 11.34pp | no |
+| Fixed-horizon | 3.68pp | -0.61 to 7.97pp | no |
+| Always-valid | 3.68pp | -3.71 to 11.07pp | no |
 
 The always-valid interval is wider at every moment. That width is the price
 of being allowed to stop whenever you like, and it is cheaper than the

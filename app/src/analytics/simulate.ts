@@ -37,6 +37,8 @@ export interface SimulationConfig {
    * not find one you did not.
    */
   liftTreatmentC: number;
+  /** D is C plus pairing. */
+  liftTreatmentD: number;
   /** Probability any given search produces at least one candidate. */
   matchOpportunity: number;
   /** Of exposures, how often the user acts / dismisses. */
@@ -58,6 +60,7 @@ export const DEFAULT_SIMULATION: SimulationConfig = {
   liftTreatmentA: 0.03,
   liftTreatmentB: 0.05,
   liftTreatmentC: 0.06,
+  liftTreatmentD: 0.065,
   matchOpportunity: 0.32,
   actionRate: 0.22,
   dismissRate: 0.08,
@@ -72,7 +75,13 @@ function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-const ARMS: ExperimentArm[] = ["control", "treatment_a", "treatment_b", "treatment_c"];
+const ARMS: ExperimentArm[] = [
+  "control",
+  "treatment_a",
+  "treatment_b",
+  "treatment_c",
+  "treatment_d",
+];
 const QUERIES = [
   "check shirt",
   "casual shoes",
@@ -115,7 +124,9 @@ export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationR
           ? config.liftTreatmentB
           : arm === "treatment_c"
             ? config.liftTreatmentC
-            : 0;
+            : arm === "treatment_d"
+              ? config.liftTreatmentD
+              : 0;
 
     // Entry is spread across the first two thirds of the run so that most
     // users have a closed 30-day window by the end, and some deliberately
@@ -340,6 +351,7 @@ export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationR
       treatment_a: config.liftTreatmentA,
       treatment_b: config.liftTreatmentB,
       treatment_c: config.liftTreatmentC,
+      treatment_d: config.liftTreatmentD,
     },
   };
 }

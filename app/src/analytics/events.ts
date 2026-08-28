@@ -47,11 +47,21 @@ export interface BaseEvent {
  * interpretable if B differs from A in exactly one thing. Adding evidence to B
  * would make that difference two mechanisms wide and the read-out unusable.
  *
- * The cost is real and is stated rather than hidden: the panel now splits four
+ * D adds cross-category pairing on top of C, for the same reason and at the
+ * same cost. Improvement 9 warned against adding complements "solely to
+ * increase basket size"; an arm is how that warning becomes a measurement
+ * rather than a hope.
+ *
+ * The cost is real and is stated rather than hidden: the panel now splits five
  * ways instead of three, so every arm is smaller and `docs/panel-sizing.md`
  * gets worse. That is the price of an answerable question.
  */
-export type ExperimentArm = "control" | "treatment_a" | "treatment_b" | "treatment_c";
+export type ExperimentArm =
+  | "control"
+  | "treatment_a"
+  | "treatment_b"
+  | "treatment_c"
+  | "treatment_d";
 
 export interface SearchPerformed extends BaseEvent {
   type: "search_performed";
@@ -146,6 +156,31 @@ export interface ConfidenceInteraction extends BaseEvent {
  * "opened the comparison and left with something else". Collapsing them would
  * make the compare rate unreadable.
  */
+/** The pairing surfaces (this feature). */
+export type PairingEventName =
+  | "pairing_section_viewed"
+  | "pairing_item_opened"
+  | "suggestion_dropdown_opened"
+  | "suggestion_saved_group_shown"
+  | "suggestion_selected"
+  | "product_view_opened";
+
+export interface PairingInteraction extends BaseEvent {
+  type: "pairing_interaction";
+  name: PairingEventName;
+  /** The product being viewed, where there is one. */
+  product_id?: number;
+  /**
+   * For `suggestion_selected`. The one field that makes the dropdown
+   * falsifiable: without it there is no way to tell whether the saved group
+   * does any work, and a feature nobody can disprove is not a finding.
+   */
+  from_saved_group?: boolean;
+  /** How many saved items completed the look, including zero. */
+  suggestion_count?: number;
+  via?: "search" | "pairing" | "home";
+}
+
 export type CompareEventName =
   | "compare_view_opened"
   | "compare_priority_selected"
@@ -244,6 +279,7 @@ export type AnalyticsEvent =
   | ModuleAction
   | ConfidenceInteraction
   | CompareInteraction
+  | PairingInteraction
   | MoveToBagAttempted
   | VariantRecoveryShown
   | VariantRecoveryResolved

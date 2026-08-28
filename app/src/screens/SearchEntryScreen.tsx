@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AskMayaStrip } from "@/components/home/AskMayaStrip";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { RecentSearches } from "@/components/home/RecentSearches";
 import type { Catalog } from "@/data/types";
+import type { Match } from "@/match/contract";
+import { buildSearchIndex, search } from "@/search/localSearch";
+import { SearchSuggestions } from "@/components/SearchSuggestions";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 
 export interface SearchEntryScreenProps {
   catalog: Catalog;
+  /**
+   * The saved group for the typeahead. Owned by the caller because it comes
+   * from the match client, which is auth-gated, suppressible and fail-open --
+   * none of which this screen should know about.
+   */
+  savedSuggestions?: Match[];
+  onQueryChange?: (query: string) => void;
+  onOpenSaved?: (sku: string) => void;
+  onOpenProduct?: (productId: number) => void;
   /** Prior search terms, most recent first. Caller's job to order/persist. */
   recents: string[];
   onSubmit: (query: string) => void;
@@ -19,6 +31,10 @@ export interface SearchEntryScreenProps {
 
 export function SearchEntryScreen({
   catalog,
+  savedSuggestions = [],
+  onQueryChange,
+  onOpenSaved,
+  onOpenProduct,
   recents,
   onSubmit,
   onClearRecents,
@@ -26,6 +42,31 @@ export function SearchEntryScreen({
   onNotImplemented,
 }: SearchEntryScreenProps) {
   const [value, setValue] = useState("");
+
+  // Organic suggestions are synchronous and local. They never wait on the
+  // match call, which is the same rule the results grid follows (C-3).
+  const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
+  const organic = useMemo(() => {
+    if (value.trim().length < 2) return [];
+    // One row per product. `search()` ranks colourways, so two colours of the
+    // same shirt render as two identical-looking rows and fill half a
+    // four-row dropdown with the same suggestion -- the same de-duplication
+    // `match/ranking.ts` applies to the module, for the same reason.
+    const seen = new Set<string>();
+    const deduped = [];
+    for (const result of search(value, index, 24)) {
+      if (seen.has(result.parent.parent_product_id)) continue;
+      seen.add(result.parent.parent_product_id);
+      deduped.push(result);
+      if (deduped.length === 4) break;
+    }
+    return deduped;
+  }, [value, index]);
+
+  const change = (next: string) => {
+    setValue(next);
+    onQueryChange?.(next);
+  };
 
   const submit = () => {
     const trimmed = value.trim();
@@ -52,7 +93,7 @@ export function SearchEntryScreen({
             autoFocus
             returnKeyType="search"
             value={value}
-            onChangeText={setValue}
+            onChangeText={change}
             onSubmitEditing={submit}
             placeholder="Search for products, brands and more"
             placeholderTextColor={color.textSecondary}
@@ -69,6 +110,15 @@ export function SearchEntryScreen({
           <Text style={styles.iconGlyph}>🎤</Text>
         </Pressable>
       </View>
+
+      {/* Above recents, because it answers the question being typed right now.
+          Renders nothing until there is something to say. */}
+      <SearchSuggestions
+        organic={organic}
+        saved={savedSuggestions}
+        onOpenSaved={(sku) => onOpenSaved?.(sku)}
+        onOpenProduct={(productId) => onOpenProduct?.(productId)}
+      />
 
       <RecentSearches recents={recents} onSubmit={onSubmit} onClearRecents={onClearRecents} />
 

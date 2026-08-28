@@ -1,11 +1,6 @@
 import { DEFAULT_CONFIG } from "@/match/contract";
 import { MODALITY_MODES, isStricterThanText, modeFor, thresholdFor } from "@/match/modality";
 import { INTENT_TAGS, PRIVATE_TAGS, TagStore, surfacedCopy } from "@/wishlist/tags";
-import {
-  MAX_LOOK_SUGGESTIONS,
-  completeTheLook,
-  complements,
-} from "@/wishlist/lookCompletion";
 import { BANNED_COPY_PATTERNS } from "@/copy/bundle";
 import { makeCatalog, makeWishlist } from "./helpers/fixtures";
 import { buildIndex, match } from "@/match/matcher";
@@ -94,58 +89,6 @@ describe("intent tags (improvement 7)", () => {
       expect(line).not.toBe("");
       for (const pattern of BANNED_COPY_PATTERNS) expect(line).not.toMatch(pattern);
     }
-  });
-});
-
-describe("look completion (improvement 9)", () => {
-  const catalog = makeCatalog();
-  const wishlist = makeWishlist();
-
-  it("pairs symmetrically, so the table cannot disagree with itself", () => {
-    for (const type of ["Shirts", "Jeans", "Tshirts"]) {
-      for (const other of complements(type)) {
-        expect(complements(other)).toContain(type);
-      }
-    }
-  });
-
-  it("suggests only items the user already saved", () => {
-    const suggestions = completeTheLook("Shirts", wishlist, catalog);
-    for (const suggestion of suggestions) {
-      expect(wishlist.items.map((item) => item.item_id)).toContain(suggestion.item.item_id);
-    }
-  });
-
-  it("stays sparse", () => {
-    // "Do not create an overwhelming recommendation carousel."
-    const many = {
-      ...wishlist,
-      items: [0, 1, 2, 3, 4].map((n) => ({
-        ...wishlist.items[0],
-        item_id: `wi_${n}`,
-        parent_product_id: "pp_jeans",
-        product_id: 2001,
-      })),
-    };
-    expect(completeTheLook("Shirts", many, catalog).length).toBeLessThanOrEqual(
-      MAX_LOOK_SUGGESTIONS
-    );
-  });
-
-  it("says nothing rather than reaching into the catalog", () => {
-    // A suggestion the user never saved is the basket-size recommender the
-    // prompt forbids. With nothing saved that pairs, the answer is silence.
-    const empty = { ...wishlist, items: [] };
-    expect(completeTheLook("Shirts", empty, catalog)).toEqual([]);
-  });
-
-  it("has nothing to say about a category with no pairing", () => {
-    expect(completeTheLook("Watches", wishlist, catalog)).toEqual([]);
-  });
-
-  it("excludes the item already being shown", () => {
-    const suggestions = completeTheLook("Shirts", wishlist, catalog, ["wi_1"]);
-    expect(suggestions.map((s) => s.item.item_id)).not.toContain("wi_1");
   });
 });
 

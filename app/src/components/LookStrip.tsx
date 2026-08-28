@@ -21,15 +21,24 @@ import type { LookSuggestion } from "@/wishlist/lookCompletion";
 export interface LookStripProps {
   suggestions: LookSuggestion[];
   onOpen: (itemId: string) => void;
+  /** Search says "to go with this"; a product page names the look. */
+  heading?: string;
+  /** The later-phase note is for Search; the PDP section is a real feature. */
+  note?: string | null;
 }
 
-export function LookStrip({ suggestions, onOpen }: LookStripProps) {
+export function LookStrip({
+  suggestions,
+  onOpen,
+  heading = LOOK_HEADING,
+  note = LOOK_NOTE,
+}: LookStripProps) {
   if (suggestions.length === 0) return null;
 
   return (
     <View style={styles.strip} testID="look-strip">
-      <Text style={styles.heading}>{LOOK_HEADING}</Text>
-      <Text style={styles.note}>{LOOK_NOTE}</Text>
+      <Text style={styles.heading}>{heading}</Text>
+      {note ? <Text style={styles.note}>{note}</Text> : null}
       <View style={styles.row}>
         {suggestions.map((suggestion) => (
           <Pressable

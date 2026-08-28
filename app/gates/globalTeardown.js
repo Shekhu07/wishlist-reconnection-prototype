@@ -11,6 +11,7 @@ const ALL_GATES = [
   ["DC-provenance", "Signal provenance"],
   ["CR-staleness", "Comparison staleness"],
   ["C7-accessibility", "Accessibility"],
+  ["PAIR-coherence", "Pairing coherence"],
 ];
 
 module.exports = () => {

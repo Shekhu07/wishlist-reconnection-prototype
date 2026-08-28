@@ -96,16 +96,33 @@ export function assign(userId: string, options: AssignmentOptions): Assignment {
   // exposed becomes unexposed. The experiment report measures it either way
   // rather than taking this paragraph's word for it.
   const armRoll = bucket(userId, salt, "arm");
-  const arm: ExperimentArm =
-    armRoll < 1 / 3 ? "treatment_a" : armRoll < 2 / 3 ? "treatment_b" : "treatment_c";
+  const arm: ExperimentArm = TREATMENTS[Math.min(
+    TREATMENTS.length - 1,
+    Math.floor(armRoll * TREATMENTS.length)
+  )];
   return { arm, exposed: true, overridden: false };
 }
+
+/**
+ * The treatment arms, in order, split evenly.
+ *
+ * A list rather than a chain of ternaries: adding an arm is a one-line change
+ * and the split stays even by construction, which is the property the
+ * experiment report measures.
+ */
+const TREATMENTS: ExperimentArm[] = [
+  "treatment_a",
+  "treatment_b",
+  "treatment_c",
+  "treatment_d",
+];
 
 export interface ArmCounts {
   control: number;
   treatment_a: number;
   treatment_b: number;
   treatment_c: number;
+  treatment_d: number;
   exposed: number;
   total: number;
 }
@@ -116,6 +133,7 @@ export function tally(userIds: string[], options: AssignmentOptions): ArmCounts 
     treatment_a: 0,
     treatment_b: 0,
     treatment_c: 0,
+    treatment_d: 0,
     exposed: 0,
     total: userIds.length,
   };

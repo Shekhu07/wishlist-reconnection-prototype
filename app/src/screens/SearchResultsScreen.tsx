@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, type ReactNode } from "react";
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { MatchResponse } from "@/match/contract";
 import { WishlistModule } from "@/components/WishlistModule";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
@@ -34,6 +34,8 @@ export interface SearchResultsScreenProps {
   /** Bumped when a dismissal is raised from the DC-02 sheet. */
   externalDismiss?: number;
   intentFor?: (sku: string) => string | null;
+  /** Opens an ordinary catalog product. Tiles did not respond to taps at all. */
+  onOpenProduct?: (productId: number) => void;
   /** Improvement 9: later-phase, off by default, rendered below the module. */
   lookCompletion?: ReactNode;
   /**
@@ -69,6 +71,7 @@ export function SearchResultsScreen({
   onWhy,
   externalDismiss,
   intentFor,
+  onOpenProduct,
   resumeBar,
   lookCompletion,
   onAction,
@@ -143,9 +146,16 @@ export function SearchResultsScreen({
 
       <View style={styles.grid}>
         {results.map((result) => (
-          <View key={result.colourway.product_id} style={styles.gridItem}>
+          <Pressable
+            key={result.colourway.product_id}
+            testID={`result-tile-${result.colourway.product_id}`}
+            accessibilityRole="button"
+            accessibilityLabel={`${result.parent.brand} ${result.colourway.display_name}, ${result.colourway.colour}`}
+            onPress={() => onOpenProduct?.(result.colourway.product_id)}
+            style={styles.gridItem}
+          >
             <ProductTileBody tile={result} size={tile} />
-          </View>
+          </Pressable>
         ))}
         {results.length === 0 ? (
           <Text style={styles.empty}>No results for “{query}”.</Text>

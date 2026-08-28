@@ -83,6 +83,7 @@ const ARM_LABELS: Record<ExperimentArm, string> = {
   treatment_a: "A · reconnection",
   treatment_b: "B · + variant",
   treatment_c: "C · + confidence",
+  treatment_d: "D · + pairing",
 };
 
 const LATENCIES = [60, 240, 420, 900];

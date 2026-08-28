@@ -10,7 +10,7 @@ import { sequentialMultiplier } from "@/experiment/sequential";
  * person and a usable observation, and three links in it cost far more than
  * the arithmetic does:
  *
- *   **Four arms, not two.** Control, A, B and C. The panel splits four ways
+ *   **Five arms, not two.** Control, A, B, C and D. The panel splits five ways
  *   before anything else happens.
  *
  *   **The comparison that matters is B minus A.** Section 7 is explicit that

@@ -162,7 +162,7 @@ describe("shadow-mode report", () => {
       "",
       "## 3. Metric read-out — simulated",
       "",
-      `${(3000).toLocaleString("en-IN")} synthetic users over 45 days, evenly assigned across four arms.`,
+      `${(3000).toLocaleString("en-IN")} synthetic users over 45 days, evenly assigned across five arms.`,
       "",
       "| Metric | Role | Control | Treatment A | Treatment B | Treatment C |",
       "|---|---|---|---|---|---|",

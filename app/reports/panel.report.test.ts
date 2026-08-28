@@ -24,11 +24,11 @@ const BASE: PanelInputs = {
   // A panellist searching three times sees the module at least once with
   // probability 1 - (1 - 0.476)^3.
   exposureRate: 1 - (1 - MEASURED_OPPORTUNITY) ** 3,
-  // Four now that treatment_c exists: control, A, B and C. Every arm is
+  // Five now that treatment_d exists: control, A, B, C and D. Every arm is
   // correspondingly smaller, so the panel this needs is correspondingly
   // larger. That number getting worse is a real finding about the cost of an
   // answerable B-minus-A question, not a regression to be papered over.
-  arms: 4,
+  arms: 5,
   sequential: true,
   comparison: "treatment_vs_control",
 };
@@ -160,7 +160,7 @@ describe("panel sizing", () => {
       "Three multipliers sit between a recruited person and a usable observation,",
       "and none of them is the sample-size formula.",
       "",
-      "**Four arms.** Control, A, B and C. The panel splits four ways before",
+      "**Five arms.** Control, A, B, C and D. The panel splits five ways before",
       "anything else happens.",
       "",
       "**Intent-to-treat dilution.** A user assigned to a treatment who never sees",

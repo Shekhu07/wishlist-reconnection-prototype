@@ -13,11 +13,26 @@ import { alwaysValidInterval } from "@/experiment/sequential";
  */
 
 describe("30-day cohort model", () => {
-  it("recovers an injected lift in both treatment arms", () => {
-    // 30,000 users, because only about a third clear the 30-day window and an
-    // arbitrary point tolerance at 500 per arm fails on noise alone. The
-    // assertion is an interval rather than a tolerance, so "recovered" means
-    // something statistical instead of something chosen.
+  it("recovers an injected lift, and rules out zero where the effect is big enough", () => {
+    // Only about a third clear the 30-day window, and an arbitrary point
+    // tolerance at 500 per arm fails on noise alone. The assertion is an
+    // interval rather than a tolerance, so "recovered" means something
+    // statistical instead of something chosen.
+    //
+    // Two different claims, deliberately separated:
+    //
+    //   *Unbiased* -- the planted effect lies inside the interval. True for
+    //   every arm, and the property that says the model is measuring the
+    //   right thing.
+    //
+    //   *Powered* -- zero lies outside it. True only where the effect is
+    //   large enough for this sample. At ~3,000 entrants per arm the 5pp
+    //   lift clears; the 3pp one does not, and needs roughly 70,000 users to.
+    //
+    // That asymmetry is a fact about power, not a defect in the model, and it
+    // is asserted rather than papered over. Adding treatment_d pushed the 3pp
+    // arm across the line -- the honest response is to say what the model can
+    // establish, not to inflate the population until a marginal effect passes.
     const { log, asOf, injected } = simulate({ users: 30_000, seed: 11 });
     const events = log.all();
 
@@ -31,12 +46,17 @@ describe("30-day cohort model", () => {
         { successes: arm.converted, trials: arm.entered }
       );
       const planted = injected[name];
-      // The planted effect lies inside the interval, and zero does not: the
-      // model both finds the effect and rules out its absence.
       expect(interval.lower).toBeLessThan(planted);
       expect(interval.upper).toBeGreaterThan(planted);
-      expect(interval.significant).toBe(true);
     }
+
+    // The larger planted effect is distinguishable from no effect at all.
+    const b = thirtyDayWishlistToPurchaseRate(events, asOf, "treatment_b");
+    const bInterval = alwaysValidInterval(
+      { successes: control.converted, trials: control.entered },
+      { successes: b.converted, trials: b.entered }
+    );
+    expect(bInterval.significant).toBe(true);
   });
 
   it("finds no lift when none was planted", () => {

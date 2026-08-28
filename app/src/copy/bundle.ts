@@ -265,6 +265,20 @@ export const TAGS_OPTIONAL = "Optional. Only you see this, and you can remove it
  * ------------------------------------------------------------------ */
 
 export const LOOK_HEADING = "From your Wishlist, to go with this";
+/** The same section on a product page, where "this" is the product itself. */
+export const LOOK_HEADING_PDP = "Complete the look from your Wishlist";
+
+export const SUGGESTIONS_SAVED_HEADING = "From your Wishlist";
+export const SUGGESTIONS_ORGANIC_HEADING = "Suggestions";
+
+export const PRODUCT_DESCRIPTION_HEADING = "Description";
+/**
+ * The description is composed from attributes rather than written, because no
+ * description field exists and inventing marketing tone is what constraint 8
+ * rules out. This note names the generated half.
+ */
+export const PRODUCT_DESCRIPTION_NOTE =
+  "Prototype data: material, fit and returns are generated, not real.";
 export const LOOK_NOTE = "Later-phase prototype. Drawn only from items you already saved.";
 
 /* ------------------------------------------------------------------ *

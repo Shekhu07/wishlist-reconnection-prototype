@@ -7,13 +7,13 @@ and nothing had ever checked that guess. This checks it.
 
 ## Headline
 
-A panel of **400** supports **61.73pp** for B against control —
+A panel of **400** supports **70.66pp** for B against control —
 a lift that large on a base of 18% would be extraordinary, so in practice this panel cannot answer the question.
 
 For the B − A comparison §7 actually asks for, the same panel supports **no detectable effect**.
 
-Detecting a 5pp lift on the exposed needs a panel of **15,512**.
-Answering "is variant continuity the mechanism" needs **98,230**.
+Detecting a 5pp lift on the exposed needs a panel of **19,390**.
+Answering "is variant continuity the mechanism" needs **1,22,787**.
 
 The plan's guess is not slightly short. It is short by more than an order
 of magnitude for the question the experiment exists to answer.
@@ -23,7 +23,7 @@ of magnitude for the question the experiment exists to answer.
 Three multipliers sit between a recruited person and a usable observation,
 and none of them is the sample-size formula.
 
-**Four arms.** Control, A, B and C. The panel splits four ways before
+**Five arms.** Control, A, B, C and D. The panel splits five ways before
 anything else happens.
 
 **Intent-to-treat dilution.** A user assigned to a treatment who never sees
@@ -43,10 +43,10 @@ question unanswerable — and that failure is invisible until the read-out.
 
 | Question | Effect on exposed | Effect the estimator sees | Per arm | Cohort entrants | **Panel** |
 |---|---|---|---|---|---|
-| B vs control, 5pp lift | 5.00pp | 4.28pp | 2,637 | 10,548 | **15,512** |
-| B vs control, 3pp lift | 3.00pp | 2.57pp | 7,219 | 28,876 | **42,465** |
-| B vs control, 2pp lift | 2.00pp | 1.71pp | 16,699 | 66,796 | **98,230** |
-| B − A, 5pp vs 3pp | 5.00pp | 1.71pp | 16,699 | 66,796 | **98,230** |
+| B vs control, 5pp lift | 5.00pp | 4.28pp | 2,637 | 13,185 | **19,390** |
+| B vs control, 3pp lift | 3.00pp | 2.57pp | 7,219 | 36,095 | **53,081** |
+| B vs control, 2pp lift | 2.00pp | 1.71pp | 16,699 | 83,495 | **1,22,787** |
+| B − A, 5pp vs 3pp | 5.00pp | 1.71pp | 16,699 | 83,495 | **1,22,787** |
 
 ## The cost of being allowed to peek
 
@@ -73,11 +73,11 @@ is the input the answer is most sensitive to, and no data for it exists.
 
 | Assumed base rate | Panel needed |
 |---|---|
-| 10.0% | 10,430 |
-| 15.0% | 13,730 |
-| 18.0% | 15,512 |
-| 25.0% | 19,042 |
-| 35.0% | 22,506 |
+| 10.0% | 13,037 |
+| 15.0% | 17,162 |
+| 18.0% | 19,390 |
+| 25.0% | 23,802 |
+| 35.0% | 28,133 |
 
 Getting this number from production analytics before recruiting anyone is
 the single cheapest thing available. Every figure above moves with it.
