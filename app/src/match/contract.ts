@@ -26,7 +26,10 @@ export interface MatchRequest {
   modality: Modality;
   filters: SearchFilters;
   delivery_pincode: string;
+  /** Stable for the life of the app session. Suppression is keyed on it. */
   session_id: string;
+  /** One search within that session. The funnel counts these. */
+  search_id: string;
 }
 
 /** Why the module is showing what it is showing. Drives the copy bundle. */

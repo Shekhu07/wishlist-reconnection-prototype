@@ -254,6 +254,44 @@ export const SIGNAL_SOURCE: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ *
+ * Part B -- comparison re-entry (CR-01 .. CR-05)
+ * ------------------------------------------------------------------ */
+
+/** CR-01: says plainly that leaving will not destroy the comparison. */
+export const KEEP_COMPARISON = "Keep comparison";
+export const COMPARISON_KEPT = "Comparison kept — resume it from Search";
+
+/** CR-02: the quiet bar. Never a modal, never blocking. */
+export const RESUME_LABEL = "Resume";
+export const RESUME_DISMISS = "Hide the comparison bar for this session";
+
+/** CR-03: confirming what comes back before it comes back. */
+export const RESUME_TITLE = "Resume your comparison";
+export const RESUME_ACTION = "Resume comparison";
+/**
+ * A real alternative, not a decline. It clears the session comparison and
+ * leaves the Wishlist untouched -- the wireframes say so explicitly, and a
+ * "start fresh" that quietly removed saved items would be the worst kind of
+ * surprise.
+ */
+export const START_FRESH = "Start fresh";
+export const START_FRESH_DONE = "Comparison cleared. Your Wishlist is untouched.";
+
+/** CR-04: the context bar on a product opened from the comparison. */
+export const RETURN_TO_COMPARISON = "Return to comparison";
+
+/** CR-05: something moved while the user was away. */
+export const STALE_TITLE = "One item changed since you last compared";
+export const STALE_TITLE_MANY = (n: number) =>
+  `${n} items changed since you last compared`;
+export const REVIEW_CHANGES = "Review changes";
+export const CHANGE_COPY: Record<string, string> = {
+  size_unavailable: "no longer available in your size",
+  withdrawn: "no longer available",
+  delivery_changed: "delivery to this address has changed",
+};
+
+/* ------------------------------------------------------------------ *
  * Improvement 3 -- what happens after Move to Bag
  * ------------------------------------------------------------------ */
 

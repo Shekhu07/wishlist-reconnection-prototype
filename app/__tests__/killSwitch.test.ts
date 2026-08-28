@@ -269,6 +269,7 @@ describe("the flag actually gates the feature", () => {
         filters: {},
         delivery_pincode: "560034",
         session_id: "s1",
+        search_id: "search_1",
       },
       true
     );
@@ -296,6 +297,7 @@ describe("the flag actually gates the feature", () => {
         filters: {},
         delivery_pincode: "560034",
         session_id: "s1",
+        search_id: "search_1",
       },
       true
     );

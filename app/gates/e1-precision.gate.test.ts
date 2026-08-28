@@ -33,6 +33,7 @@ describe("E1 gate — exact-match precision", () => {
           filters: {},
           delivery_pincode: wishlist.pincode,
           session_id: pair.id,
+          search_id: "search_1",
         },
         buildIndex(catalog, wishlist),
         DEFAULT_CONFIG

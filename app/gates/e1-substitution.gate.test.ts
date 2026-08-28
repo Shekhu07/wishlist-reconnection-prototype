@@ -63,6 +63,7 @@ describe("E1 gate — silent variant substitution", () => {
           filters: {},
           delivery_pincode: wishlist.pincode,
           session_id: `fuzz_${run}`,
+          search_id: "search_1",
         },
         index,
         DEFAULT_CONFIG

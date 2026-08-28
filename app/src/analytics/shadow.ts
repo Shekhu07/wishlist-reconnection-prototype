@@ -102,6 +102,7 @@ export function runShadow(
           filters: {},
           delivery_pincode: wishlist.pincode,
           session_id: `shadow_${evaluated}`,
+      search_id: "search_1",
         },
         index,
         { ...config, tau: { ...config.tau, [modality]: 0 } }
@@ -136,6 +137,7 @@ export function runShadow(
           filters: {},
           delivery_pincode: pairWishlist.pincode,
           session_id: pair.id,
+      search_id: "search_1",
         },
         buildIndex(catalog, pairWishlist),
         { ...config, tau: { ...config.tau, text: 0 } }
@@ -189,6 +191,7 @@ export function runShadow(
             filters: {},
             delivery_pincode: wishlist.pincode,
             session_id: "latency",
+      search_id: "search_1",
           },
           index,
           config

@@ -9,6 +9,7 @@ const baseRequest = {
   filters: {},
   delivery_pincode: "560034",
   session_id: "s1",
+  search_id: "search_1",
 };
 
 function run(query: string, catalog = makeCatalog(), wishlist = makeWishlist(), config = DEFAULT_CONFIG) {

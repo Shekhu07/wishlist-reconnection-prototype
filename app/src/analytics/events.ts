@@ -18,7 +18,21 @@ export interface BaseEvent {
   /** ISO date. Day resolution is enough for a 30-day cohort. */
   ts: string;
   user_id: string;
+  /**
+   * Stable for the life of the app session. Suppression and the resume bar are
+   * keyed on it.
+   */
   session_id: string;
+  /**
+   * One search within that session.
+   *
+   * These were the same string, which made a "session" exactly one query long.
+   * Separating them fixes suppression, but it also moves what `session_id`
+   * means to every metric grouping on it -- so the search funnel now groups on
+   * this instead, and keeps counting what it always counted. Optional because
+   * the simulator models sessions directly and has no searches to id.
+   */
+  search_id?: string;
   /** Which experiment arm the user was in when this happened. */
   arm: ExperimentArm;
 }
@@ -124,7 +138,18 @@ export type CompareEventName =
   | "compare_priority_selected"
   | "comparison_item_selected"
   | "help_me_decide_opened"
-  | "move_to_bag_from_comparison";
+  | "move_to_bag_from_comparison"
+  // Part B. `comparison_persisted` and `comparison_stale_state_shown` are the
+  // two that make the re-entry legible: how often work is preserved, and how
+  // often the catalog moved under it while the user was away.
+  | "comparison_persisted"
+  | "comparison_context_bar_rendered"
+  | "comparison_resume_clicked"
+  | "comparison_resume_dismissed"
+  | "comparison_start_fresh_clicked"
+  | "comparison_stale_state_shown"
+  | "comparison_change_reviewed"
+  | "comparison_reentry_opened";
 
 export interface CompareInteraction extends BaseEvent {
   type: "compare_interaction";
@@ -134,6 +159,8 @@ export interface CompareInteraction extends BaseEvent {
   priority?: string;
   /** For `comparison_item_selected`: did they open their own saved item? */
   chose_saved?: boolean;
+  /** For the stale states: how many compared items had moved. */
+  changed_count?: number;
   /** For `move_to_bag_from_comparison`: the alternative's sku. */
   chosen_sku?: string;
 }

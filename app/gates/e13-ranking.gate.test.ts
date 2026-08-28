@@ -38,6 +38,7 @@ describe("E13 gate — multi-match ranking", () => {
         filters: {},
         delivery_pincode: wishlist.pincode,
         session_id: `rank_${query}`,
+        search_id: "search_1",
       };
       const response = match(request, index, DEFAULT_CONFIG);
       if (response.matches.length === 0) continue;

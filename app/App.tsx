@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
 import bagJson from "@/data/bag.json";
 import catalogJson from "@/data/catalog.json";
 import ordersJson from "@/data/orders.json";
@@ -11,6 +11,7 @@ import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
 import {
   EventLog,
+  type CompareEventName,
   type ConfidenceEventName,
   type ExperimentArm,
 } from "@/analytics/events";
@@ -28,6 +29,14 @@ import { RAMP_STEPS } from "@/experiment/assignment";
 import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
 import { deliveryDateFor, revalidate, servesPincode } from "@/revalidation/revalidate";
+import {
+  ComparisonStore,
+  changesSince,
+  describeSession,
+  findProduct,
+} from "@/state/comparisonSession";
+import { ResumeBar } from "@/components/ResumeBar";
+import { ResumeSheet } from "@/components/ResumeSheet";
 import { BagScreen } from "@/screens/BagScreen";
 import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
@@ -35,6 +44,7 @@ import { HomeScreen } from "@/screens/HomeScreen";
 import { AlternativeProductScreen } from "@/screens/AlternativeProductScreen";
 import { SavedProductScreen } from "@/screens/SavedProductScreen";
 import { WhySheet } from "@/components/WishlistModule/WhySheet";
+import { COMPARISON_KEPT, RETURN_TO_COMPARISON, START_FRESH_DONE } from "@/copy/bundle";
 import { SearchEntryScreen } from "@/screens/SearchEntryScreen";
 import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScreen";
 import { StubScreen } from "@/screens/StubScreen";
@@ -43,11 +53,12 @@ import { AppShell } from "@/shell/AppShell";
 import { HarnessPill } from "@/shell/HarnessPill";
 import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
 import { useSyncedHistory } from "@/shell/useSyncedHistory";
-import { color, space, type } from "@/design/tokens";
+import { color, radius, space, type } from "@/design/tokens";
 import { useWishlistMatch, type SuppressionReason } from "@/state/useWishlistMatch";
 import {
   contextFromQuery,
   contextFromScenario,
+  newSessionId,
   requestFrom,
   type SearchContext,
 } from "@/state/searchContext";
@@ -79,6 +90,7 @@ const BREACHING_EVENTS = [
     ts: "2026-08-26",
     user_id: `drill_${i}`,
     session_id: `drill_s${i}`,
+    search_id: "search_1",
     arm: (i % 2 === 0 ? "control" : "treatment_b") as ExperimentArm,
     query: "shirt",
     modality: "text" as const,
@@ -90,6 +102,7 @@ const BREACHING_EVENTS = [
     ts: "2026-08-26",
     user_id: `drill_${i * 2}`,
     session_id: `drill_s${i * 2}`,
+    search_id: "search_1",
     arm: "control" as ExperimentArm,
     skus: ["sku"],
     saved_skus: [] as string[],
@@ -104,8 +117,16 @@ export default function App() {
   // derived from the current context, read via the functional setState form
   // so a typed search's contextFromQuery bump (Tasks 7/9/10) can never be
   // raced by a stale closure here.
+  // One session for as long as the app is open. Not derived from seq: that
+  // conflation is what made "for the remainder of the session" mean "until the
+  // next search", and it would throw away a resumable comparison at exactly
+  // the moment CR-02 needs one.
+  const sessionId = useRef(newSessionId()).current;
+  // Session-scoped, like suppression: in memory, Redis-shaped key, cleared
+  // with the session rather than persisted (wireframes section 11).
+  const comparisons = useRef(new ComparisonStore()).current;
   const [context, setContext] = useState<SearchContext>(() =>
-    contextFromScenario(scenarios[1] ?? scenarios[0], 1)
+    contextFromScenario(scenarios[1] ?? scenarios[0], 1, sessionId)
   );
   const [latencyMs, setLatencyMs] = useState(60);
   const [swapFills, setSwapFills] = useState(false);
@@ -142,6 +163,10 @@ export default function App() {
   // Until treatment_c exists it lives behind the harness, off, so it is never
   // a third co-equal action competing with Buy and Compare (FR-5).
   const [helpMeDecide, setHelpMeDecide] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
+  // Bumped when the comparison session mutates, because the store lives
+  // outside React -- same pattern as stockVersion and bagVersion.
+  const [comparisonVersion, setComparisonVersion] = useState(0);
   // Improvement 3, step 8: the query survives a return from the saved product
   // via SearchContext, but the scroll position did not -- the results screen
   // unmounts on navigation and remounts at the top. Held here so it outlives
@@ -230,6 +255,7 @@ export default function App() {
       ts: catalog.today,
       user_id: wishlist.user_id,
       session_id: `sess_${context.seq}`,
+      search_id: "search_1",
       arm: client.arm,
       query: context.query,
       modality: context.modality,
@@ -284,6 +310,7 @@ export default function App() {
         ts: catalog.today,
         user_id: wishlist.user_id,
         session_id: request.session_id,
+        search_id: "search_1",
         arm: client.arm,
         sku: activeItem.sku,
         resolved_by: resolvedBy,
@@ -309,6 +336,7 @@ export default function App() {
         ts: catalog.today,
         user_id: wishlist.user_id,
         session_id: request.session_id,
+        search_id: "search_1",
         arm: client.arm,
         query_family: client.familyOf(context.query),
         skus: response?.matches.map((m) => m.sku) ?? [],
@@ -318,6 +346,26 @@ export default function App() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [dismiss, client, context.query, request.session_id, response]
+  );
+
+  /** The comparison's interactions, including re-entry (wireframes section 21). */
+  const emitCompare = useCallback(
+    (name: CompareEventName, sku: string, extra: { priority?: string; chosen_sku?: string } = {}) => {
+      events.emit({
+        type: "compare_interaction",
+        ts: catalog.today,
+        user_id: wishlist.user_id,
+        session_id: sessionId,
+        search_id: `search_${context.seq}`,
+        arm: client.arm,
+        sku,
+        name,
+        ...extra,
+      });
+      note();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [client.arm, context.seq, sessionId]
   );
 
   /** The confidence layer's interactions (wireframes section 21). */
@@ -332,6 +380,7 @@ export default function App() {
         ts: catalog.today,
         user_id: wishlist.user_id,
         session_id: request.session_id,
+        search_id: "search_1",
         arm: client.arm,
         sku: activeItem.sku,
         name,
@@ -342,6 +391,42 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeItem, client.arm, request.session_id]
   );
+
+  /**
+   * The live comparison, and what has moved under it.
+   *
+   * Both derived on every render, never stored. E14's lesson applied before it
+   * bites twice: caching a staleness flag reproduces exactly the staleness the
+   * flag exists to detect. The session pins which items were compared; whether
+   * they are still available is a question for right now.
+   */
+  const comparison = comparisons.current(sessionId);
+  const comparisonItem = comparison
+    ? wishlist.items.find((candidate) => candidate.item_id === comparison.savedItemId)
+    : undefined;
+  const comparisonChanges = useMemo(
+    () =>
+      comparison && comparisonItem
+        ? changesSince(comparison, catalog, inventory, pincode, comparisonItem.size)
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [comparison, comparisonItem, pincode, stockVersion, comparisonVersion]
+  );
+
+  // CR-05. Emitted once per (comparison, change set) so the rate counts
+  // occasions the catalog moved under a user, not renders.
+  const staleReported = useRef(new Set<string>());
+  useEffect(() => {
+    if (!comparison || !comparisonItem || comparisonChanges.length === 0) return;
+    const key = `${comparison.comparisonId}|${comparisonChanges
+      .map((change) => `${change.productId}:${change.kind}`)
+      .sort()
+      .join(",")}`;
+    if (staleReported.current.has(key)) return;
+    staleReported.current.add(key);
+    emitCompare("comparison_stale_state_shown", comparisonItem.sku, {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comparison?.comparisonId, comparisonChanges]);
 
   // Recomputed on every visit, because the whole point is that it may now
   // disagree with what the module rendered. stockVersion and pincode are
@@ -366,6 +451,7 @@ export default function App() {
       ts: catalog.today,
       user_id: wishlist.user_id,
       session_id: request.session_id,
+      search_id: "search_1",
       arm: client.arm,
       sku: activeItem.sku,
       reason,
@@ -433,6 +519,44 @@ export default function App() {
         onBack={() => setNav(pop(nav))}
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
         sheet={
+          <>
+          {comparison && comparisonItem ? (
+            <ResumeSheet
+              open={resumeOpen}
+              query={comparison.query}
+              count={comparison.productIds.length}
+              detail={describeSession(comparison, comparisonItem).detail}
+              changes={comparisonChanges}
+              nameFor={(productId) => {
+                const found = findProduct(catalog, productId);
+                // Colour included, for the same reason the trade-off labels
+                // carry it: several colourways of one product can be compared
+                // at once, and three identical lines saying "no longer
+                // available" tell the user nothing about which is which.
+                return found
+                  ? `${found.parent.brand} ${found.colourway.display_name} · ${found.colourway.colour}`
+                  : "An item";
+              }}
+              onClose={() => setResumeOpen(false)}
+              onResume={() => {
+                setResumeOpen(false);
+                if (comparisonChanges.length) {
+                  emitCompare("comparison_change_reviewed", comparisonItem.sku, {});
+                }
+                emitCompare("comparison_reentry_opened", comparisonItem.sku);
+                setNav((prev) =>
+                  push(prev, { name: "compare", itemId: comparisonItem.item_id })
+                );
+              }}
+              onStartFresh={() => {
+                setResumeOpen(false);
+                comparisons.startFresh(sessionId);
+                setComparisonVersion((v) => v + 1);
+                emitCompare("comparison_start_fresh_clicked", comparisonItem.sku);
+                setToast(START_FRESH_DONE);
+              }}
+            />
+          ) : null}
           <WhySheet
             open={whyOpen}
             onClose={() => setWhyOpen(false)}
@@ -459,6 +583,7 @@ export default function App() {
               restage();
             }}
           />
+          </>
         }
         harness={
           <HarnessPill
@@ -473,7 +598,7 @@ export default function App() {
         onSelect={(next) => {
           client.suppression.reset();
           setScenario(next);
-          setContext((prev) => contextFromScenario(next, prev.seq + 1));
+          setContext((prev) => contextFromScenario(next, prev.seq + 1, sessionId));
           resetToResults();
         }}
         latencyMs={latencyMs}
@@ -630,6 +755,27 @@ export default function App() {
                 deliveryBy={
                   deliverable ? deliveryDateFor(catalog.today, alt.colourway.product_id) : null
                 }
+                contextBar={
+                  comparison && comparisonItem ? (
+                    <View style={styles.contextBar} testID="comparison-context-bar">
+                      <Text style={styles.contextText}>
+                        Comparing {comparison.productIds.length} items
+                        {comparison.priority ? ` · Priority: ${comparison.priority}` : ""}
+                      </Text>
+                      <Pressable
+                        testID="context-return"
+                        accessibilityRole="button"
+                        accessibilityLabel={RETURN_TO_COMPARISON}
+                        onPress={() => {
+                          emitCompare("comparison_reentry_opened", comparisonItem.sku);
+                          goBack();
+                        }}
+                      >
+                        <Text style={styles.contextAction}>{RETURN_TO_COMPARISON}</Text>
+                      </Pressable>
+                    </View>
+                  ) : null
+                }
                 selectedSize={altSize}
                 onChooseSize={setAltSize}
                 onBack={goBack}
@@ -652,6 +798,7 @@ export default function App() {
                     ts: catalog.today,
                     user_id: wishlist.user_id,
                     session_id: request.session_id,
+                    search_id: "search_1",
                     arm: client.arm,
                     sku: activeItem.sku,
                     name: "move_to_bag_from_comparison",
@@ -722,6 +869,7 @@ export default function App() {
                     ts: catalog.today,
                     user_id: wishlist.user_id,
                     session_id: request.session_id,
+                    search_id: "search_1",
                     arm: client.arm,
                     sku: activeItem.sku,
                     size,
@@ -748,6 +896,7 @@ export default function App() {
                   ts: catalog.today,
                   user_id: wishlist.user_id,
                   session_id: request.session_id,
+                  search_id: "search_1",
                   arm: client.arm,
                   sku: activeItem.sku,
                   via_wishlist_module: true,
@@ -796,24 +945,39 @@ export default function App() {
             <CompareScreen
               catalog={catalog}
               item={activeItem}
+              onOpened={(productIds) => {
+                comparisons.open({
+                  sessionId,
+                  savedItemId: activeItem.item_id,
+                  productIds,
+                  query: context.query,
+                  filters: context.filters ?? {},
+                  pincode,
+                  variant: { colour: activeItem.colour, size: activeItem.size },
+                  catalog,
+                  inventory,
+                  savedSize: activeItem.size,
+                });
+                setComparisonVersion((v) => v + 1);
+                emitCompare("compare_view_opened", activeItem.sku);
+                emitCompare("comparison_persisted", activeItem.sku);
+              }}
               parent={revalidation.parent}
               colourway={revalidation.colourway}
               query={context.query}
               pincode={pincode}
               inventory={inventory}
               onBack={goBack}
+              initialPriority={comparison?.priority ?? null}
               onPriority={(priority) => {
-                events.emit({
-                  type: "compare_interaction",
-                  ts: catalog.today,
-                  user_id: wishlist.user_id,
-                  session_id: request.session_id,
-                  arm: client.arm,
-                  sku: activeItem.sku,
-                  name: "compare_priority_selected",
-                  priority,
+                // Persisted, because CR-03 promises to restore it by name and a
+                // priority the user chose is the most expensive part of the
+                // decision to make them repeat.
+                comparisons.setPriority(sessionId, priority);
+                setComparisonVersion((v) => v + 1);
+                emitCompare("compare_priority_selected", activeItem.sku, {
+                  priority: priority ?? undefined,
                 });
-                note();
               }}
               helpMeDecide={helpMeDecide}
               onHelpMeDecide={() => {
@@ -822,6 +986,7 @@ export default function App() {
                   ts: catalog.today,
                   user_id: wishlist.user_id,
                   session_id: request.session_id,
+                  search_id: "search_1",
                   arm: client.arm,
                   sku: activeItem.sku,
                   name: "help_me_decide_opened",
@@ -834,6 +999,7 @@ export default function App() {
                   ts: catalog.today,
                   user_id: wishlist.user_id,
                   session_id: request.session_id,
+                  search_id: "search_1",
                   arm: client.arm,
                   sku: activeItem.sku,
                   name: "comparison_item_selected",
@@ -882,6 +1048,27 @@ export default function App() {
             onScrollOffset={(offset) => {
               resultsOffset.current = offset;
             }}
+            resumeBar={
+              comparison && comparisonItem && !comparison.barDismissed ? (
+                <ResumeBar
+                  {...describeSession(comparison, comparisonItem)}
+                  changedCount={comparisonChanges.length}
+                  onResume={() => {
+                    setResumeOpen(true);
+                    emitCompare("comparison_resume_clicked", comparisonItem.sku);
+                  }}
+                  onDismiss={() => {
+                    // Hides the bar, keeps the comparison. The wireframes are
+                    // explicit that dismissing the offer is not abandoning the
+                    // work -- "Start fresh" is the control that does that.
+                    comparisons.dismissBar(sessionId);
+                    setComparisonVersion((v) => v + 1);
+                    emitCompare("comparison_resume_dismissed", comparisonItem.sku);
+                    setToast("Comparison kept — reopen it from the module");
+                  }}
+                />
+              ) : null
+            }
             onWhy={() => {
               setWhyOpen(true);
               const item = firstMatchItem;
@@ -891,6 +1078,7 @@ export default function App() {
                 ts: catalog.today,
                 user_id: wishlist.user_id,
                 session_id: request.session_id,
+                search_id: "search_1",
                 arm: client.arm,
                 sku: item.sku,
                 name: "confidence_explanation_opened",
@@ -913,6 +1101,7 @@ export default function App() {
                 ts: catalog.today,
                 user_id: wishlist.user_id,
                 session_id: request.session_id,
+                search_id: "search_1",
                 arm: client.arm,
                 action: action === "primary" ? "buy_from_wishlist" : "compare_options",
                 sku,
@@ -996,6 +1185,20 @@ const styles = StyleSheet.create({
   // the two-column grid to full width and render each product card enormous,
   // which tells a researcher nothing about the real layout.
   frame: { flex: 1, width: "100%", maxWidth: FRAME_MAX_WIDTH, alignSelf: "center" },
+  // CR-04: a compact context bar that must not obscure the product's own CTA,
+  // so it sits at the top of the screen rather than floating over the button.
+  contextBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginHorizontal: space.lg,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.card,
+    backgroundColor: color.surfaceMuted,
+  },
+  contextText: { fontSize: 11, fontWeight: "500", color: color.textSecondary, flex: 1 },
+  contextAction: { fontSize: 12, fontWeight: "700", color: color.brandPink },
   footer: {
     padding: space.md,
     backgroundColor: "#FFF6E5",

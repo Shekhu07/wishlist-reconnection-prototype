@@ -36,6 +36,7 @@ function requestFor(scenario: Scenario): MatchRequest {
     filters: scenario.filters as MatchRequest["filters"],
     delivery_pincode: wishlist.pincode,
     session_id: `sess_${scenario.id}`,
+    search_id: "search_1",
   };
 }
 

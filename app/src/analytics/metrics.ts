@@ -113,15 +113,23 @@ export function savedItemPurchaseRate(events: readonly AnalyticsEvent[], arm?: E
  * even when all of its own metrics look good.
  */
 export function searchToPurchaseRate(events: readonly AnalyticsEvent[], arm?: ExperimentArm): Rate {
-  const sessionsWithSearch = new Set(
-    typed<SearchPerformed>(events, "search_performed", arm).map((event) => event.session_id)
+  // Grouped on the search, not the session.
+  //
+  // Until session_id was split from search_id these were the same string, so
+  // this counted searches while appearing to count sessions. Making session_id
+  // genuinely span a session would have silently changed the denominator of a
+  // *guardrail* -- the one number that must not move for the wrong reason. It
+  // still counts searches; `?? session_id` keeps simulated populations, which
+  // have no search ids, computing exactly as before.
+  const unit = (event: { search_id?: string; session_id: string }) =>
+    event.search_id ?? event.session_id;
+  const searches = new Set(
+    typed<SearchPerformed>(events, "search_performed", arm).map(unit)
   );
   const converting = new Set(
-    typed<OrderPlaced>(events, "order_placed", arm)
-      .map((event) => event.session_id)
-      .filter((id) => sessionsWithSearch.has(id))
+    typed<OrderPlaced>(events, "order_placed", arm).map(unit).filter((id) => searches.has(id))
   );
-  return rate(converting.size, sessionsWithSearch.size);
+  return rate(converting.size, searches.size);
 }
 
 /** Relevance signal, never a permanent opt-out (FR-8). */

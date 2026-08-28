@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   COMPARE_PRIORITIES,
@@ -11,6 +11,7 @@ import { tradeOffCaveat, tradeOffs, type DecideColumn } from "@/compare/decide";
 import { Sheet } from "@/components/Sheet";
 import {
   COMPARE_AXES,
+  KEEP_COMPARISON,
   COMPARE_SAVED_LABEL,
   COMPARE_SYNTHETIC_NOTE,
   COMPARE_TITLE,
@@ -48,10 +49,16 @@ export interface CompareScreenProps {
   inventory: InventorySimulator;
   onBack: () => void;
   onChoose: (productId: number) => void;
-  onPriority?: (priority: ComparePriority) => void;
+  onPriority?: (priority: ComparePriority | null) => void;
+  /** CR-01: fires once per comparison, with the ids that are on screen. */
+  onOpened?: (productIds: number[]) => void;
+  /** Restores a priority the user already chose (CR-03). */
+  initialPriority?: ComparePriority | null;
   /** Improvement 5: off by default, so it is never a third co-equal action. */
   helpMeDecide?: boolean;
   onHelpMeDecide?: () => void;
+  /** CR-01: states plainly that leaving will not destroy this. */
+  onKeepComparison?: () => void;
 }
 
 export interface CompareColumn {
@@ -144,10 +151,13 @@ export function CompareScreen({
   onBack,
   onChoose,
   onPriority,
+  onOpened,
+  initialPriority = null,
   helpMeDecide = false,
   onHelpMeDecide,
+  onKeepComparison,
 }: CompareScreenProps) {
-  const [priority, setPriority] = useState<ComparePriority | null>(null);
+  const [priority, setPriority] = useState<ComparePriority | null>(initialPriority);
   const [decideOpen, setDecideOpen] = useState(false);
 
   const columns = useMemo(
@@ -157,6 +167,18 @@ export function CompareScreen({
 
   // Reordered, never filtered: hiding the rows a user did not prioritise would
   // decide for them which trade-offs are allowed to exist (improvement 4).
+  // Reported once per set of columns, not once per render: the comparison is
+  // persisted on open, and re-persisting on every keystroke would make
+  // `comparison_persisted` count renders instead of comparisons.
+  const productIds = useMemo(
+    () => columns.map((column) => column.colourway.product_id),
+    [columns]
+  );
+  useEffect(() => {
+    onOpened?.(productIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productIds]);
+
   const axes = orderedAxes(priority);
   const isPrioritised = (axis: (typeof COMPARE_AXES)[number]["key"]) =>
     priority !== null && PRIORITY_AXES[priority].includes(axis);
@@ -226,7 +248,7 @@ export function CompareScreen({
                 // the unranked table without reloading the screen.
                 const next = active ? null : entry.key;
                 setPriority(next);
-                if (next) onPriority?.(next);
+                onPriority?.(next);
               }}
               style={[styles.priority, active && styles.priorityActive]}
             >
@@ -337,6 +359,23 @@ export function CompareScreen({
           </View>
         ))}
       </ScrollView>
+
+      {/* CR-01. The comparison is already persisted the moment it opens, so
+          this button changes nothing -- which is exactly why it exists. The
+          wireframes ask for it because a user who does not know their work
+          survives leaving will not leave, and behaviour nobody can see is
+          behaviour nobody relies on. */}
+      {onKeepComparison ? (
+        <Pressable
+          testID="keep-comparison"
+          accessibilityRole="button"
+          accessibilityLabel={KEEP_COMPARISON}
+          onPress={onKeepComparison}
+          style={styles.keep}
+        >
+          <Text style={styles.keepText}>{KEEP_COMPARISON}</Text>
+        </Pressable>
+      ) : null}
 
       <Sheet
         open={decideOpen}
@@ -487,6 +526,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   decideDisabled: { opacity: 0.5 },
+  keep: {
+    minHeight: MIN_TOUCH_TARGET,
+    marginHorizontal: space.lg,
+    marginBottom: space.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keepText: { ...type.body, fontWeight: "700", color: color.textSecondary },
   decideText: { ...type.body, fontWeight: "700", color: color.textPrimary },
   reason: { ...type.chip, color: color.textSecondary, marginTop: 2 },
   against: { ...type.chip, color: color.textSecondary, marginTop: 2 },

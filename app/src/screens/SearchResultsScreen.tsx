@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, type ReactNode } from "react";
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { MatchResponse } from "@/match/contract";
 import { WishlistModule } from "@/components/WishlistModule";
@@ -33,6 +33,14 @@ export interface SearchResultsScreenProps {
   onWhy?: () => void;
   /** Bumped when a dismissal is raised from the DC-02 sheet. */
   externalDismiss?: number;
+  /**
+   * CR-02's resume bar.
+   *
+   * Rendered above the Wishlist module and below the filter row, and it scrolls
+   * away with the results -- the wireframes ask for a quiet re-entry point in
+   * the Search context, not a sticky element competing with search itself.
+   */
+  resumeBar?: ReactNode;
   onAction: (action: "primary" | "secondary", sku: string) => void;
   /**
    * Where the results were scrolled to when the user last left them, and a
@@ -57,6 +65,7 @@ export function SearchResultsScreen({
   onHideForever,
   onWhy,
   externalDismiss,
+  resumeBar,
   onAction,
   scrollOffset = 0,
   onScrollOffset,
@@ -104,6 +113,11 @@ export function SearchResultsScreen({
         <Text style={styles.filterLabel}>SORT BY</Text>
         <Text style={styles.resultCount}>{results.length} items</Text>
       </View>
+
+      {/* Above the module and outside its conditional: a comparison can be
+          resumable on a search that surfaces no saved item at all, and the
+          re-entry point disappearing in that case would be arbitrary. */}
+      {resumeBar}
 
       {matchResponse ? (
         <WishlistModule

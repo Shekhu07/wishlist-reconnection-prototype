@@ -15,12 +15,50 @@ export interface SearchContext {
   filters?: MatchRequest["filters"];
   authenticated: boolean;
   source: "scenario" | "user";
-  /** Increments per search. session_id derives from it, so the funnel counts
-   *  searches rather than scenario selections. */
+  /**
+   * Increments per search. `search_id` derives from it, so the funnel counts
+   * searches rather than scenario selections.
+   */
   seq: number;
+  /**
+   * Stable for as long as the app is open, and deliberately *not* derived from
+   * `seq`.
+   *
+   * These were one string, which quietly made a session last exactly one
+   * search. Suppression is keyed per (user x query-family x session x day), so
+   * "hidden for this session" survived only until the user typed again -- FR-8
+   * asks for the remainder of the session, not the remainder of the query. The
+   * same collision would throw away a resumable comparison at the moment the
+   * user goes back to Search, which is the entire journey CR-02 exists for.
+   */
+  sessionId: string;
 }
 
-export function contextFromScenario(scenario: Scenario, seq: number): SearchContext {
+let sessionCounter = 0;
+
+/** A new session. One per app launch, not one per search. */
+export function newSessionId(): string {
+  sessionCounter += 1;
+  return `sess_${Date.now().toString(36)}_${sessionCounter}`;
+}
+
+/** The context a freshly opened app starts from. */
+export function startSession(sessionId: string): SearchContext {
+  return {
+    query: "",
+    modality: "text",
+    authenticated: true,
+    source: "user",
+    seq: 0,
+    sessionId,
+  };
+}
+
+export function contextFromScenario(
+  scenario: Scenario,
+  seq: number,
+  sessionId: string
+): SearchContext {
   return {
     query: scenario.query,
     modality: scenario.modality,
@@ -28,6 +66,7 @@ export function contextFromScenario(scenario: Scenario, seq: number): SearchCont
     authenticated: scenario.authenticated,
     source: "scenario",
     seq,
+    sessionId,
   };
 }
 
@@ -47,6 +86,8 @@ export function contextFromQuery(
     filters: undefined,
     source: "user",
     seq,
+    // The session is the thing the user is in; typing again does not end it.
+    sessionId: previous.sessionId,
   };
 }
 
@@ -57,6 +98,9 @@ export function requestFrom(context: SearchContext, pincode: string): MatchReque
     // MatchRequest.filters is required; an unstaged search has none to apply.
     filters: context.filters ?? {},
     delivery_pincode: pincode,
-    session_id: `sess_${context.seq}`,
+    session_id: context.sessionId,
+    // Kept distinct so the funnel can still count searches. Conflating the two
+    // is what made a session one query long.
+    search_id: `search_${context.seq}`,
   };
 }

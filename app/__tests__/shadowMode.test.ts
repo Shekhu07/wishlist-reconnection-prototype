@@ -18,6 +18,7 @@ const request = {
   filters: {},
   delivery_pincode: "560034",
   session_id: "s1",
+  search_id: "search_1",
 };
 
 function client(shadowMode: boolean, events: EventLog) {

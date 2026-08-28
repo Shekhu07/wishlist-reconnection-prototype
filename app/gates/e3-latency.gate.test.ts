@@ -37,7 +37,7 @@ describe("E3 gate — match latency", () => {
     // Warm the JIT, or the first hundred samples measure compilation.
     for (let i = 0; i < 500; i += 1) {
       match(
-        { query: queries[i % queries.length], modality: "text", filters: {}, delivery_pincode: "560034", session_id: "warm" },
+        { query: queries[i % queries.length], modality: "text", filters: {}, delivery_pincode: "560034", session_id: "warm", search_id: "search_1" },
         index,
         DEFAULT_CONFIG
       );
@@ -51,7 +51,7 @@ describe("E3 gate — match latency", () => {
       const query = pick(queries, random);
       const started = process.hrtime.bigint();
       match(
-        { query, modality: "text", filters: {}, delivery_pincode: "560034", session_id: `perf_${i}` },
+        { query, modality: "text", filters: {}, delivery_pincode: "560034", session_id: `perf_${i}`, search_id: "search_1" },
         index,
         DEFAULT_CONFIG
       );

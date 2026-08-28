@@ -64,6 +64,7 @@ describe("E8 gate — wishlist leakage", () => {
             filters: {},
             delivery_pincode: wishlist.pincode,
             session_id: `privacy_${calls}`,
+      search_id: "search_1",
           },
           authenticated
         );
@@ -99,6 +100,7 @@ describe("E8 gate — wishlist leakage", () => {
       filters: {},
       delivery_pincode: wishlist.pincode,
       session_id: "shape",
+      search_id: "search_1",
     };
     const loggedOut = await new MatchClient({ catalog, wishlist, latencyMs: 1 }).requestMatch(
       request,
