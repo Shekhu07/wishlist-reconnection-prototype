@@ -55,6 +55,9 @@ function renderedText(): string {
 
 describe("compare options (E6)", () => {
   it("compares on exactly the axes the plan names", () => {
+    // Asserted as a whole list rather than spot-checked, so a monetary
+    // incentive cannot arrive disguised as a ninth column. Growing it is
+    // therefore a deliberate edit here, which is the point.
     expect(COMPARE_AXES.map((axis) => axis.key)).toEqual([
       "price",
       "rating",
@@ -64,6 +67,9 @@ describe("compare options (E6)", () => {
       "sizes",
       "delivery",
       "returns",
+      // Added for the comparison-priority selector. Backed by real dataset
+      // columns (usage, season), unlike the five synthesised axes above.
+      "occasion",
     ]);
   });
 

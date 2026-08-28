@@ -1,11 +1,8 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-  ADVISORY_COPY,
-  RECOVERY_COPY,
-  formatDelivery,
-  formatPrice,
-  formatReturns,
-} from "@/copy/bundle";
+import { ADVISORY_COPY, RECOVERY_COPY } from "@/copy/bundle";
+import { Button } from "@/components/Button";
+import { ConfidencePanel } from "@/components/ConfidencePanel";
+import { signalsFor } from "@/confidence/signals";
 import { CATALOG_IMAGES } from "@/data/images";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 import type { RevalidationResult } from "@/revalidation/revalidate";
@@ -29,6 +26,11 @@ export interface SavedProductScreenProps {
   onRecoverySecondary: () => void;
   onChooseSize: (size: string) => void;
   selectedSize: string;
+  /** DC-06: the colour selector. Null keeps the saved colour selected. */
+  onChooseColour?: (colour: string) => void;
+  selectedColour?: string;
+  onConfidenceExpand?: () => void;
+  onSignalExpand?: (key: string) => void;
 }
 
 export function SavedProductScreen({
@@ -40,8 +42,14 @@ export function SavedProductScreen({
   onRecoverySecondary,
   onChooseSize,
   selectedSize,
+  onChooseColour,
+  selectedColour,
+  onConfidenceExpand,
+  onSignalExpand,
 }: SavedProductScreenProps) {
   const { parent, colourway, current, blocking, advisories, item } = result;
+  const activeColour = selectedColour ?? item.colour;
+  const signals = signalsFor(result, { size: selectedSize, colour: activeColour });
   const recovery = blocking
     ? RECOVERY_COPY[blocking]({
         size: item.size,
@@ -60,8 +68,16 @@ export function SavedProductScreen({
   // hidden from them.
   const nothingIsBuyable =
     blocking === "product_unavailable" || blocking === "delivery_unavailable";
-  const purchasable = !nothingIsBuyable && current.sizesInStock.includes(selectedSize);
-  const deviatesFromSaved = selectedSize !== item.size;
+  // Availability for the colour being *looked at*, never inferred from the
+  // saved one -- once a colour can be picked, reading the saved colourway's
+  // stock is exactly the silent substitution FR-7 forbids.
+  const activeColourway =
+    parent.colourways.find((c) => c.colour === activeColour) ?? colourway;
+  const sizesForActiveColour =
+    result.sizesByColour[activeColourway.product_id] ?? current.sizesInStock;
+  const purchasable = !nothingIsBuyable && sizesForActiveColour.includes(selectedSize);
+  const deviatesFromSaved = selectedSize !== item.size || activeColour !== item.colour;
+  const selectedVariant = `${activeColour} · ${selectedSize}`;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="saved-product">
@@ -96,24 +112,18 @@ export function SavedProductScreen({
             <Text style={styles.recoveryTitle}>{recovery.title}</Text>
             <Text style={styles.recoveryBody}>{recovery.body}</Text>
             <View style={styles.recoveryActions}>
-              <Pressable
+              <Button
                 testID="recovery-primary"
-                accessibilityRole="button"
-                accessibilityLabel={recovery.primaryAction}
+                filled
+                label={recovery.primaryAction}
                 onPress={onRecoveryPrimary}
-                style={[styles.button, styles.filled]}
-              >
-                <Text style={styles.labelFilled}>{recovery.primaryAction}</Text>
-              </Pressable>
-              <Pressable
+              />
+              <Button
                 testID="recovery-secondary"
-                accessibilityRole="button"
-                accessibilityLabel={recovery.secondaryAction}
+                filled={false}
+                label={recovery.secondaryAction}
                 onPress={onRecoverySecondary}
-                style={[styles.button, styles.outlined]}
-              >
-                <Text style={styles.labelOutlined}>{recovery.secondaryAction}</Text>
-              </Pressable>
+              />
             </View>
           </View>
         ) : null}
@@ -124,38 +134,82 @@ export function SavedProductScreen({
           </View>
         ))}
 
-        {/* The five facts section 4.13 requires be revalidated, all from the
-            binding read. Price stays neutral: no strike-through, no savings. */}
-        <View style={styles.facts}>
-          <Fact label="Price" value={formatPrice(current.price)} />
-          {item.price_at_save !== current.price ? (
-            <Fact label="Price when saved" value={formatPrice(item.price_at_save)} />
-          ) : null}
-          <Fact label="Seller" value={current.seller} />
-          <Fact
-            label="Delivery"
-            value={
-              current.delivery_by
-                ? formatDelivery(current.delivery_by)
-                : `Not deliverable to ${pincode}`
-            }
-          />
-          <Fact label="Returns" value={formatReturns(current.returns_days)} />
-        </View>
+        {/* DC-03. This replaces a flat list of five facts: the facts were true
+            but said nothing about where they came from, and section 7 makes the
+            source the point. Everything here is still the binding read. */}
+        <ConfidencePanel
+          signals={signals}
+          onExpand={onConfidenceExpand}
+          onSignalExpand={onSignalExpand}
+          // Section 3 of the wireframes: reaching this screen from "Buy from
+          // Wishlist" is already the user asking to inspect, so the section
+          // arrives open. It is Search that must stay compact, not this.
+          initiallyExpanded
+        />
+
+        {/* DC-06. revalidate() has returned coloursInStock all along and
+            nothing rendered it, so the saved colour could not be inspected,
+            let alone changed. */}
+        {parent.colourways.length > 1 ? (
+          <>
+            <Text style={styles.sizeHeading}>Colour</Text>
+            <View style={styles.sizes}>
+              {parent.colourways.map((cw) => {
+                const available = current.coloursInStock.includes(cw.colour);
+                const selected = cw.colour === activeColour;
+                const isSaved = cw.colour === item.colour;
+                return (
+                  <Pressable
+                    key={cw.colour}
+                    testID={`colour-${cw.colour}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={[
+                      cw.colour,
+                      isSaved ? "your saved colour" : null,
+                      available ? null : "out of stock",
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                    accessibilityState={{ selected, disabled: !available }}
+                    disabled={!available || !onChooseColour}
+                    onPress={() => onChooseColour?.(cw.colour)}
+                    style={[
+                      styles.colour,
+                      selected && styles.sizeSelected,
+                      !available && styles.sizeDisabled,
+                    ]}
+                  >
+                    <Text style={[styles.sizeText, selected && styles.sizeTextSelected]}>
+                      {/* The saved colour keeps its label even when another is
+                          selected (DC-06): the user must never mistake a
+                          fallback colour for the one they chose. */}
+                      {isSaved ? `${cw.colour} — saved` : cw.colour}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
 
         <Text style={styles.sizeHeading}>Size</Text>
         <View style={styles.sizes}>
           {parent.sizes.map((size) => {
-            const available = current.sizesInStock.includes(size);
+            const available = sizesForActiveColour.includes(size);
             const selected = size === selectedSize;
+            const isSavedSize = size === item.size;
             return (
               <Pressable
                 key={size}
                 testID={`size-${size}`}
                 accessibilityRole="button"
-                accessibilityLabel={
-                  available ? `Size ${size}` : `Size ${size}, out of stock`
-                }
+                accessibilityLabel={[
+                  `Size ${size}`,
+                  isSavedSize ? "your saved size" : null,
+                  available ? null : "out of stock",
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
                 accessibilityState={{ selected, disabled: !available }}
                 disabled={!available}
                 onPress={() => onChooseSize(size)}
@@ -176,21 +230,23 @@ export function SavedProductScreen({
         {/* No dead-end Buy: when nothing can be bought the recovery block above
             carries the next step and this button is not drawn at all. */}
         {purchasable ? (
-          <Pressable
-            testID="move-to-bag"
-            accessibilityRole="button"
-            accessibilityLabel={
-              deviatesFromSaved
-                ? `Move to Bag in size ${selectedSize}, instead of your saved size ${item.size}`
-                : "Move to Bag"
-            }
-            onPress={onMoveToBag}
-            style={[styles.button, styles.filled]}
-          >
-            <Text style={styles.labelFilled}>
-              {deviatesFromSaved ? `Move to Bag · Size ${selectedSize}` : "Move to Bag"}
-            </Text>
-          </Pressable>
+          <View style={styles.buyRow}>
+            <Button
+              testID="move-to-bag"
+              filled
+              grow
+              // FR-7 covers colour as much as size: the button says which
+              // variant it is actually buying, so a deviation from what was
+              // saved is never hidden behind a generic label.
+              accessibilityLabel={
+                deviatesFromSaved
+                  ? `Move to Bag in ${selectedVariant}, instead of your saved ${item.colour} · ${item.size}`
+                  : "Move to Bag"
+              }
+              label={deviatesFromSaved ? `Move to Bag · ${selectedVariant}` : "Move to Bag"}
+              onPress={onMoveToBag}
+            />
+          </View>
         ) : null}
       </View>
     </ScrollView>
@@ -253,6 +309,17 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   sizes: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.sm },
+  // Wider than a size pill because it carries a word plus the "— saved" tag.
+  colour: {
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: space.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+  },
+  buyRow: { flexDirection: "row", marginTop: space.lg },
   size: {
     minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,

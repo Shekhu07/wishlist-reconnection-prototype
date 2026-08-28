@@ -47,6 +47,16 @@ export interface RevalidationResult {
   current: CurrentFacts;
   /** Alternatives offered only when the saved variant is blocked. */
   alternatives: { colourway: Colourway; sizes: string[] }[];
+  /**
+   * Sizes in stock for every colourway of this parent, keyed by product_id.
+   *
+   * Populated always, unlike `alternatives`. Section 6 of the wireframes is
+   * explicit that size availability uses current inventory and is never
+   * inferred from another size -- and the same holds across colours. Once the
+   * user can pick a colour, answering "is my size available" from the *saved*
+   * colourway's stock is exactly that inference.
+   */
+  sizesByColour: Record<number, string[]>;
 }
 
 /**
@@ -80,9 +90,13 @@ export function revalidate(
   const colourway = parent.colourways.find((c) => c.product_id === item.product_id);
   if (!colourway) return null;
 
-  const sizesInStock = inventory.sizesInStock(parent, colourway.product_id);
+  const sizesByColour: Record<number, string[]> = {};
+  for (const c of parent.colourways) {
+    sizesByColour[c.product_id] = inventory.sizesInStock(parent, c.product_id);
+  }
+  const sizesInStock = sizesByColour[colourway.product_id] ?? [];
   const coloursInStock = parent.colourways
-    .filter((c) => c.skus.some((s) => inventory.isInStock(s.sku)))
+    .filter((c) => (sizesByColour[c.product_id] ?? []).length > 0)
     .map((c) => c.colour);
 
   const deliverable = servesPincode(colourway.seller, pincode);
@@ -118,12 +132,18 @@ export function revalidate(
     blocking === "variant_unavailable"
       ? parent.colourways
           .filter((c) => c.product_id !== colourway.product_id)
-          .map((c) => ({
-            colourway: c,
-            sizes: inventory.sizesInStock(parent, c.product_id),
-          }))
+          .map((c) => ({ colourway: c, sizes: sizesByColour[c.product_id] ?? [] }))
           .filter((entry) => entry.sizes.length > 0)
       : [];
 
-  return { item, parent, colourway, blocking, advisories, current, alternatives };
+  return {
+    item,
+    parent,
+    colourway,
+    blocking,
+    advisories,
+    current,
+    alternatives,
+    sizesByColour,
+  };
 }

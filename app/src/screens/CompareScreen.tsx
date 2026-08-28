@@ -146,6 +146,9 @@ export function CompareScreen({
           : "Not deliverable";
       case "returns":
         return formatReturns(cw.returns_days);
+      case "occasion":
+        // Real dataset columns, so this row says nothing the data cannot back.
+        return [cw.usage, cw.season].filter(Boolean).join(" · ") || "—";
       default:
         return "—";
     }

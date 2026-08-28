@@ -13,6 +13,17 @@ export interface AppShellProps {
   onOpenSearch: () => void;
   /** The harness pill. Optional so shell tests can render without it. */
   harness?: ReactNode;
+  /**
+   * Overlay sheets (DC-02, DC-04, CR-03, Help me decide).
+   *
+   * They belong here, beside the harness, rather than inside the screen that
+   * raises them. An absolutely-positioned overlay resolves against its nearest
+   * positioned ancestor, so a sheet rendered inside the wishlist module is
+   * clipped to the module and scrims only the module -- which is exactly what
+   * it did, and no test could see it. The harness has always been correct for
+   * this reason; sheets now share the position.
+   */
+  sheet?: ReactNode;
   children: ReactNode;
 }
 
@@ -23,6 +34,7 @@ export function AppShell({
   onBack,
   onOpenSearch,
   harness,
+  sheet,
   children,
 }: AppShellProps) {
   return (
@@ -30,6 +42,7 @@ export function AppShell({
       <TopBar screen={top(nav)} onBack={onBack} onOpenSearch={onOpenSearch} />
       <View style={styles.body}>{children}</View>
       {harness}
+      {sheet}
       <BottomNav tab={nav.tab} bagCount={bagCount} onTab={onTab} />
     </SafeAreaView>
   );

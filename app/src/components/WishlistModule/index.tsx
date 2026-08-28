@@ -9,6 +9,7 @@ import {
   HIDE_FOREVER_LABEL,
   UNDO_LABEL,
   VIEW_ALL,
+  WHY_LINK,
 } from "@/copy/bundle";
 import {
   CAROUSEL_CARD_WIDTH,
@@ -38,6 +39,21 @@ export interface WishlistModuleProps {
   onHideForever?: (sku: string) => void;
   onPrimary: (sku: string) => void;
   onSecondary: (sku: string) => void;
+  /** Raises DC-02. The shell renders the sheet; see AppShell's `sheet` slot. */
+  onWhy?: () => void;
+  /**
+   * A dismissal raised from outside the module -- today, DC-02's "Hide for this
+   * search".
+   *
+   * The module going away is local state, not a consequence of the service-side
+   * suppression: `client.dismiss()` records the signal for the *next* match and
+   * leaves the current response alone. So a second entry point that only called
+   * dismiss() logged the relevance signal and left the module sitting there,
+   * having just been asked to hide. Bumping this nonce takes the same path the
+   * close box does, undo strip included, because FR-8 requires a dismissal stay
+   * reversible however it was raised.
+   */
+  externalDismiss?: number;
   swapFills?: boolean;
 }
 
@@ -50,6 +66,8 @@ export function WishlistModule({
   onHideForever,
   onPrimary,
   onSecondary,
+  onWhy,
+  externalDismiss = 0,
   swapFills,
 }: WishlistModuleProps) {
   const [dismissed, setDismissed] = useState(false);
@@ -62,6 +80,12 @@ export function WishlistModule({
     setUndoVisible(false);
     setHiddenForever(false);
   }, [response]);
+
+  useEffect(() => {
+    if (externalDismiss === 0) return;
+    setDismissed(true);
+    setUndoVisible(true);
+  }, [externalDismiss]);
 
   useEffect(() => {
     if (!undoVisible) return undefined;
@@ -192,6 +216,22 @@ export function WishlistModule({
         onSecondary={() => onSecondary(primary.sku)}
         swapFills={swapFills}
       />
+
+      {/* DC-01 places this below the two actions rather than beside them: it is
+          a question about the module, not a third thing to do with the item,
+          and giving it equal weight would make three co-equal actions out of
+          the two FR-5 asks for. */}
+      <Pressable
+        testID="wishlist-why"
+        accessibilityRole="button"
+        accessibilityLabel={WHY_LINK}
+        hitSlop={hitSlopFor(MIN_TOUCH_TARGET)}
+        onPress={() => onWhy?.()}
+        style={styles.why}
+      >
+        <Text style={styles.whyText}>{WHY_LINK}</Text>
+      </Pressable>
+
     </View>
   );
 }
@@ -231,6 +271,8 @@ const styles = StyleSheet.create({
   },
   carousel: { gap: space.md },
   carouselCard: { width: CAROUSEL_CARD_WIDTH },
+  why: { marginTop: space.sm, alignSelf: "flex-start" },
+  whyText: { ...type.chip, color: color.textSecondary, textDecorationLine: "underline" },
   viewAll: {
     ...type.body,
     color: color.brandPink,

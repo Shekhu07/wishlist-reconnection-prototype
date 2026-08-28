@@ -9,7 +9,11 @@ import wishlistJson from "@/data/wishlist.json";
 import type { Catalog, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
-import { EventLog, type ExperimentArm } from "@/analytics/events";
+import {
+  EventLog,
+  type ConfidenceEventName,
+  type ExperimentArm,
+} from "@/analytics/events";
 import { PreferenceStore } from "@/preferences/store";
 import {
   addToBag,
@@ -28,6 +32,7 @@ import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { SavedProductScreen } from "@/screens/SavedProductScreen";
+import { WhySheet } from "@/components/WishlistModule/WhySheet";
 import { SearchEntryScreen } from "@/screens/SearchEntryScreen";
 import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScreen";
 import { StubScreen } from "@/screens/StubScreen";
@@ -111,9 +116,18 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>({ tab: "home", stack: [rootFor("home")] });
   const [harnessOpen, setHarnessOpen] = useState(false);
+  // DC-02 lives in the shell's sheet slot, not in the module: an overlay
+  // rendered inside the module is clipped to the module.
+  const [whyOpen, setWhyOpen] = useState(false);
+  // Bumped to make the module take its own dismissal path when the hide was
+  // raised from the DC-02 sheet rather than from the close box.
+  const [externalDismiss, setExternalDismiss] = useState(0);
   const [recents, setRecents] = useState<string[]>([]);
   const [pincode, setPincode] = useState(wishlist.pincode);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  // DC-06. Null means "the colour they saved", which is what the screen opens
+  // on -- the saved variant is the default, never a replacement for it.
+  const [selectedColour, setSelectedColour] = useState<string | null>(null);
   // Stock lives outside React, so a change has to be announced to re-render.
   const [stockVersion, setStockVersion] = useState(0);
   // commerce.bag.items is mutated in place by addToBag, which is imperative,
@@ -227,6 +241,82 @@ export default function App() {
       ? wishlist.items.find((candidate) => candidate.item_id === screen.itemId)
       : undefined;
 
+  /**
+   * The E5 recovery telemetry.
+   *
+   * `variant_recovery_shown` and `variant_recovery_resolved` were declared in
+   * events.ts and consumed by section 7's variantRecoveryRate, but nothing in
+   * the app ever emitted either -- only the simulator did. The metric therefore
+   * read entirely off synthetic data while looking like it measured the
+   * product. It now measures the product.
+   */
+  const emitRecoveryResolved = useCallback(
+    (resolvedBy: "other_size" | "other_colour" | "changed_address" | "abandoned") => {
+      if (!activeItem) return;
+      events.emit({
+        type: "variant_recovery_resolved",
+        ts: catalog.today,
+        user_id: wishlist.user_id,
+        session_id: request.session_id,
+        arm: client.arm,
+        sku: activeItem.sku,
+        resolved_by: resolvedBy,
+      });
+      note();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeItem, client.arm, request.session_id]
+  );
+
+  /**
+   * One definition of "the user dismissed the module".
+   *
+   * FR-8 makes dismissal a relevance signal, and section 7 reads the dismissal
+   * rate off it -- so a second entry point that suppressed without logging
+   * would silently deflate the metric rather than obviously break it.
+   */
+  const dismissModule = useCallback(
+    (toast: string) => {
+      dismiss();
+      events.emit({
+        type: "module_dismissed",
+        ts: catalog.today,
+        user_id: wishlist.user_id,
+        session_id: request.session_id,
+        arm: client.arm,
+        query_family: client.familyOf(context.query),
+        skus: response?.matches.map((m) => m.sku) ?? [],
+      });
+      note();
+      setToast(toast);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dismiss, client, context.query, request.session_id, response]
+  );
+
+  /** The confidence layer's interactions (wireframes section 21). */
+  const emitConfidence = useCallback(
+    (
+      name: ConfidenceEventName,
+      detail: { signal_type?: string; changed?: "size" | "colour"; to?: string }
+    ) => {
+      if (!activeItem) return;
+      events.emit({
+        type: "confidence_interaction",
+        ts: catalog.today,
+        user_id: wishlist.user_id,
+        session_id: request.session_id,
+        arm: client.arm,
+        sku: activeItem.sku,
+        name,
+        ...detail,
+      });
+      note();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeItem, client.arm, request.session_id]
+  );
+
   // Recomputed on every visit, because the whole point is that it may now
   // disagree with what the module rendered. stockVersion and pincode are
   // dependencies for exactly that reason.
@@ -234,6 +324,29 @@ export default function App() {
     () => (activeItem ? revalidate(activeItem, catalog, inventory, pincode) : null),
     [activeItem, inventory, pincode, stockVersion]
   );
+
+  // The other half of the pair: emitted when a blocking state actually renders,
+  // once per (item, reason), so the rate has a denominator that is not the
+  // number of times React re-rendered.
+  const recoveryShown = useRef(new Set<string>());
+  useEffect(() => {
+    const reason = revalidation?.blocking;
+    if (!activeItem || !reason) return;
+    const key = `${activeItem.sku}|${reason}`;
+    if (recoveryShown.current.has(key)) return;
+    recoveryShown.current.add(key);
+    events.emit({
+      type: "variant_recovery_shown",
+      ts: catalog.today,
+      user_id: wishlist.user_id,
+      session_id: request.session_id,
+      arm: client.arm,
+      sku: activeItem.sku,
+      reason,
+    });
+    note();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeItem?.sku, revalidation?.blocking]);
 
   /** Re-run the current match without charging it to the user's daily cap. */
   const restage = useCallback(() => {
@@ -244,6 +357,7 @@ export default function App() {
   const goBack = useCallback(() => {
     setNav((prev) => pop(prev));
     setSelectedSize(null);
+    setSelectedColour(null);
   }, []);
 
   // Picking a scenario from the harness has to land on its results
@@ -259,6 +373,7 @@ export default function App() {
       stack: [rootFor("home"), { name: "searchEntry" }, { name: "results" }],
     });
     setSelectedSize(null);
+    setSelectedColour(null);
   }, []);
 
   const noteStockChange = () => setStockVersion((version) => version + 1);
@@ -289,6 +404,34 @@ export default function App() {
         }
         onBack={() => setNav(pop(nav))}
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
+        sheet={
+          <WhySheet
+            open={whyOpen}
+            onClose={() => setWhyOpen(false)}
+            onViewItem={() => {
+              setWhyOpen(false);
+              const item = firstMatchItem;
+              if (item) setNav((prev) => push(prev, { name: "saved", itemId: item.item_id }));
+            }}
+            onHideForSearch={() => {
+              setWhyOpen(false);
+              // The same relevance signal as the close box, not a quieter one:
+              // section 7's dismissal rate counts both or it counts neither.
+              setExternalDismiss((n) => n + 1);
+              dismissModule("Hidden for this search — logged as a relevance signal");
+            }}
+            onHideAlways={() => {
+              // Section 4.16's control, enforced service-side rather than in the
+              // view -- a preference the UI honours and the service ignores is
+              // not a control.
+              setWhyOpen(false);
+              setShowWishlistInSearch(false);
+              client.preferences.showWishlistInSearch = false;
+              setToast("Wishlist matches hidden in Search — change it in the harness");
+              restage();
+            }}
+          />
+        }
         harness={
           <HarnessPill
             stateNumber={scenarios.indexOf(scenario) + 1}
@@ -435,8 +578,25 @@ export default function App() {
               result={revalidation}
               pincode={pincode}
               selectedSize={selectedSize ?? activeItem.size}
+              selectedColour={selectedColour ?? activeItem.colour}
               onBack={goBack}
-              onChooseSize={setSelectedSize}
+              onChooseSize={(size) => {
+                setSelectedSize(size);
+                emitConfidence("saved_variant_changed", { changed: "size", to: size });
+              }}
+              onChooseColour={(colour) => {
+                // Changing colour can invalidate the selected size, and
+                // carrying a size that colour does not stock would be the
+                // silent substitution FR-7 forbids. Fall back to the saved
+                // size and let the size row say what is actually available.
+                setSelectedColour(colour);
+                setSelectedSize(null);
+                emitConfidence("saved_variant_changed", { changed: "colour", to: colour });
+              }}
+              onConfidenceExpand={() => emitConfidence("confidence_layer_viewed", {})}
+              onSignalExpand={(signal) =>
+                emitConfidence("confidence_signal_expanded", { signal_type: signal })
+              }
               onMoveToBag={() => {
                 const size = selectedSize ?? activeItem.size;
                 const duplicate = wouldDuplicate(activeItem, commerce);
@@ -464,20 +624,29 @@ export default function App() {
                 restage();
               }}
               onRecoveryPrimary={() => {
+                emitConfidence("confidence_recovery_selected", {});
                 if (revalidation.blocking === "variant_unavailable") {
                   const available = revalidation.current.sizesInStock[0];
                   if (available) {
                     setSelectedSize(available);
+                    emitRecoveryResolved("other_size");
                     return setToast(`Size ${available} selected. Your saved size is unchanged.`);
                   }
+                  emitRecoveryResolved("other_colour");
                   return setNav((prev) => push(prev, { name: "compare", itemId: activeItem.item_id }));
                 }
                 if (revalidation.blocking === "product_unavailable") {
+                  emitRecoveryResolved("other_colour");
                   return setNav((prev) => push(prev, { name: "compare", itemId: activeItem.item_id }));
                 }
+                emitRecoveryResolved("changed_address");
                 setToast("Pick a different delivery pincode in the harness bar above");
               }}
               onRecoverySecondary={() => {
+                // Keeping it in the wishlist is a real outcome of the recovery
+                // state, not a non-event: section 7's variant recovery rate
+                // needs the denominator as much as the numerator.
+                emitRecoveryResolved("abandoned");
                 setToast(
                   revalidation.blocking === "product_unavailable"
                     ? "Removed from Wishlist"
@@ -521,21 +690,24 @@ export default function App() {
             catalog={catalog}
             query={context.query}
             matchResponse={response}
-            onDismiss={() => {
-              dismiss();
+            onDismiss={() => dismissModule("Dismissal logged as a relevance signal")}
+            onUndo={undo}
+            externalDismiss={externalDismiss}
+            onWhy={() => {
+              setWhyOpen(true);
+              const item = firstMatchItem;
+              if (!item) return;
               events.emit({
-                type: "module_dismissed",
+                type: "confidence_interaction",
                 ts: catalog.today,
                 user_id: wishlist.user_id,
                 session_id: request.session_id,
                 arm: client.arm,
-                query_family: client.familyOf(context.query),
-                skus: response?.matches.map((m) => m.sku) ?? [],
+                sku: item.sku,
+                name: "confidence_explanation_opened",
               });
               note();
-              setToast("Dismissal logged as a relevance signal");
             }}
-            onUndo={undo}
             onHideForever={(sku) => {
               const item = itemFor(sku);
               if (!item) return;

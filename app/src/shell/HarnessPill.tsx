@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text } from "react-native";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
+import { SheetOverlay } from "@/components/Sheet";
 import type { SuppressionReason } from "@/state/useWishlistMatch";
 
 /**
@@ -48,17 +49,9 @@ export function HarnessPill({ stateNumber, suppression, open, onToggle, children
         </Text>
       </Pressable>
       {open ? (
-        <View style={styles.overlay}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close the state harness"
-            style={styles.scrim}
-            onPress={onToggle}
-          />
-          <View style={styles.sheet}>
-            <ScrollView>{children}</ScrollView>
-          </View>
-        </View>
+        <SheetOverlay onScrimPress={onToggle} scrimLabel="Close the state harness">
+          {children}
+        </SheetOverlay>
       ) : null}
     </>
   );
@@ -93,30 +86,4 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   pillText: { ...type.chip, color: color.surface, fontWeight: "700" },
-  overlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 20,
-  },
-  scrim: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  sheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    maxHeight: "70%",
-    backgroundColor: color.surface,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
-  },
 });

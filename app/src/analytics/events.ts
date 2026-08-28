@@ -78,6 +78,37 @@ export interface ModuleAction extends BaseEvent {
   sku: string;
 }
 
+/**
+ * The Decision Confidence Layer's interactions (wireframes section 21).
+ *
+ * Grouped under one type with a `name` rather than ten interfaces, following
+ * `ModuleAction`'s precedent: the discriminating field is what the metric
+ * filters on either way, and ten near-identical shapes would obscure the two
+ * fields that actually differ between them.
+ */
+export type ConfidenceEventName =
+  | "confidence_layer_viewed"
+  | "confidence_detail_opened"
+  | "confidence_signal_expanded"
+  | "saved_variant_viewed"
+  | "colour_selector_opened"
+  | "size_selector_opened"
+  | "saved_variant_changed"
+  | "confidence_explanation_opened"
+  | "move_to_bag_from_confidence"
+  | "confidence_recovery_selected";
+
+export interface ConfidenceInteraction extends BaseEvent {
+  type: "confidence_interaction";
+  name: ConfidenceEventName;
+  sku: string;
+  /** Which signal, where the interaction was about one. */
+  signal_type?: string;
+  /** Which half of the variant moved, for `saved_variant_changed`. */
+  changed?: "size" | "colour";
+  to?: string;
+}
+
 export interface VariantRecoveryShown extends BaseEvent {
   type: "variant_recovery_shown";
   sku: string;
@@ -120,6 +151,7 @@ export type AnalyticsEvent =
   | ModuleRendered
   | ModuleDismissed
   | ModuleAction
+  | ConfidenceInteraction
   | VariantRecoveryShown
   | VariantRecoveryResolved
   | MovedToBag

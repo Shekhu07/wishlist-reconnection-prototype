@@ -1,25 +1,59 @@
-import {
-  BANNED_COPY_PATTERNS,
-  COPY,
-  DISMISSED_COPY,
-  DISMISS_LABEL,
-  UNDO_LABEL,
-  VIEW_ALL,
-  formatPrice,
-} from "@/copy/bundle";
+import * as bundle from "@/copy/bundle";
+import { BANNED_COPY_PATTERNS, COPY, formatPrice } from "@/copy/bundle";
 
 /**
  * Constraint C-1 is a launch gate, so it is a test rather than a review note.
  * If someone adds "20% off" to the bundle, the build fails here.
+ *
+ * This used to enumerate the bundle's keys by hand, which meant every string
+ * added after it was written -- the recovery copy, the advisories, the whole
+ * compare vocabulary -- was silently outside the sweep. A ban list that only
+ * covers what someone remembered to list is not a ban list. So it now walks the
+ * module's exports and reaches every string, including the ones behind copy
+ * functions, whether or not anyone remembers this file exists.
  */
 
-function everyString(): string[] {
-  const context = { count: 3, savedSize: "M", savedColour: "Black" };
-  const strings: string[] = [DISMISS_LABEL, DISMISSED_COPY, UNDO_LABEL, VIEW_ALL];
-  for (const copy of Object.values(COPY)) {
-    strings.push(copy.title, copy.primaryAction, copy.secondaryAction, copy.subtitle(context));
+/** Enough fields to satisfy every copy function's context in one call. */
+const CONTEXT = {
+  count: 3,
+  savedSize: "M",
+  savedColour: "Black",
+  size: "M",
+  colour: "Black",
+  seller: "Vector Lifestyle",
+  pincode: "560034",
+};
+
+function collect(value: unknown, out: string[]): void {
+  if (typeof value === "string") {
+    out.push(value);
+    return;
   }
-  return strings;
+  if (typeof value === "function") {
+    // Copy functions take a context and return copy. Formatters take numbers
+    // and produce something harmless from an object; either way, whatever comes
+    // back is swept. Anything that throws is not copy.
+    try {
+      collect((value as (ctx: unknown) => unknown)(CONTEXT), out);
+    } catch {
+      /* not a copy function */
+    }
+    return;
+  }
+  if (value instanceof RegExp) return;
+  if (Array.isArray(value)) {
+    for (const entry of value) collect(entry, out);
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const entry of Object.values(value)) collect(entry, out);
+  }
+}
+
+function everyString(): string[] {
+  const strings: string[] = [];
+  collect(bundle, strings);
+  return [...new Set(strings)].filter((text) => text.trim().length > 0);
 }
 
 describe("copy bundle (constraint C-1)", () => {

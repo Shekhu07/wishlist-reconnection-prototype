@@ -65,9 +65,31 @@ describe("saved product screen (E5)", () => {
   it("shows the five facts revalidated at the boundary (section 4.13)", () => {
     const { result } = setup();
     renderScreen(result, "M");
+    // They now live in the decision confidence section (DC-03), which arrives
+    // expanded on this screen -- reaching it is already a request to inspect.
     for (const label of ["Price", "Seller", "Delivery", "Returns"]) {
       expect(screen.getByText(label)).toBeTruthy();
     }
+  });
+
+  it("states where every fact came from, not just what it says (section 7)", () => {
+    const { result } = setup();
+    renderScreen(result, "M");
+    // The source is the difference between evidence and assertion, so every
+    // signal has a "Why" and every "Why" resolves to a named source.
+    fireEvent.press(screen.getByTestId("signal-why-delivery"));
+    expect(screen.getByTestId("signal-source-delivery")).toBeTruthy();
+    expect(screen.getByText("This seller, for your delivery address")).toBeTruthy();
+  });
+
+  it("labels generated data as generated, and claims no fit confidence", () => {
+    const { result } = setup();
+    renderScreen(result, "M");
+    fireEvent.press(screen.getByTestId("signal-why-fit"));
+    // Constraint 8 of the improvement prompt: seeded data is never presented
+    // as real. There is no size chart in this catalog, so no fit claim exists.
+    expect(renderedText()).toContain("prototype data");
+    expect(renderedText()).toMatch(/no fit confidence is claimed/i);
   });
 
   it("offers Move to Bag when the saved variant is genuinely buyable", () => {
@@ -127,7 +149,11 @@ describe("saved product screen (E5)", () => {
     renderScreen(result, item.size);
     const gone = screen.getByTestId(`size-${item.size}`);
     expect(gone.props.accessibilityState.disabled).toBe(true);
-    expect(gone.props.accessibilityLabel).toBe(`Size ${item.size}, out of stock`);
+    // The saved size is named as such even while it is out of stock: a screen
+    // reader must be able to tell "your size, gone" from "some size, gone".
+    expect(gone.props.accessibilityLabel).toBe(
+      `Size ${item.size}, your saved size, out of stock`
+    );
   });
 
   it("surfaces a price change as an advisory without blocking the purchase", () => {
@@ -141,7 +167,8 @@ describe("saved product screen (E5)", () => {
     expect(screen.getByTestId("move-to-bag")).toBeTruthy();
     // Both numbers are stated so the user can see the change, but neither is
     // framed as a gain and no direction of travel is named (constraint C-1).
-    expect(screen.getByText("Price when saved")).toBeTruthy();
+    fireEvent.press(screen.getByTestId("signal-why-price"));
+    expect(renderedText()).toContain("You saved it at \u20b91,499");
     expect(renderedText()).not.toMatch(/\b(cheaper|lower|reduced|now only|save \u20b9)\b/i);
   });
 
@@ -177,11 +204,41 @@ describe("saved product screen (E5)", () => {
     const stocked = result.current.sizesInStock.find((size) => size !== item.size)!;
     renderScreen(result, stocked);
     // FR-7 bans a silent substitution. An explicit choice is fine; a button
-    // that reads "Move to Bag" while quietly buying another size is not.
-    expect(screen.getByText(`Move to Bag · Size ${stocked}`)).toBeTruthy();
+    // that reads "Move to Bag" while quietly buying another size is not. The
+    // label names the whole variant, because colour can now deviate too.
+    expect(screen.getByText(`Move to Bag · ${item.colour} · ${stocked}`)).toBeTruthy();
     expect(screen.getByTestId("move-to-bag").props.accessibilityLabel).toContain(
-      `instead of your saved size ${item.size}`
+      `instead of your saved ${item.colour} · ${item.size}`
     );
+  });
+
+  it("names the colour it is actually buying when that is what deviates", () => {
+    // DC-06. The saved colour keeps its label while another is selected, so a
+    // fallback colour can never be mistaken for the one the user chose.
+    const { result, item } = setup();
+    const other = result.parent.colourways.find((c) => c.colour !== item.colour)!;
+    renderScreen(result, item.size, { selectedColour: other.colour, onChooseColour: noop });
+
+    expect(screen.getByText(`Move to Bag · ${other.colour} · ${item.size}`)).toBeTruthy();
+    expect(screen.getByText(`${item.colour} — saved`)).toBeTruthy();
+    expect(screen.getByTestId("signal-saved_variant")).toBeTruthy();
+    expect(renderedText()).toContain(`Originally saved: ${item.colour} · ${item.size}`);
+  });
+
+  it("reads size availability from the colour on screen, not the saved one", () => {
+    // Inferring the selected colour's stock from the saved colourway's is the
+    // silent substitution FR-7 forbids, wearing a different hat.
+    const catalog = makeCatalog();
+    const inventory = new InventorySimulator(catalog);
+    const item = makeWishlist().items[0];
+    // Sell out size M in the *other* colour only; the saved colour keeps it.
+    const other = catalog.parents[0].colourways.find((c) => c.product_id !== item.product_id)!;
+    inventory.sellOut(other.skus.find((s) => s.size === "M")!.sku);
+    const result = revalidate(item, catalog, inventory, PINCODE)!;
+
+    renderScreen(result, "M", { selectedColour: other.colour, onChooseColour: noop });
+    expect(screen.getByTestId("size-M").props.accessibilityState.disabled).toBe(true);
+    expect(screen.queryByTestId("move-to-bag")).toBeNull();
   });
 
   it("still offers no purchase when the product is gone in every variant", () => {

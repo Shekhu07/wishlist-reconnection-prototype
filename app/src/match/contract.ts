@@ -61,7 +61,9 @@ export interface CurrentSnapshot {
   available: boolean;
   price: number;
   seller: string;
-  delivery_by: string;
+  /** Null when this seller does not serve the request's pincode. Advisory: the
+   *  binding read happens again in revalidate.ts at the action boundary. */
+  delivery_by: string | null;
   state: ItemState;
 }
 

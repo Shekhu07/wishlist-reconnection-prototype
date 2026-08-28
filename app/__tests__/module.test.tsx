@@ -33,6 +33,19 @@ function makeResponse(matches: Match[]): MatchResponse {
 
 const noop = () => undefined;
 
+/** Every string currently on screen, for whole-surface assertions. */
+function renderedText(): string {
+  return screen.root ? collect(screen.root) : "";
+}
+
+function collect(node: { children: unknown[] }): string {
+  return node.children
+    .map((child) =>
+      typeof child === "string" ? child : collect(child as { children: unknown[] })
+    )
+    .join(" ");
+}
+
 function renderModule(response: MatchResponse, props: Partial<Parameters<typeof WishlistModule>[0]> = {}) {
   return render(
     <WishlistModule
@@ -142,5 +155,49 @@ describe("wishlist module (E4)", () => {
     renderModule(makeResponse(matches));
     expect(screen.getAllByText("MARK TAYLOR")).toHaveLength(3);
     expect(screen.getAllByText("Saved: Blue · M")).toHaveLength(3);
+  });
+
+  describe("the compact confidence summary (DC-01)", () => {
+    it("confirms the saved size and points at the size guide", () => {
+      renderModule(makeResponse([makeMatch()]));
+      expect(screen.getByTestId("confidence-summary")).toBeTruthy();
+      expect(screen.getByText("Size M available · Check size guide")).toBeTruthy();
+    });
+
+    it("claims nothing about availability once the variant is gone", () => {
+      // Saying "Size M available" beside "Saved size unavailable" would be the
+      // module contradicting itself in the space of two lines.
+      renderModule(
+        makeResponse([
+          makeMatch({
+            current: { ...makeMatch().current, available: false, state: "variant_unavailable" },
+          }),
+        ])
+      );
+      expect(screen.queryByTestId("confidence-summary")).toBeNull();
+      expect(screen.getByText("Saved size unavailable")).toBeTruthy();
+    });
+
+    it("says the seller cannot deliver rather than naming a date", () => {
+      renderModule(
+        makeResponse([
+          makeMatch({ current: { ...makeMatch().current, delivery_by: null } }),
+        ])
+      );
+      expect(screen.getByText(/Not deliverable to this address/)).toBeTruthy();
+    });
+  });
+
+  it("raises the explanation rather than rendering it inside the module", () => {
+    // The sheet is an overlay, and an overlay rendered inside the module is
+    // clipped to the module and scrims only the module -- which is exactly
+    // what it did until a browser showed it. The module reports the intent;
+    // AppShell's `sheet` slot renders it, beside the harness that has always
+    // been positioned correctly for the same reason.
+    const onWhy = jest.fn();
+    renderModule(makeResponse([makeMatch()]), { onWhy });
+    fireEvent.press(screen.getByTestId("wishlist-why"));
+    expect(onWhy).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("why-sheet")).toBeNull();
   });
 });

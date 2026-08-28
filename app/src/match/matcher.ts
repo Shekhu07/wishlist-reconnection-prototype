@@ -18,6 +18,11 @@ import {
   type CommerceState,
   type DuplicateState,
 } from "@/commerce/reconcile";
+// One definition of "when does this arrive, and does it arrive here at all".
+// The module's read is advisory and revalidate.ts's is binding, but that is a
+// difference of *when* they are read, not of how they are computed -- a second
+// copy here promised a date at an address the seller does not serve.
+import { deliveryDateFor, servesPincode } from "@/revalidation/revalidate";
 
 /**
  * E3, tiers 1 and 2 only.
@@ -406,7 +411,9 @@ export function match(
       available: c.itemState === "purchasable" || c.itemState === "in_bag",
       price: c.colourway.price,
       seller: c.colourway.seller,
-      delivery_by: deliveryDate(index.catalog.today, c.colourway.product_id),
+      delivery_by: servesPincode(c.colourway.seller, request.delivery_pincode)
+        ? deliveryDateFor(index.catalog.today, c.colourway.product_id)
+        : null,
       state: c.itemState,
     },
     copy_key: copyKeyFor(c, deduped.length, filters, reconcile(c.item, index.commerce).state),
@@ -418,12 +425,4 @@ export function match(
   }));
 
   return { matches, capped_total: deduped.length, suppressed: false };
-}
-
-/** Advisory delivery estimate: 2-5 days out, stable per product. */
-function deliveryDate(today: string, productId: number): string {
-  const offset = 2 + (productId % 4);
-  const date = new Date(`${today}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + offset);
-  return date.toISOString().slice(0, 10);
 }

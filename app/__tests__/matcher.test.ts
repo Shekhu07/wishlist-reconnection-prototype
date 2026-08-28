@@ -1,6 +1,8 @@
 import { DEFAULT_CONFIG } from "@/match/contract";
 import { buildIndex, match } from "@/match/matcher";
-import { makeCatalog, makeWishlist } from "./helpers/fixtures";
+import { InventorySimulator } from "@/revalidation/inventory";
+import { deliveryDateFor, revalidate, servesPincode } from "@/revalidation/revalidate";
+import { TODAY, makeCatalog, makeWishlist } from "./helpers/fixtures";
 
 const baseRequest = {
   modality: "text" as const,
@@ -171,5 +173,40 @@ describe("match service (E3, tiers 1 and 2)", () => {
 
   it("is deterministic across repeated calls", () => {
     expect(run("mark taylor shirt")).toEqual(run("mark taylor shirt"));
+  });
+
+  describe("delivery is answered for the address that was asked about", () => {
+    // The matcher used to carry its own copy of the delivery estimate that
+    // never looked at the pincode, so the module could promise a date at an
+    // address the seller does not serve -- and the binding read would then
+    // contradict it a tap later. Both paths now share one definition.
+    const request = (pincode: string) => ({ ...baseRequest, query: "mark taylor shirt", delivery_pincode: pincode });
+    const at = (pincode: string) =>
+      match(request(pincode), buildIndex(makeCatalog(), makeWishlist())).matches[0];
+
+    it("gives a date where the seller serves the address", () => {
+      expect(servesPincode("Myntra Retail", "560034")).toBe(true);
+      expect(at("560034").current.delivery_by).toBe(deliveryDateFor(TODAY, 1001));
+    });
+
+    it("withholds the date where the seller does not serve it", () => {
+      // 100001 is a pincode this seller fails. Asserted rather than assumed,
+      // so the test cannot quietly become vacuous if servesPincode changes.
+      expect(servesPincode("Myntra Retail", "100001")).toBe(false);
+      expect(at("100001").current.delivery_by).toBeNull();
+    });
+
+    it("agrees with the binding read at the same address", () => {
+      for (const pincode of ["560034", "100001"]) {
+        const advisory = at(pincode).current.delivery_by;
+        const binding = revalidate(
+          makeWishlist().items[0],
+          makeCatalog(),
+          new InventorySimulator(makeCatalog()),
+          pincode
+        );
+        expect(advisory).toBe(binding?.current.delivery_by ?? null);
+      }
+    });
   });
 });

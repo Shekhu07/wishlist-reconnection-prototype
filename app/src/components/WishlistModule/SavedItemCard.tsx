@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 import type { Match } from "@/match/contract";
-import { formatDelivery, formatPrice } from "@/copy/bundle";
+import { FIT_PROMPT, NOT_DELIVERABLE, formatDelivery, formatPrice } from "@/copy/bundle";
 import { CATALOG_IMAGES } from "@/data/images";
 import { CARD_IMAGE, color, radius, space, type } from "@/design/tokens";
 
@@ -51,8 +51,29 @@ export function SavedItemCard({ match, compact = false }: { match: Match; compac
         <Text style={styles.meta} numberOfLines={compact ? 1 : 2}>
           {unavailable
             ? "Saved size unavailable"
-            : `${formatPrice(match.current.price)} · ${formatDelivery(match.current.delivery_by)}`}
+            : `${formatPrice(match.current.price)} · ${
+                // A seller that does not ship here has no date to promise, and
+                // inventing one would be contradicted by the binding read a tap
+                // later. Say what is true instead.
+                match.current.delivery_by
+                  ? formatDelivery(match.current.delivery_by)
+                  : NOT_DELIVERABLE
+              }`}
         </Text>
+        {/* DC-01's compact confidence summary. Advisory, and deliberately only
+            two facts: this read may be contradicted by the binding one, and a
+            dense block here would push the results grid the module must not
+            disturb (section 4.5). The rest is a tap away on the detail screen.
+
+            The fit line does not vary by product, and does not need to: there
+            is no size chart in this catalog, so "check the size guide" is the
+            only fit statement the data supports for any item. Widening the wire
+            contract to carry a field that cannot change would be ceremony. */}
+        {!unavailable ? (
+          <Text style={styles.summary} numberOfLines={1} testID="confidence-summary">
+            {`Size ${match.saved.size} available · ${FIT_PROMPT}`}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -87,4 +108,5 @@ const styles = StyleSheet.create({
   // Price is neutral state text: no strike-through, no was/now, no savings
   // line. Constraint C-1 is enforced here as much as in the copy bundle.
   meta: { ...type.body, color: color.textSecondary, marginTop: space.sm },
+  summary: { ...type.chip, color: color.textSecondary, marginTop: 2 },
 });

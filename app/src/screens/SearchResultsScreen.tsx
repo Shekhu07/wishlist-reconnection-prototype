@@ -4,7 +4,7 @@ import type { MatchResponse } from "@/match/contract";
 import { WishlistModule } from "@/components/WishlistModule";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import type { Catalog } from "@/data/types";
-import { color, radius, space, type } from "@/design/tokens";
+import { FRAME_MAX_WIDTH, color, radius, space, type } from "@/design/tokens";
 import { buildSearchIndex, search } from "@/search/localSearch";
 
 /**
@@ -18,7 +18,8 @@ import { buildSearchIndex, search } from "@/search/localSearch";
  */
 
 /** Kept in step with the phone frame in App.tsx. */
-export const FRAME_MAX_WIDTH = 480;
+/** Re-exported for the screens that already import it from here. */
+export { FRAME_MAX_WIDTH } from "@/design/tokens";
 
 export interface SearchResultsScreenProps {
   catalog: Catalog;
@@ -28,6 +29,10 @@ export interface SearchResultsScreenProps {
   onUndo: () => void;
   /** E16: durable per-item hide, offered after a dismissal. */
   onHideForever?: (sku: string) => void;
+  /** Raises DC-02; the shell owns the sheet. */
+  onWhy?: () => void;
+  /** Bumped when a dismissal is raised from the DC-02 sheet. */
+  externalDismiss?: number;
   onAction: (action: "primary" | "secondary", sku: string) => void;
   swapFills?: boolean;
 }
@@ -39,6 +44,8 @@ export function SearchResultsScreen({
   onDismiss,
   onUndo,
   onHideForever,
+  onWhy,
+  externalDismiss,
   onAction,
   swapFills,
 }: SearchResultsScreenProps) {
@@ -78,6 +85,8 @@ export function SearchResultsScreen({
           onDismiss={onDismiss}
           onUndo={onUndo}
           onHideForever={onHideForever}
+          onWhy={onWhy}
+          externalDismiss={externalDismiss}
           onPrimary={(sku) => onAction("primary", sku)}
           onSecondary={(sku) => onAction("secondary", sku)}
           swapFills={swapFills}

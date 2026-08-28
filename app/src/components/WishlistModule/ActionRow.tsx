@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { MIN_TOUCH_TARGET, color, radius, space } from "@/design/tokens";
+import { StyleSheet, View } from "react-native";
+import { space } from "@/design/tokens";
+import { Button } from "@/components/Button";
 
 /**
  * The two co-equal actions (FR-5).
@@ -49,73 +50,10 @@ export function ActionRow({
   );
 }
 
-function Button({
-  label,
-  filled,
-  onPress,
-  disabled = false,
-  testID,
-}: {
-  label: string;
-  filled: boolean;
-  onPress: () => void;
-  disabled?: boolean;
-  testID: string;
-}) {
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        filled ? styles.filled : styles.outlined,
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-      ]}
-    >
-      <Text style={[styles.label, filled ? styles.labelFilled : styles.labelOutlined]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     gap: space.sm,
     marginTop: space.md,
   },
-  button: {
-    flex: 1,
-    // Identical box for both actions. Constraint C-7 also makes this the
-    // minimum touch target, so the two requirements agree.
-    minHeight: MIN_TOUCH_TARGET,
-    borderRadius: radius.card - 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: space.sm,
-  },
-  filled: {
-    backgroundColor: color.brandPink,
-    borderColor: color.brandPink,
-  },
-  outlined: {
-    backgroundColor: color.surface,
-    borderColor: color.brandPink,
-  },
-  pressed: { opacity: 0.85 },
-  disabled: { opacity: 0.4 },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  labelFilled: { color: color.surface },
-  labelOutlined: { color: color.brandPink },
 });

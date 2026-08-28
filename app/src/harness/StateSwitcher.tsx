@@ -246,7 +246,9 @@ export function StateSwitcher({
                   {shadowMode ? "Shadow mode: on" : "Shadow mode: off"}
                 </Text>
               </Pressable>
-              <Text style={styles.controlLabel}>{eventCount} events</Text>
+              <Text testID="harness-event-count" style={styles.controlLabel}>
+                {eventCount} events
+              </Text>
             </View>
             <View style={styles.group}>
               <Text style={styles.controlLabel}>Hidden {hiddenCount}</Text>
