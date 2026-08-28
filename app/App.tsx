@@ -25,6 +25,7 @@ import {
   type Orders,
   type SavedForLater,
 } from "@/commerce/reconcile";
+import { destinationFor } from "@/match/contract";
 import { RAMP_STEPS } from "@/experiment/assignment";
 import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
@@ -1210,11 +1211,31 @@ export default function App() {
               } else {
                 setSelectedSize(item.size);
               }
+              // Route by what the button *says*, not by which side it is on.
+              //
+              // The module's copy varies with the item's state -- "View Bag",
+              // "Reorder", "View Save for Later" -- while the routing was
+              // positional, so "View Bag" opened the product page. Every one
+              // of those is a button that cannot do what it says, which is the
+              // exact failure the no-dead-end-Buy rule exists to prevent; the
+              // copy test asserts the label and the nav test asserts the
+              // destination, and nothing asserted that they agree.
+              const destination = destinationFor(
+                response?.matches.find((m) => m.sku === sku)?.copy_key,
+                action
+              );
+              if (destination === "bag") return setNav((prev) => switchTab(prev, "bag"));
+              if (destination === "unbuilt") {
+                return setNav((prev) =>
+                  push(prev, {
+                    name: "stub",
+                    reason:
+                      "Save for Later and order history are outside this prototype's scope.",
+                  })
+                );
+              }
               setNav((prev) =>
-                push(prev, {
-                  name: action === "primary" ? "saved" : "compare",
-                  itemId: item.item_id,
-                })
+                push(prev, { name: destination, itemId: item.item_id })
               );
             }}
             swapFills={swapFills}

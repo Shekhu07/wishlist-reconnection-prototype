@@ -155,3 +155,29 @@ export const DEFAULT_CONFIG: MatchConfig = {
   breakerCooldownMs: 30_000,
   perItemDailyCap: 2,
 };
+
+/**
+ * Where a module action actually goes.
+ *
+ * The module's two buttons change their words with the item's state, so
+ * routing them by position sends "View Bag" to the product page and "View
+ * order" to a comparison. Destination belongs with the copy that promises it.
+ *
+ * `unbuilt` is honest rather than convenient: Save for Later and order history
+ * have no screens in this prototype, and a named stub beats silently landing
+ * the user somewhere plausible.
+ */
+export type ActionDestination = "saved" | "compare" | "bag" | "unbuilt";
+
+export function destinationFor(
+  copyKey: CopyKey | undefined,
+  action: "primary" | "secondary"
+): ActionDestination {
+  if (action === "primary") {
+    if (copyKey === "already_in_bag") return "bag";
+    return "saved";
+  }
+  if (copyKey === "saved_for_later" || copyKey === "purchased_before") return "unbuilt";
+  if (copyKey === "purchased_other_variant") return "unbuilt";
+  return "compare";
+}
