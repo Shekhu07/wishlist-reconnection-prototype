@@ -24511,6 +24511,933 @@
       "subCategory": "Nails"
     },
     {
+      "articleType": "Watches",
+      "brand": "Fastrack",
+      "brand_key": "fastrack",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Silicone",
+          "mrp": 3690,
+          "price": 2729,
+          "product_id": 28276,
+          "rating": 4.3,
+          "returns_days": 30,
+          "review_count": 1332,
+          "season": "Winter",
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_979676ecce0e78"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Steel",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Silicone",
+          "mrp": 6880,
+          "price": 4209,
+          "product_id": 43151,
+          "rating": 4.4,
+          "returns_days": 0,
+          "review_count": 1070,
+          "season": "Winter",
+          "seller": "Fashnear Technologies",
+          "skus": [
+            {
+              "in_stock": false,
+              "size": "Onesize",
+              "sku": "sku_cc2e0af2f95572"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Dial Watch",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "dial",
+      "parent_product_id": "pp_281b56a6eda8",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Watches"
+    },
+    {
+      "articleType": "Watches",
+      "brand": "Maxima",
+      "brand_key": "maxima",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Silicone",
+          "mrp": 4010,
+          "price": 3329,
+          "product_id": 23263,
+          "rating": 4.5,
+          "returns_days": 7,
+          "review_count": 2791,
+          "season": "Winter",
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_5930c3ef638c9d"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Cream",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Silicone",
+          "mrp": 5920,
+          "price": 3979,
+          "product_id": 23265,
+          "rating": 4.4,
+          "returns_days": 7,
+          "review_count": 1343,
+          "season": "Winter",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_4eb44ab2f19793"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Dial Watch",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "dial",
+      "parent_product_id": "pp_2b967903816a",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Watches"
+    },
+    {
+      "articleType": "Watches",
+      "brand": "Q&Q",
+      "brand_key": "qq",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Silicone",
+          "mrp": 3410,
+          "price": 3039,
+          "product_id": 32286,
+          "rating": 4.4,
+          "returns_days": 0,
+          "review_count": 12,
+          "season": "Winter",
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_3f5b3bcd7d2e70"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Black",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Silicone",
+          "mrp": 7650,
+          "price": 5719,
+          "product_id": 32287,
+          "rating": 4.7,
+          "returns_days": 30,
+          "review_count": 60,
+          "season": "Winter",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_62fd151e5a113c"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Dial Watch",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "dial",
+      "parent_product_id": "pp_ca29c2232fec",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Watches"
+    },
+    {
+      "articleType": "Watches",
+      "brand": "Fastrack",
+      "brand_key": "fastrack",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Leather Strap",
+          "mrp": 5670,
+          "price": 3219,
+          "product_id": 8146,
+          "rating": 4.0,
+          "returns_days": 30,
+          "review_count": 2264,
+          "season": "Winter",
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_6092c64666f483"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Blue",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Stainless Steel",
+          "mrp": 3310,
+          "price": 2699,
+          "product_id": 25611,
+          "rating": 3.6,
+          "returns_days": 14,
+          "review_count": 2576,
+          "season": "Winter",
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_99190f77a39ba0"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Dial Watch",
+      "gender": "Women",
+      "masterCategory": "Accessories",
+      "name_core": "dial",
+      "parent_product_id": "pp_8c81d461a7af",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Watches"
+    },
+    {
+      "articleType": "Watches",
+      "brand": "Q&Q",
+      "brand_key": "qq",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Leather Strap",
+          "mrp": 5800,
+          "price": 3199,
+          "product_id": 32304,
+          "rating": 3.9,
+          "returns_days": 30,
+          "review_count": 502,
+          "season": "Winter",
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_63581844779942"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Red",
+          "display_name": "Dial Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Leather Strap",
+          "mrp": 2580,
+          "price": 2169,
+          "product_id": 32305,
+          "rating": 3.3,
+          "returns_days": 30,
+          "review_count": 2171,
+          "season": "Winter",
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_32df8aae976ff6"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Dial Watch",
+      "gender": "Women",
+      "masterCategory": "Accessories",
+      "name_core": "dial",
+      "parent_product_id": "pp_d08e6a3be483",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Watches"
+    },
+    {
+      "articleType": "Watches",
+      "brand": "Fastrack",
+      "brand_key": "fastrack",
+      "colourways": [
+        {
+          "colour": "White",
+          "display_name": "Casual Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Leather Strap",
+          "mrp": 6810,
+          "price": 3859,
+          "product_id": 22919,
+          "rating": 4.2,
+          "returns_days": 30,
+          "review_count": 238,
+          "season": "Winter",
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_81430199877fbc"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Yellow",
+          "display_name": "Casual Watch",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Leather Strap",
+          "mrp": 2100,
+          "price": 1479,
+          "product_id": 22923,
+          "rating": 3.6,
+          "returns_days": 7,
+          "review_count": 51,
+          "season": "Winter",
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_9bd08f9f38c938"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Casual Watch",
+      "gender": "Women",
+      "masterCategory": "Accessories",
+      "name_core": "casual",
+      "parent_product_id": "pp_3c526facfbf5",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Watches"
+    },
+    {
+      "articleType": "Belts",
+      "brand": "Lino Perros",
+      "brand_key": "linoperros",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Leather Belt",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 3200,
+          "price": 2469,
+          "product_id": 25746,
+          "rating": 4.7,
+          "returns_days": 14,
+          "review_count": 329,
+          "season": "Winter",
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_047483c795ade6"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Brown",
+          "display_name": "Leather Belt",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 4650,
+          "price": 3669,
+          "product_id": 25748,
+          "rating": 3.6,
+          "returns_days": 7,
+          "review_count": 1302,
+          "season": "Winter",
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_57262c65b9346d"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Leather Belt",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "leather",
+      "parent_product_id": "pp_16b15a00a177",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Belts"
+    },
+    {
+      "articleType": "Belts",
+      "brand": "Peter England",
+      "brand_key": "peterengland",
+      "colourways": [
+        {
+          "colour": "Brown",
+          "display_name": "Casual Belt",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Mixed",
+          "mrp": 1040,
+          "price": 589,
+          "product_id": 18801,
+          "rating": 3.8,
+          "returns_days": 0,
+          "review_count": 30,
+          "season": "Summer",
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_c66c389e2b9e9e"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Black",
+          "display_name": "Casual Belt",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 1750,
+          "price": 1499,
+          "product_id": 18802,
+          "rating": 4.2,
+          "returns_days": 30,
+          "review_count": 299,
+          "season": "Summer",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_f1756b51224128"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Casual Belt",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "casual",
+      "parent_product_id": "pp_125d1ac617c9",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Belts"
+    },
+    {
+      "articleType": "Belts",
+      "brand": "United Colors of Benetton",
+      "brand_key": "unitedcolorsbenetton",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Solid Belts",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Synthetic",
+          "mrp": 7370,
+          "price": 4419,
+          "product_id": 14593,
+          "rating": 3.8,
+          "returns_days": 7,
+          "review_count": 48,
+          "season": "Summer",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_e7c4e354bf9d16"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Brown",
+          "display_name": "Solid Belts",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Mixed",
+          "mrp": 2660,
+          "price": 1729,
+          "product_id": 14823,
+          "rating": 4.7,
+          "returns_days": 14,
+          "review_count": 4122,
+          "season": "Summer",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_04c28719a2c1bb"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Solid Belts",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "solid",
+      "parent_product_id": "pp_9f31dec0cbea",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Belts"
+    },
+    {
+      "articleType": "Sunglasses",
+      "brand": "Celine Dion",
+      "brand_key": "celinedion",
+      "colourways": [
+        {
+          "colour": "Copper",
+          "display_name": "Frame Sunglasses",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Synthetic",
+          "mrp": 470,
+          "price": 409,
+          "product_id": 21291,
+          "rating": 3.3,
+          "returns_days": 30,
+          "review_count": 12,
+          "season": "Winter",
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_3924076b9188e6"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Black",
+          "display_name": "Frame Sunglasses",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 5370,
+          "price": 3609,
+          "product_id": 21293,
+          "rating": 4.5,
+          "returns_days": 14,
+          "review_count": 834,
+          "season": "Winter",
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_e7569413a5b0b4"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Frame Sunglasses",
+      "gender": "Women",
+      "masterCategory": "Accessories",
+      "name_core": "frame",
+      "parent_product_id": "pp_f2c4347e66ff",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Eyewear"
+    },
+    {
+      "articleType": "Sunglasses",
+      "brand": "Idee",
+      "brand_key": "idee",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Funky Eyewear Sunglasses",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Mixed",
+          "mrp": 4520,
+          "price": 2919,
+          "product_id": 16835,
+          "rating": 4.3,
+          "returns_days": 14,
+          "review_count": 35,
+          "season": "Winter",
+          "seller": "Myntra Retail",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_39d94a6ada0e9b"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Brown",
+          "display_name": "Funky Eyewear Sunglasses",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 2510,
+          "price": 2219,
+          "product_id": 16837,
+          "rating": 3.9,
+          "returns_days": 14,
+          "review_count": 323,
+          "season": "Winter",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_aca2a5a337fd3a"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Funky Eyewear Sunglasses",
+      "gender": "Women",
+      "masterCategory": "Accessories",
+      "name_core": "funky",
+      "parent_product_id": "pp_1b8d49d39a13",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Eyewear"
+    },
+    {
+      "articleType": "Sunglasses",
+      "brand": "United Colors of Benetton",
+      "brand_key": "unitedcolorsbenetton",
+      "colourways": [
+        {
+          "colour": "Purple",
+          "display_name": "Funky Sunglasses",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Mixed",
+          "mrp": 2620,
+          "price": 1829,
+          "product_id": 14861,
+          "rating": 4.5,
+          "returns_days": 14,
+          "review_count": 2910,
+          "season": "Winter",
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": false,
+              "size": "Onesize",
+              "sku": "sku_a7fc2190f7ba25"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Brown",
+          "display_name": "Funky Sunglasses",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Synthetic",
+          "mrp": 2500,
+          "price": 2029,
+          "product_id": 14907,
+          "rating": 4.3,
+          "returns_days": 30,
+          "review_count": 33,
+          "season": "Winter",
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_bb19faca15b732"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Funky Eyewear Sunglasses",
+      "gender": "Women",
+      "masterCategory": "Accessories",
+      "name_core": "funky",
+      "parent_product_id": "pp_1fc5043a8e38",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Eyewear"
+    },
+    {
+      "articleType": "Wallets",
+      "brand": "United Colors of Benetton",
+      "brand_key": "unitedcolorsbenetton",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Solid Wallets",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 4970,
+          "price": 3349,
+          "product_id": 14839,
+          "rating": 4.1,
+          "returns_days": 7,
+          "review_count": 1668,
+          "season": "Summer",
+          "seller": "Trendsetter Distributors",
+          "skus": [
+            {
+              "in_stock": false,
+              "size": "Onesize",
+              "sku": "sku_3c5ae8adef2100"
+            }
+          ],
+          "usage": "Casual"
+        },
+        {
+          "colour": "Brown",
+          "display_name": "Solid Wallets",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Mixed",
+          "mrp": 1530,
+          "price": 979,
+          "product_id": 14840,
+          "rating": 3.4,
+          "returns_days": 14,
+          "review_count": 542,
+          "season": "Summer",
+          "seller": "Vector Lifestyle",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_6d7de8db7f3f0d"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Solid Wallets",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "solid",
+      "parent_product_id": "pp_1d4999de98cb",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Wallets"
+    },
+    {
+      "articleType": "Wallets",
+      "brand": "JAG",
+      "brand_key": "jag",
+      "colourways": [
+        {
+          "colour": "Black",
+          "display_name": "Leather Wallet",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 1000,
+          "price": 669,
+          "product_id": 52792,
+          "rating": 4.7,
+          "returns_days": 30,
+          "review_count": 31,
+          "season": "Summer",
+          "seller": "Bluestone Apparel",
+          "skus": [
+            {
+              "in_stock": true,
+              "size": "Onesize",
+              "sku": "sku_86feecc289e8e7"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Leather Wallet",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "leather",
+      "parent_product_id": "pp_438ab9a6843a",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Wallets"
+    },
+    {
+      "articleType": "Wallets",
+      "brand": "JAG",
+      "brand_key": "jag",
+      "colourways": [
+        {
+          "colour": "Brown",
+          "display_name": "Chocolate Leather Wallet",
+          "fit": null,
+          "identity_confidence": 1.0,
+          "identity_flags": [],
+          "material": "Cotton Blend",
+          "mrp": 4090,
+          "price": 2849,
+          "product_id": 52791,
+          "rating": 4.0,
+          "returns_days": 0,
+          "review_count": 14,
+          "season": "Summer",
+          "seller": "Omnitech Retail",
+          "skus": [
+            {
+              "in_stock": false,
+              "size": "Onesize",
+              "sku": "sku_eb787207f76708"
+            }
+          ],
+          "usage": "Casual"
+        }
+      ],
+      "display_name": "Chocolate Leather Wallet",
+      "gender": "Men",
+      "masterCategory": "Accessories",
+      "name_core": "chocolate leather",
+      "parent_product_id": "pp_994982f0a352",
+      "sizes": [
+        "Onesize"
+      ],
+      "specific": true,
+      "subCategory": "Wallets"
+    },
+    {
       "articleType": "Cushion Cover",
       "brand": "Home Centre",
       "brand_key": "homecentre",

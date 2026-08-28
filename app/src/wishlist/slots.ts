@@ -56,6 +56,14 @@ const SLOT_BY_ARTICLE_TYPE: Record<string, OutfitSlot> = {
   Heels: "feet",
   // Accessories
   Handbags: "carry",
+  Wallets: "carry",
+  // Worn with an outfit without occupying a garment slot -- the same reason
+  // fragrance and cosmetics sit here. Note this means a watch does not pair
+  // with a belt: two finishing items are two finishing touches, not a look,
+  // which is the same rule that stops lipstick pairing with perfume.
+  Watches: "finishing",
+  Belts: "finishing",
+  Sunglasses: "finishing",
   // Personal Care
   Lipstick: "finishing",
   "Nail Polish": "finishing",
@@ -73,6 +81,10 @@ const SLOT_BY_SUB_CATEGORY: Record<string, OutfitSlot> = {
   Dress: "full_body",
   Shoes: "feet",
   Bags: "carry",
+  Watches: "finishing",
+  Belts: "finishing",
+  Eyewear: "finishing",
+  Wallets: "carry",
   Lips: "finishing",
   Nails: "finishing",
   Fragrance: "finishing",

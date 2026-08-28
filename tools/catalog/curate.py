@@ -38,6 +38,31 @@ QUERY_FAMILIES = OrderedDict(
 PARENTS_PER_FAMILY = 4
 FILLER_PER_FAMILY = 9
 
+# Accessories the shop should visibly stock, so the Accessories circle is not
+# thirteen handbags and the app reads like the real one.
+#
+# These are NOT query families, and the difference is load-bearing. A family
+# owns four wishlisted parents, nine filler, and a slot in the state-fixture
+# table that select() indexes positionally -- adding one reshapes the demo.
+# A showcase group is browse-only: a few real rows, no wishlist item, no role,
+# no fixture. It exists to be found by Search and by the Accessories circle.
+#
+# Every row here is a real dataset row, which is the whole reason the list is
+# short. Nothing in it is invented, so nothing in it needs the `synthetic`
+# quarantine the home range carries.
+SHOWCASE_GROUPS = OrderedDict(
+    [
+        ("watch", {"articleTypes": ["Watches"], "genders": ["Men"]}),
+        ("women's watch", {"articleTypes": ["Watches"], "genders": ["Women"]}),
+        ("belt", {"articleTypes": ["Belts"], "genders": ["Men"]}),
+        ("sunglasses", {"articleTypes": ["Sunglasses"], "genders": ["Women"]}),
+        ("wallet", {"articleTypes": ["Wallets"], "genders": ["Men"]}),
+    ]
+)
+
+PARENTS_PER_SHOWCASE = 3
+COLOURS_PER_SHOWCASE_PARENT = 2
+
 # A generic parent ("plain men's shirt") can absorb hundreds of rows. Every
 # colourway kept costs one 384x512 image on disk, so parents are trimmed to a
 # handful of distinct colours -- more than enough to exercise Tier 2, and it
@@ -156,6 +181,45 @@ def select(parents):
         roles["low_identity"] = low
 
     return chosen, family_index, roles
+
+
+def showcase(parents, taken):
+    """Browse-only accessories, picked after the families have taken theirs.
+
+    Deliberately called from build.run() rather than from select(), for the
+    same reason the invented home range is: anything select() returns can be
+    reached by the state-fixture table, and a watch has no business being
+    state 2. Passing `taken` keeps a showcase parent from shadowing a parent
+    a family already owns.
+
+    Onesize is not filtered here. A family excludes onesize parents because a
+    size ladder of one cannot produce the variant states; these products are
+    never a fixture, so they have no variant state to produce, and watches and
+    sunglasses genuinely have no size to lose.
+    """
+    picked = OrderedDict()
+    for spec in SHOWCASE_GROUPS.values():
+        # Every group here is onesize-exempt, so the flag is injected rather
+        # than repeated five times. Without it _candidates drops the lot:
+        # watches, sunglasses and wallets are all Onesize, and the only thing
+        # that survived the filter was a belt the dataset had mis-filed under
+        # Topwear -- which then carried an XS-XXL apparel ladder.
+        spec = dict(spec, onesize_ok=True)
+        candidates = [
+            parent
+            for parent in _candidates(parents, spec, 1)
+            if parent["parent_product_id"] not in taken
+            and parent["parent_product_id"] not in picked
+            # A generic parent ("plain men's watch") absorbs hundreds of rows
+            # and reads as a placeholder on a tile. With only three slots to
+            # spend per group, spend them on named products.
+            and parent["specific"]
+        ]
+        for parent in candidates[:PARENTS_PER_SHOWCASE]:
+            picked[parent["parent_product_id"]] = trim_colourways(
+                parent, COLOURS_PER_SHOWCASE_PARENT
+            )
+    return picked
 
 
 IDENTITY_FLOOR = 0.8

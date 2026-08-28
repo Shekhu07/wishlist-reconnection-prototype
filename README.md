@@ -254,10 +254,20 @@ than letting "0 violations across 497 suggestions" read as broader coverage
 than it has.
 
 The request that prompted this named *trousers* and *watches*: bottomwear here
-is Jeans and Track Pants, and accessories are handbags only. The shipped
-wishlist demonstrates two chains — men's shirt → jeans, and women's kurta →
-handbag → heels. Girls' items have nothing saved to pair with, Boys have
-T-shirts only, the `finishing` slot is empty, and Home is excluded by design.
+is Jeans and Track Pants. Watches now exist — along with belts, sunglasses and
+wallets — but as **browse-only** stock, so the caveat moves rather than
+disappearing. Nothing in that range is saved, and pairing draws only from
+saved items, so a watch can be found, opened and paired *from*, never
+suggested. The shipped wishlist still demonstrates two chains — men's shirt →
+jeans, and women's kurta → handbag → heels. Girls' items have nothing saved to
+pair with, Boys have T-shirts only, the `finishing` slot is still empty in the
+wishlist, and Home is excluded by design.
+
+There are no earphones, and there cannot be: the source dataset is fashion
+only — Apparel, Accessories, Footwear, Personal Care — with no audio or
+electronics row in any of its 42,426. Inventing one would put a fabricated
+product in front of a participant, which is the line the `synthetic` flag
+exists to hold.
 
 ## Acceptance gates
 
@@ -277,6 +287,32 @@ measure, and `npm run gates` measures them, writing
 | CR-05 | every changed compared item is marked, and no unchanged one is |
 | C-7 | every control labelled, every touch target ≥44pt |
 | Pairing | no suggestion crosses gender, clashes a slot, resurfaces a bought item, or comes from outside the wishlist |
+
+**E1 precision is currently red, and the number it was green on was luck.**
+Adding the browse-only accessories moved the catalog, and the labelled-pair
+sampler indexes by position — so only 1 of its 500 pairs survived the change
+and the whole eval set resampled. Measured at sample sizes where the estimate
+settles, the catalog *with* accessories scores better than the one before it:
+
+| pairs | before accessories | with accessories |
+|---|---|---|
+| 500 (shipped) | 99.46% | **98.91%** |
+| 2,000 | 98.50% | 99.05% |
+| 8,000 | 98.49% | 99.22% |
+
+So this is not a regression; it is a gate whose published figure rode on 184
+rendered results, where one more hard case moves it half a point. The failure
+mode underneath is identical in both and predates the accessories: a positive
+whose saved variant is out of stock in every size renders tier 1 rather than
+tier 2 — 44 such cases on the *old* catalog at 8,000 pairs. Whether that is a
+matcher defect or a mislabel is a real question (`SavedItemCard` renders
+"Saved size unavailable" by design, which argues the label is wrong), and it
+is open.
+
+The sample size has deliberately **not** been raised to clear the bar. That is
+the move this codebase already talked itself out of once, in the cohort-test
+episode below: inflating the population until a marginal effect passes answers
+a question about power with a fact about the ramp.
 
 Each new gate was **confirmed to fail against a planted violation** before it
 was trusted. A gate nobody has watched fail is a gate nobody should trust, and

@@ -470,6 +470,14 @@ def run(force=False, check=False):
     chosen, families, roles = curate.select(parents)
     print("curated %d parents" % len(chosen))
 
+    # Browse-only accessories -- watches, belts, sunglasses, wallets. Real
+    # dataset rows, appended after the families for the same reason the home
+    # range is: nothing select() never returned can become a state fixture.
+    accessories = curate.showcase(parents, set(chosen))
+    for parent in accessories.values():
+        chosen[parent["parent_product_id"]] = parent
+    print("added %d showcase accessories" % len(accessories))
+
     # The invented home range, kept out of curate.select() so it can never be
     # picked as a state fixture. See the spec, section 3.2.
     home_parents = synthesize.build_home_parents()

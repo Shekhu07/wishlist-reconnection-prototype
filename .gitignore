@@ -7,6 +7,8 @@ web-build/
 data/raw/
 __pycache__/
 .venv/
+# tools/catalog needs pyarrow and pillow to extract images from the mirror.
+.venv-catalog/
 .playwright-mcp/
 docs/.gate-results.jsonl
 .vercel
