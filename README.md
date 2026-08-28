@@ -1,12 +1,21 @@
 # Wishlist Search-Reconnection — prototype
 
-A buildable prototype of the "From your Wishlist" search-reconnection module
-specified in [`Wishlist_Reconnection_MVP_Prototype_Plan.md`](./Wishlist_Reconnection_MVP_Prototype_Plan.md).
+A buildable prototype of the "From your Wishlist" search-reconnection module,
+built against three specs that are really one plan at three altitudes:
 
-This repository covers **Slice 1** (the catalog pipeline, the identity and
-variant graph, the match layer, and the module UI in all ten of its states) and
-**Slice 2** (the Buy-from-Wishlist revalidation flow, E5, and the Compare view,
-E6).
+| Spec | What it is |
+|---|---|
+| [`Wishlist_Reconnection_MVP_Prototype_Plan.md`](./Wishlist_Reconnection_MVP_Prototype_Plan.md) | The engineering plan. Every epic is built except E15, which constraint C-5 forbids in v1. |
+| [`Implementation Prompt_ Improve Myntra Wishlist Reconnection Prototype.md`](./Implementation%20Prompt_%20Improve%20Myntra%20Wishlist%20Reconnection%20Prototype.md) | Ten improvements on the deployed prototype, plus harness, analytics and validation requirements. |
+| [`Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md`](./Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md) | The UX blueprint for improvements 1 and 8 — eleven wireframes, interaction rules, an edge-case matrix and measurement hooks. |
+
+All ten improvements are built. The reconnection module answers *"did I save
+this?"*; the Decision Confidence Layer answers *"is it still right for me?"*;
+comparison re-entry means the answer survives leaving the screen.
+
+**Live:** https://wishlist-reconnection-prototype.vercel.app
+
+521 tests, nine measured acceptance gates, four generated reports.
 
 ## Running it
 
@@ -23,25 +32,142 @@ npm run panel                                       # panel sizing → docs/pane
 npm run web                                         # open the prototype
 ```
 
-The dark bar at the top of the app is the **E12 state harness**. Every state
-from section 4.6 of the plan is one tap, plus a match-latency control and the
-swapped-fill treatment the plan defers to Phase 5. When the module is absent,
-the harness says why — timed out, breaker open, dismissed, or resolved past the
-render grace — so an intentional suppression is never mistaken for a broken build.
+The dark pill above the bottom nav opens the **E12 state harness**. Every state
+from section 4.6 of the plan is one tap, plus match latency, delivery pincode,
+stock controls, shadow mode, the four experiment arms, the ramp and kill switch,
+the later-phase surfaces, and the swapped-fill treatment the plan defers to
+Phase 5. When the module is absent, the harness says why — timed out, breaker
+open, dismissed, or resolved past the render grace — so an intentional
+suppression is never mistaken for a broken build.
 
 | | |
 |---|---|
-| ![One exact match](docs/state2-one-exact-match.png) | ![Variant unavailable](docs/state5-variant-unavailable.png) |
-| **State 2** — one exact match | **State 5** — saved size gone. The primary action becomes "See available sizes": no dead-end Buy, no silent substitution. |
-| ![Saved product](docs/e5-saved-product.png) | ![Recovery](docs/e5-recovery-sold-out.png) |
-| **E5** — the saved product, colour and size preselected, all five facts revalidated at the boundary | **E5 recovery** — stock moved between the module render and the tap. Named state, saved variant untouched. |
-| ![Compare](docs/e6-compare.png) | |
-| **E6** — the saved item first and labelled, against four query-relevant alternatives on eight axes. No discount column. | |
+| ![One exact match](docs/dc01-module-summary.png) | ![Why this appeared](docs/dc02-why-appeared.png) |
+| **DC-01** — the module with its compact confidence summary. Saved variant, availability, delivery, and the one fit statement this catalog can support. | **DC-02** — the explanation, and both controls. Hiding for this search is a relevance signal; hiding always is the durable setting. Neither mentions why the item was saved. |
+| ![Confidence panel](docs/dc03-confidence-panel.png) | ![Colour selector](docs/dc06-colour-selector.png) |
+| **DC-03/04** — ten signals, each with a "Why" that names its source. `?` means no verdict is claimed, not that data is missing. | **DC-06** — switch colour and the saved variant stays visible as a reference. The signals re-read from the colour on screen, never from the saved one. |
+| ![Variant unavailable](docs/state5-variant-unavailable.png) | ![Recovery](docs/e5-recovery-sold-out.png) |
+| **State 5** — saved size gone. The primary action becomes "See available sizes": no dead-end Buy, no silent substitution. | **E5 recovery** — stock moved between the module render and the tap. Named state, saved variant untouched. |
+| ![Compare with priority](docs/compare-priority.png) | ![Help me decide](docs/help-me-decide.png) |
+| **Compare** — a priority reorders the rows and hides none, with a derived reason line per alternative and the saved variant as the anchor. | **Help me decide** — restates the evidence on the chosen axes, marks any axis that separates nothing, and names no winner. |
+| ![Added from Wishlist](docs/added-confirmation.png) | ![Stale comparison](docs/cr05-stale-comparison.png) |
+| **Improvement 3** — the add is a decision point with three real next moves, not a toast that vanishes in 2.6 seconds. | **CR-02/05** — the quiet resume bar, and the sheet naming what changed before the user commits to going back. |
+
+## The Decision Confidence Layer
+
+A confidence signal is a value, not a string, and the reason is section 7 of
+the wireframes: *"Size guidance is based on this brand's size guide"* beats an
+unexplained *"High fit confidence"*. So `source` is mandatory on every signal
+and `synthetic` is not optional either — five of the fields this panel reads
+are SHA-1 synthesised by the catalog pipeline, and presenting those as real
+marketplace data is forbidden outright.
+
+Everything derives from `RevalidationResult`, the *binding* read. The module's
+compact summary is advisory and is allowed to be contradicted a tap later;
+that disagreement is two-phase freshness working, not a bug.
+
+**`status: "unknown"` is a first-class outcome**, and fit is permanently one.
+This catalog has no size chart, no measurements and no fit feedback — the fit
+label is itself generated. A fit *score* here would be the clearest possible
+case of dressing invented data as evidence, so the panel says it claims no fit
+confidence and points at the size guide. Reviews are the same: the count and
+the average are stated, and no verdict is drawn from them, because section 6
+asks for review coverage to be distinguished from a quality judgement.
+
+Four things the improvement prompt implies that the data cannot support, and
+which are therefore **not** built: stock depth, a real size guide, review
+quality as distinct from count, and seller trust signals. Each is named in the
+plan rather than quietly approximated.
+
+## Comparison, made a decision rather than a table
+
+**A priority reorders and never filters.** Improvement 4 asks for reordering
+"without hiding important information", and the distinction is the design:
+hiding the rows a user did not prioritise would decide for them which
+trade-offs are allowed to exist. Price stays on screen at every priority — but
+it is not a priority anyone can pick, because that is where monetary logic
+would re-enter a comparison C-1 keeps it out of.
+
+**"Comfort" is not a column** and does not pretend to be one; it reads material
+and fit together. "Occasion" is backed by `usage` and `season`, which are real
+dataset columns.
+
+**Why an option appears is derived or absent, never generated.** Every reason
+compares fields that exist — parent id, brand key, article type, name core, fit
+label, delivery date — and an option matching none of them gets no line at all.
+Two null fit labels are explicitly not a similarity: an absence of data is not a
+match. A user who reads a false reason learns the whole panel is decorative.
+
+**"Help me decide" does not decide.** It restates what the table already says
+on the axes the user picked, marks any axis that fails to separate the options,
+and closes with a line that cannot name an item. Any ranking would be an
+opinion dressed as arithmetic, built on five synthesised fields and handed to
+someone who asked for help — which improvement 5 rules out in as many words.
+It is off by default, so it is never a third action competing with the two FR-5
+requires stay co-equal.
+
+## Comparison re-entry (Part B)
+
+Session-first, per section 11: no durable comparison history in v1, because
+that adds privacy and clutter questions before the core behaviour is validated.
+
+**The session pins which items were compared and never what they said.**
+`CompareScreen` re-derives its columns on every mount, so persisting the
+rendered values would let a resumed comparison drift out of date — and E14
+already taught this codebase that caching a derivation reproduces the staleness
+the derivation exists to remove.
+
+**But a baseline is not a cache.** Answering "what changed since you last
+compared" needs the prior answer, and that is a different thing: an immutable
+historical fact rather than a value that goes stale. Without one, an option that
+was *already* out of the user's size when they compared it reports as changed,
+and the recovery affordance cries wolf on the first resume. A test caught
+exactly that.
+
+**Getting here required fixing what a session is.** `session_id` was
+`sess_${seq}` and `seq` increments per search, so the two ideas were the same
+string — which made "hidden for this session" mean "hidden until you type
+again", a live FR-8 violation, and would have thrown away a resumable
+comparison at exactly the moment CR-02 needs one. One existing test had the
+defect written down as a requirement. Splitting the ids moved what `session_id`
+means to `searchToPurchaseRate`, a *guardrail*, so it groups on the search now
+and keeps counting what it always counted; the reports regenerate identically,
+which is how that was verified rather than asserted.
+
+## Later-phase surfaces, honestly labelled
+
+All off by default, all out of the primary experiment.
+
+**Intent tags** are optional, added after the save rather than in front of it,
+and never inferred — the store has no input but explicit calls, which is the
+structural version of "do not infer sensitive personal occasions". At most one
+line surfaces per card, in canonical order so it cannot reshuffle between
+identical searches. Display is a preference, because "the user wrote it
+deliberately" and "safe on a screen a flatmate can see" are different questions.
+
+**Look completion** is capped at two and draws only from items already saved.
+With nothing suitable saved it renders nothing rather than reaching into the
+catalog — suggesting something the user never chose is the basket-size
+recommender the prompt forbids.
+
+**Voice, category/brand and Ask-Maya are real**: the same exact matcher and
+rules parser at a stricter threshold, which the contract has keyed per modality
+since Slice 1 (C-8). The ladder is measured rather than claimed — on the real
+catalog, "shirt" matches three items under text and **zero** under voice, and
+"blue jeans" sits between the voice and image bars.
+
+**Image is not real, and says so on the chip.** Visual similarity is Tier 4;
+C-5 excludes Tier 3 and 4 from v1, and E15 is the one epic in the whole plan
+left deliberately unbuilt for that reason. Building an embedding path to
+satisfy a later-phase checkbox would quietly undo the constraint the entire
+precision story rests on, and the false positives are exactly what C-4 calls
+worse than misses. A stub that admits what it is beats a demo implying a
+capability the system does not have.
 
 ## Acceptance gates
 
-The plan attaches a `✅ Gate` line to every P0 epic. Five of them are things
-code can measure, and `npm run gates` measures them, writing
+The plan attaches a `✅ Gate` line to every P0 epic. Nine things code can
+measure, and `npm run gates` measures them, writing
 [`docs/gate-report.md`](docs/gate-report.md):
 
 | Epic | Requirement |
@@ -51,6 +177,28 @@ code can measure, and `npm run gates` measures them, writing
 | E2 | ≥ 90% field-level parser accuracy over 1,000 queries |
 | E3 | match p95 ≤ 120 ms |
 | E8 | no wishlist field in any unauthenticated response **or log line** |
+| E13 | cap, one slot per product, usefulness ordering, stable order |
+| DC | every signal cites a source; every generated field is labelled as such |
+| CR-05 | every changed compared item is marked, and no unchanged one is |
+| C-7 | every control labelled, every touch target ≥44pt |
+
+Each new gate was **confirmed to fail against a planted violation** before it
+was trusted. A gate nobody has watched fail is a gate nobody should trust, and
+this codebase has produced enough measurements that could only come out one way
+to make that a rule rather than a nicety.
+
+**C-7 has been a launch gate in the plan since day one and had no gate behind
+it** — its only measured assertion lived inside `module.test.tsx` and covered a
+single hit target. The gate found a real defect on its first run: the colour and
+tag pills carried `minHeight` but no `minWidth`, unlike the size pills beside
+them, so a short colour name could render a target narrower than a fingertip.
+
+It also produced fourteen false positives on that first run, which is worth
+recording rather than quietly tuning away. React Native stretches a column
+child by default, so a static check cannot tell a self-sizing pill from a
+full-width row without seeing the parent. The rule now measures only elements
+that declare a width, and the caveat says the number is a floor rather than a
+proof instead of implying a rigour it does not have.
 
 The report records what each number **is not evidence for**, alongside the
 number. That column is the point. The E1 labels are generated rather than
@@ -100,15 +248,23 @@ The plan guesses 300–500 recruited testers (§7.4) and nothing had checked it.
 [`docs/panel-sizing.md`](docs/panel-sizing.md) does.
 
 **A panel of 400 cannot answer the primary question, and cannot answer the
-B − A question at all.** Detecting a 5pp lift needs ~11,600; establishing
-whether variant continuity is the mechanism needs ~73,700.
+B − A question at all.** Detecting a 5pp lift needs ~15,500; establishing
+whether variant continuity is the mechanism needs ~98,200.
 
 The gap is not the sample-size formula. It is three multipliers between a
-recruited person and a usable observation: the panel splits three ways before
+recruited person and a usable observation: the panel splits four ways before
 anything happens; a treatment user who never sees the module behaves like
 control, so the observed effect is scaled by exposure and sample size scales
 with its square; and B − A is a *smaller* effect than either arm's lift,
 measured between two treatment groups rather than against the whole control.
+
+**Adding treatment C made this a third worse** — 11,634 → 15,512 and 73,673 →
+98,230, the 4/3 ratio of splitting four ways instead of three. That is the
+price of an answerable question rather than a regression, and it is stated here
+because the alternative was a report that kept publishing a three-arm sizing
+while the code ran four. Two places would have done exactly that:
+`panel.report.test.ts` hardcoded `arms: 3`, and the shadow report's metric
+table had no treatment C column at all.
 
 The sizing is validated rather than asserted — at the computed size, 2,000
 simulated experiments detected the effect 79.1% of the time against a target of
@@ -210,6 +366,14 @@ order:
 `npm run experiment` writes [`docs/experiment-report.md`](docs/experiment-report.md).
 The harness bar carries an arm selector, the ramp, and a kill-switch drill.
 
+**Four arms.** Control sees no module. A is reconnection only; B adds variant
+continuity; **C is B plus the Decision Confidence Layer**. C is its own arm
+rather than folded into B because §7 splits the arms to learn *where* a lift
+comes from, and B − A is interpretable only if B differs from A in exactly one
+thing. Adding evidence to B would make that difference two mechanisms wide and
+the read-out unusable. The cost — a third more panel — is in the panel section
+above, stated rather than absorbed.
+
 **Assignment** is a pure function of user id and salt — no storage, no session
 state. Two properties carry the experiment and both fail silently:
 
@@ -249,6 +413,14 @@ card the user just tapped. That disagreement is the point, so the harness can
 force it: **Sell out saved size**, **Sell out product** and the delivery
 address selector each drive a different named recovery state.
 
+**Sell out silently** exists for a subtler reason. Every other stock control
+announces its change to React, so the screen re-renders into a recovery state
+before the user can tap — which means the binding read is never the thing that
+catches it, and `boundaryBlockRate` could only ever have read zero. This one
+skips the announcement and leaves the card stale on purpose, so the mechanism
+that justifies two-phase freshness is reachable, demonstrable to a researcher,
+and falsifiable in a test.
+
 Blocking reasons are named rather than generic, because each has a different
 next step: a sold-out size, a withdrawn product, and an unservable address are
 not the same conversation. Advisories (price or seller changed) are stated as
@@ -285,11 +457,60 @@ mislabelled-listing case the plan's E1 exists to handle.
 ```
 tools/catalog/     the pipeline: fetch → derive → curate → synthesise → images
 app/src/match/     contract, rules-based query parser, tier 1+2 matcher,
-                   suppression, circuit breaker, fail-open transport
+                   suppression, circuit breaker, fail-open transport, modality modes
+app/src/confidence/   the signal model: value, status, source, provenance
+app/src/compare/   priority, derived reasons, and the trade-off restatement
+app/src/wishlist/  intent tags and look completion, both later-phase
+app/src/state/     search context, the match hook, the comparison session
 app/src/components/WishlistModule/   the module
+app/src/components/   Sheet, Button, ConfidencePanel, ResumeBar, ResumeSheet
 app/src/harness/   the E12 state switcher
 app/src/data/      generated — never hand-edit
+app/gates/         the nine acceptance gates
 ```
+
+## What clicking through found that the tests did not
+
+This is the most transferable thing in the repository, so it is written down
+rather than left in commit messages.
+
+The suite is at 521 tests and nine measured gates, and it has still never been
+the thing that caught a user-facing defect first. Seven were found only by
+opening a browser:
+
+| Defect | Why no test saw it |
+|---|---|
+| The DC-02 sheet was clipped to the module and scrimmed only the module | An overlay resolves against its nearest positioned ancestor. Rendering is correct in a test renderer that has no layout. |
+| "Hide for this search" logged the dismissal and left the module on screen | `client.dismiss()` records suppression for the *next* match; the module disappears through local state only the close box set. Both halves were individually correct. |
+| Two colourways of one product produced identical trade-off labels | React reported a duplicate key. Nothing asserted labels were distinguishable, because with a two-product fixture they always were. |
+| The same collision again, in the stale-comparison sheet | I had just fixed it elsewhere and did not generalise. Tests confirm what you thought of. |
+| `pointerEvents` as a prop is deprecated in react-native-web | A console warning is invisible to Jest. |
+| Colour and tag pills had no `minWidth` floor | Found by the C-7 gate on its first run — a gate written *because* the browser passes kept finding things. |
+| "View Bag" opened the product page | `copy.test.ts` asserted the label. `navigation.test.tsx` asserted the destination. Nothing asserted they agree, and the bug lived in the gap between two correct tests. |
+
+The last one is the sharpest. It had been there since Slice 1, behind two green
+tests, and no amount of adding cases to either would have closed it — the
+missing assertion was about the *relationship* between them. The fix is a
+property test: every label in the copy bundle must map to a destination it can
+honour, and a label with no promise defined fails too, so new copy cannot slip
+past.
+
+The same shape recurs in the measurements. A number that can only come out one
+way is the failure mode this project keeps meeting, and the countermeasures are
+now routine:
+
+- `boundaryBlockRate` could only ever have read zero, because every stock
+  control announced its change to React and the screen re-rendered into
+  recovery before a user could tap. The harness gained **"Sell out silently"**
+  so the binding read is the thing that catches it, and the mechanism is
+  reachable, demonstrable and falsifiable.
+- `variant_recovery_shown` and `variant_recovery_resolved` were declared,
+  consumed by a §7 metric, and emitted only by the simulator — so the metric
+  read entirely off synthetic data while looking like it measured the product.
+- The C-8 threshold ladder was a claim until it was measured: "shirt" matches
+  three items under text and zero under voice.
+- Every new gate was watched failing against a planted violation before it was
+  believed.
 
 ## The constraints, and where they are enforced
 
@@ -298,9 +519,14 @@ app/src/data/      generated — never hand-edit
 | C-1 no monetary incentive | `copy/bundle.ts` ban list, asserted in `__tests__/copy.test.ts` |
 | C-3 search never waits on matching | `search/localSearch.ts` takes no wishlist argument; `match/transport.ts` fails open inside 250 ms |
 | C-4 precision over recall | Below τ returns empty, never a weak card (`match/matcher.ts`) |
-| C-5 no semantic similarity | Tier 3/4 are absent, not stubbed |
+| C-5 no semantic similarity | Tier 3/4 are absent, not stubbed. The harness's image mode says on its own chip that it is not similarity search |
 | C-6 no cross-account leak | Logged-out callers take the same path to the same frozen empty response |
-| C-7 accessibility | Labels, focus order and ≥44×44 targets asserted in `__tests__/module.test.tsx` |
+| C-7 accessibility | `gates/c7-accessibility.gate.test.tsx` across every Part A and Part B surface, plus inline assertions |
+| Constraint 8 — no invented data as real | Every signal carries `source` and `synthetic`; `gates/dc-provenance.gate.test.ts` sweeps all of them |
+| FR-3 cap of three | `match/ranking.ts`, with the true total reported and a View all affordance |
+| FR-5 co-equal actions | Identical geometry in `components/Button.tsx`; Help-me-decide stays off so it is never a third action |
 | FR-7 no silent substitution | An alternative is only ever offered once the saved variant is blocked, and buying a different size relabels the button with the size it is actually buying |
 | C-8 higher bar for voice/image | Per-modality τ in `match/contract.ts` |
 | §4.16 user control | `preferences.showWishlistInSearch`, enforced in `match/transport.ts` before the matcher runs — a preference the UI honours but the service ignores is not a control |
+| §5 privacy of intent | The DC-02 sheet explains the *match* and never why an item was saved; intent tags have their own display control |
+| A button does what it says | `destinationFor()` in `match/contract.ts` routes by copy, not by position, asserted in `__tests__/actionDestination.test.ts` |
