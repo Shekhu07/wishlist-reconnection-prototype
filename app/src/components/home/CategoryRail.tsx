@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { Catalog } from "@/data/types";
 import { CATALOG_IMAGES } from "@/data/images";
 import { CATEGORIES, categoryCover, type CategoryKey } from "@/search/catalogBrowse";
@@ -25,7 +25,12 @@ export function CategoryRail({
   );
 
   return (
-    <View style={styles.row} testID="category-rail">
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.row}
+      testID="category-rail"
+    >
       {covers.map(({ key, label, cover }) => (
         <Pressable
           key={key}
@@ -53,31 +58,37 @@ export function CategoryRail({
           </Text>
         </Pressable>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  // Scrolls rather than distributing: the spec's 18pt gutter at 56pt circles
+  // overflows a 420pt frame at six categories, and a seventh would have had
+  // nowhere to go.
   row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 18,
     paddingHorizontal: space.lg,
-    paddingVertical: space.md,
+    paddingTop: space.lg,
+    paddingBottom: space.xs,
   },
   item: {
     alignItems: "center",
-    minWidth: MIN_TOUCH_TARGET,
-    gap: space.xs,
+    minWidth: CIRCLE,
+    flexShrink: 0,
+    gap: 6,
   },
   circle: {
     width: CIRCLE,
     height: CIRCLE,
     borderRadius: CIRCLE / 2,
     backgroundColor: color.surfaceMuted,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
     // Squares clipped to a circle: without this the 3:4 photo renders as a
     // rectangle sitting on top of the rail.
     overflow: "hidden",
   },
   cover: { width: "100%", height: "100%" },
-  label: { ...type.body, color: color.textPrimary },
+  label: { ...type.chip, fontWeight: "600", color: color.textPrimary },
 });

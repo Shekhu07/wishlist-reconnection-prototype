@@ -12,6 +12,7 @@ export interface AppShellProps {
   onBack: () => void;
   onOpenSearch: () => void;
   onOpenWishlist: () => void;
+  onOpenProfile: () => void;
   wishlistCount?: number;
   /** The harness pill. Optional so shell tests can render without it. */
   harness?: ReactNode;
@@ -36,6 +37,7 @@ export function AppShell({
   onBack,
   onOpenSearch,
   onOpenWishlist,
+  onOpenProfile,
   wishlistCount,
   harness,
   sheet,
@@ -48,6 +50,7 @@ export function AppShell({
         onBack={onBack}
         onOpenSearch={onOpenSearch}
         onOpenWishlist={onOpenWishlist}
+        onOpenProfile={onOpenProfile}
         wishlistCount={wishlistCount}
       />
       <View style={styles.body}>{children}</View>

@@ -61,7 +61,7 @@ export function WishlistScreen({ results, pincode, onSelectItem }: WishlistScree
     <ScrollView style={styles.screen} testID="wishlist-screen">
       <Text style={styles.heading}>Wishlist</Text>
       <Text style={styles.count}>
-        {results.length === 1 ? "1 item" : `${results.length} items`}
+        {results.length === 1 ? "1 item saved" : `${results.length} items saved`}
       </Text>
 
       {results.length === 0 ? (

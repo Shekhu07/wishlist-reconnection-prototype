@@ -8,7 +8,7 @@ const nav: Nav = { tab: "home", stack: [rootFor("home")] };
 describe("the app shell", () => {
   it("shows the five destinations and the bag count", () => {
     render(
-      <AppShell nav={nav} bagCount={3} onTab={() => {}} onBack={() => {}} onOpenSearch={() => {}} onOpenWishlist={() => {}}>
+      <AppShell nav={nav} bagCount={3} onTab={() => {}} onBack={() => {}} onOpenSearch={() => {}} onOpenWishlist={() => {}} onOpenProfile={() => {}}>
         <Text>screen</Text>
       </AppShell>
     );
@@ -20,7 +20,7 @@ describe("the app shell", () => {
 
   it("hides the badge at zero rather than showing a nought", () => {
     render(
-      <AppShell nav={nav} bagCount={0} onTab={() => {}} onBack={() => {}} onOpenSearch={() => {}} onOpenWishlist={() => {}}>
+      <AppShell nav={nav} bagCount={0} onTab={() => {}} onBack={() => {}} onOpenSearch={() => {}} onOpenWishlist={() => {}} onOpenProfile={() => {}}>
         <Text>screen</Text>
       </AppShell>
     );
@@ -30,7 +30,7 @@ describe("the app shell", () => {
   it("reports the tab that was tapped", () => {
     const tapped: Tab[] = [];
     render(
-      <AppShell nav={nav} bagCount={0} onTab={(t) => tapped.push(t)} onBack={() => {}} onOpenSearch={() => {}} onOpenWishlist={() => {}}>
+      <AppShell nav={nav} bagCount={0} onTab={(t) => tapped.push(t)} onBack={() => {}} onOpenSearch={() => {}} onOpenWishlist={() => {}} onOpenProfile={() => {}}>
         <Text>screen</Text>
       </AppShell>
     );

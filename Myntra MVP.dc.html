@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body{margin:0;background:#EFEFEF;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+  a{color:#FF3F6C;text-decoration:none}
+  a:hover{color:#E8305D}
+  *{box-sizing:border-box}
+  ::-webkit-scrollbar{display:none}
+</style>
+<script src="./image-slot.js"></script>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px">
+<div style="width:420px;height:860px;background:#FFFFFF;border-radius:28px;box-shadow:0 30px 60px rgba(0,0,0,0.25);overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+  <!-- ===== HOME HEADER ===== -->
+  <sc-if value="{{ showHomeHeader }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:10px 16px 10px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #EAEAEC;flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#FF3F6C,#FF9A3F);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <div style="width:11px;height:11px;border-radius:50% 50% 50% 0;background:#fff;transform:rotate(45deg)"></div>
+        </div>
+        <span style="font-size:22px;font-weight:800;font-style:italic;color:#FF3F6C;letter-spacing:-0.5px">wear.io</span>
+        <div style="width:1px;height:16px;background:#EAEAEC"></div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="width:12px;height:12px;border:1.5px solid #7E818C;border-radius:6px"></div>
+          <span style="font-size:11px;color:#282C3F">Home · 400001</span>
+        </div>
+        <div style="margin-left:auto;background:#F5F5F6;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:#282C3F">₹0</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="{{ openSearch }}" style="flex:1;display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid #EAEAEC;border-radius:999px;padding:0 12px;background:#fff;cursor:pointer">
+          <div style="position:relative;width:18px;height:18px">
+            <div style="position:absolute;left:0;top:0;width:2.5px;height:18px;background:#FF3F6C;border-radius:1px"></div>
+            <div style="position:absolute;left:6.5px;top:5px;width:2.5px;height:12px;background:#FF3F6C;border-radius:1px"></div>
+            <div style="position:absolute;right:0;top:0;width:2.5px;height:18px;background:#FF3F6C;border-radius:1px"></div>
+          </div>
+          <span style="flex:1;text-align:left;font-size:12px;color:#7E818C">"Earrings"</span>
+          <span style="font-size:11px;color:#7E818C">🎤</span>
+        </button>
+        <button onclick="{{ goProfile }}" style="min-width:44px;min-height:44px;border:none;background:none;font-size:16px;cursor:pointer">🔔</button>
+        <button onclick="{{ goWishlist }}" style="min-width:44px;min-height:44px;border:none;background:none;font-size:18px;color:#282C3F;cursor:pointer">♡</button>
+        <button onclick="{{ goProfile }}" style="min-width:44px;min-height:44px;border:none;background:none;font-size:16px;cursor:pointer">👤</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== BACK HEADER ===== -->
+  <sc-if value="{{ showBackHeader }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:8px;border-bottom:1px solid #EAEAEC;flex-shrink:0">
+      <button onclick="{{ onBack }}" style="min-width:44px;min-height:44px;border:none;background:none;font-size:18px;color:#282C3F;cursor:pointer">←</button>
+    </div>
+  </sc-if>
+
+  <!-- ===== BODY (scroll area) ===== -->
+  <div style="flex:1;overflow-y:auto;position:relative">
+
+    <!-- HOME SCREEN -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div style="padding-bottom:24px">
+        <div style="display:flex;gap:8px;padding:12px 16px 4px;overflow-x:auto">
+          <sc-for list="{{ genderTabs }}" as="t" hint-placeholder-count="4">
+            <button onclick="{{ t.onTap }}" style="flex-shrink:0;padding:8px 16px;border-radius:999px;border:none;font-size:12px;font-weight:700;letter-spacing:0.4px;cursor:pointer;background:{{ t.bg }};color:{{ t.color }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;gap:18px;padding:16px 16px 4px;overflow-x:auto">
+          <sc-for list="{{ categories }}" as="c" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:56px;flex-shrink:0">
+              <div style="width:56px;height:56px;border-radius:28px;overflow:hidden;background:#F5F5F6;border:1px solid #EAEAEC">
+                <image-slot id="{{ c.imgId }}" placeholder="{{ c.label }}" shape="circle"></image-slot>
+              </div>
+              <span style="font-size:11px;color:#282C3F;font-weight:600">{{ c.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- banner carousel -->
+        <div style="display:flex;gap:10px;padding:14px 16px 6px;overflow-x:auto">
+          <sc-for list="{{ banners }}" as="b" hint-placeholder-count="3">
+            <div style="flex-shrink:0;width:340px;height:150px;border-radius:14px;overflow:hidden;position:relative;background:{{ b.bg }}">
+              <image-slot id="{{ b.imgId }}" placeholder="{{ b.imgHint }}" shape="rect"></image-slot>
+              <div style="position:absolute;left:16px;top:16px;pointer-events:none">
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.6px;color:{{ b.textColor }}">{{ b.tag }}</div>
+                <div style="font-size:20px;font-weight:800;color:{{ b.textColor }};margin-top:4px;max-width:220px;line-height:1.15">{{ b.headline }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:center;gap:5px;padding:6px 0 2px">
+          <sc-for list="{{ bannerDots }}" as="d" hint-placeholder-count="3">
+            <div style="width:6px;height:6px;border-radius:3px;background:{{ d.color }}"></div>
+          </sc-for>
+        </div>
+
+        <!-- brand strip -->
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:18px 16px 0">
+          <span style="font-size:15px;font-weight:700;color:#282C3F">Shop by Brand</span>
+          <a href="#" onclick="{{ noop }}" style="font-size:11px;font-weight:700;color:#FF3F6C">SEE ALL</a>
+        </div>
+        <div style="display:flex;gap:12px;padding:10px 16px;overflow-x:auto">
+          <sc-for list="{{ brandStrip }}" as="br" hint-placeholder-count="4">
+            <div onclick="{{ br.onTap }}" style="flex-shrink:0;width:104px;padding:14px 8px;border-radius:12px;background:#F5F5F6;text-align:center;cursor:pointer">
+              <span style="font-size:12px;font-weight:700;letter-spacing:0.3px;color:#282C3F">{{ br.name }}</span>
+              <div style="font-size:10px;color:#7E818C;margin-top:4px">{{ br.tagline }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- sale strip -->
+        <div style="margin:14px 16px 0;padding:20px;border-radius:14px;background:linear-gradient(135deg,#FFF2F6,#F5F5F6)">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.4px;color:#FF3F6C">END OF SEASON SALE</div>
+          <div style="font-size:23px;font-weight:800;color:#282C3F;margin-top:6px">40–70% Off</div>
+          <div style="font-size:12px;color:#7E818C;margin-top:4px">On top brands · Extra 10% off on prepaid orders</div>
+        </div>
+
+        <!-- reconnection teaser -->
+        <sc-if value="{{ homeReconnection.show }}" hint-placeholder-val="{{ false }}">
+          <div onclick="{{ homeReconnection.onOpen }}" style="display:flex;align-items:center;gap:12px;margin:14px 16px 0;padding:12px;border-radius:12px;border:1px solid #EAEAEC;cursor:pointer">
+            <div style="width:44px;height:56px;border-radius:6px;overflow:hidden;background:#F5F5F6;flex-shrink:0">
+              <image-slot id="{{ homeReconnection.imgId }}" placeholder="{{ homeReconnection.name }}" shape="rounded"></image-slot>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:#282C3F"><span style="color:#FF3F6C">♥</span> {{ homeReconnection.count }} items waiting in your wishlist</div>
+              <div style="font-size:11px;color:#7E818C;margin-top:2px">Pick up where you left off</div>
+            </div>
+            <span style="color:#7E818C;font-size:14px">›</span>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:20px 16px 4px">
+          <span style="font-size:15px;font-weight:700;color:#282C3F">Trending Now</span>
+          <a href="#" onclick="{{ noop }}" style="font-size:11px;font-weight:700;color:#FF3F6C">SEE ALL</a>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;padding:4px 12px">
+          <sc-for list="{{ homeTiles }}" as="p" hint-placeholder-count="6">
+            <dc-import name="ProductTile" p="{{ p }}" hint-size="50%,220px" style="width:50%;padding:4px;box-sizing:border-box"></dc-import>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SEARCH ENTRY -->
+    <sc-if value="{{ isSearchEntry }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid #FF3F6C;border-radius:8px;padding:0 12px;min-height:44px">
+          <input value="{{ searchQuery }}" oninput="{{ onSearchInput }}" onkeydown="{{ onSearchKeydown }}" placeholder="Search for products, brands..." style="flex:1;border:none;outline:none;font-size:13px;color:#282C3F"></input>
+          <button onclick="{{ onSubmitSearch }}" style="border:none;background:none;color:#FF3F6C;font-weight:700;font-size:13px;cursor:pointer">Go</button>
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:#7E818C;margin-top:18px">RECENT SEARCHES</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+          <sc-for list="{{ recentChips }}" as="rc" hint-placeholder-count="4">
+            <button onclick="{{ rc.onTap }}" style="padding:8px 14px;border-radius:999px;border:1px solid #EAEAEC;background:#fff;font-size:12px;color:#282C3F;cursor:pointer">{{ rc.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:20px;padding:16px;border-radius:12px;background:#F0EDFF">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.4px;color:#7C5CFF">ASK MAYA</div>
+          <div style="font-size:12px;color:#282C3F;margin-top:6px">Not sure what to search? Describe it and let Maya help.</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SEARCH RESULTS -->
+    <sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:12px 16px 4px">
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid #EAEAEC;border-radius:8px;padding:0 12px;min-height:40px" onclick="{{ openSearch }}">
+          <span style="font-size:13px;color:#282C3F">{{ results.query }}</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ results.resumeBar.show }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;margin:10px 16px;padding:10px 12px 10px 12px;border:1px solid #EAEAEC;border-radius:12px">
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700;color:#282C3F">{{ results.resumeBar.count }}</div>
+            <div style="font-size:11px;color:#7E818C;margin-top:1px">{{ results.resumeBar.detail }}</div>
+          </div>
+          <button onclick="{{ results.resumeBar.onResume }}" style="border:none;background:none;color:#FF3F6C;font-weight:700;font-size:12px;cursor:pointer">Resume</button>
+          <button onclick="{{ results.resumeBar.onDismiss }}" style="border:none;background:none;color:#7E818C;font-size:14px;cursor:pointer">✕</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ results.reconnection.show }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ results.reconnection.dismissed }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ results.reconnection.undoVisible }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:0 16px 12px;padding:10px 12px;background:#F5F5F6;border-radius:12px">
+              <span style="font-size:12px;color:#7E818C">{{ results.reconnection.undoText }}</span>
+              <div style="display:flex;gap:14px">
+                <button onclick="{{ results.reconnection.onHideForever }}" style="border:none;background:none;color:#7E818C;font-size:12px;cursor:pointer">Don't show again</button>
+                <button onclick="{{ results.reconnection.onUndo }}" style="border:none;background:none;color:#FF3F6C;font-weight:700;font-size:12px;cursor:pointer">Undo</button>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ results.reconnection.showModule }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border:1px solid #EAEAEC;border-radius:12px;margin:0 16px 12px;padding:12px">
+            <div style="display:flex;align-items:flex-start">
+              <div style="flex:1">
+                <div style="font-size:16px;font-weight:700;color:#282C3F"><span style="color:#FF3F6C">♥ </span>From your Wishlist</div>
+                <div style="font-size:12px;color:#7E818C;margin-top:2px">{{ results.reconnection.subtitle }}</div>
+              </div>
+              <button onclick="{{ results.reconnection.onDismiss }}" style="border:none;background:none;color:#7E818C;font-size:14px;cursor:pointer">✕</button>
+            </div>
+            <div style="height:1px;background:#EAEAEC;margin:12px 0"></div>
+
+            <sc-if value="{{ results.reconnection.multi }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
+                <sc-for list="{{ results.reconnection.matches }}" as="m" hint-placeholder-count="2">
+                  <div style="width:156px;flex-shrink:0" onclick="{{ m.onOpen }}">
+                    <div style="width:100%;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:#F5F5F6">
+                      <image-slot id="{{ m.imgId }}" placeholder="{{ m.name }}" shape="rounded"></image-slot>
+                    </div>
+                    <div style="font-size:12px;font-weight:700;color:#282C3F;margin-top:6px">{{ m.brand }}</div>
+                    <div style="font-size:11px;color:#7E818C;margin-top:1px">{{ m.name }}</div>
+                    <div style="display:inline-block;background:#F5F5F6;border-radius:4px;padding:2px 8px;margin-top:6px;font-size:11px;color:#282C3F">Saved: {{ m.savedVariant }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ results.reconnection.single }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:12px" onclick="{{ results.reconnection.primary.onOpen }}">
+                <div style="width:96px;height:128px;border-radius:6px;overflow:hidden;background:#F5F5F6;flex-shrink:0">
+                  <image-slot id="{{ results.reconnection.primary.imgId }}" placeholder="{{ results.reconnection.primary.name }}" shape="rounded"></image-slot>
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:14px;font-weight:700;color:#282C3F">{{ results.reconnection.primary.brand }}</div>
+                  <div style="font-size:12px;color:#7E818C;margin-top:2px">{{ results.reconnection.primary.name }}</div>
+                  <div style="display:inline-block;background:#F5F5F6;border-radius:4px;padding:3px 8px;margin-top:8px;font-size:11px;color:#282C3F">Saved: {{ results.reconnection.primary.savedVariant }}</div>
+                  <div style="font-size:12px;color:#7E818C;margin-top:8px">{{ results.reconnection.primary.metaLine }}</div>
+                  <div style="font-size:11px;color:#7E818C;margin-top:2px">{{ results.reconnection.primary.fitLine }}</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ results.reconnection.overflowLabel }}" hint-placeholder-val="{{ false }}">
+              <button onclick="{{ results.reconnection.onSecondary }}" style="border:none;background:none;color:#FF3F6C;font-weight:700;font-size:12px;margin-top:12px;cursor:pointer;display:block">{{ results.reconnection.overflowLabel }}</button>
+            </sc-if>
+
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button onclick="{{ results.reconnection.onPrimary }}" style="flex:1;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#FF3F6C;color:#fff;font-weight:700;font-size:13px;cursor:pointer">{{ results.reconnection.primaryAction }}</button>
+              <button onclick="{{ results.reconnection.onSecondary }}" style="flex:1;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#fff;color:#FF3F6C;font-weight:700;font-size:13px;cursor:pointer">{{ results.reconnection.secondaryAction }}</button>
+            </div>
+            <button onclick="{{ results.reconnection.onWhy }}" style="border:none;background:none;color:#7E818C;font-size:11px;text-decoration:underline;margin-top:10px;cursor:pointer;display:block">Why am I seeing this?</button>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <div style="display:flex;flex-wrap:wrap;padding:0 12px 24px">
+        <sc-for list="{{ results.tiles }}" as="p" hint-placeholder-count="4">
+          <dc-import name="ProductTile" p="{{ p }}" hint-size="50%,220px" style="width:50%;padding:4px;box-sizing:border-box"></dc-import>
+        </sc-for>
+      </div>
+      <sc-if value="{{ results.empty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:40px 24px;text-align:center;color:#7E818C;font-size:13px">No results for "{{ results.query }}"</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- BROWSE -->
+    <sc-if value="{{ isBrowse }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 16px 0">
+        <div style="font-size:20px;font-weight:700;color:#282C3F">{{ browse.title }}</div>
+        <div style="font-size:12px;color:#7E818C;margin-top:4px">{{ browse.count }} items</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;padding:8px 12px 24px">
+        <sc-for list="{{ browse.tiles }}" as="p" hint-placeholder-count="4">
+          <dc-import name="ProductTile" p="{{ p }}" hint-size="50%,220px" style="width:50%;padding:4px;box-sizing:border-box"></dc-import>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- PRODUCT DETAIL -->
+    <sc-if value="{{ isProduct }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%;aspect-ratio:3/4;background:#F5F5F6;max-height:340px">
+        <image-slot id="{{ product.imgId }}" placeholder="{{ product.name }}" shape="rect"></image-slot>
+      </div>
+      <div style="padding:16px">
+        <div style="font-size:16px;font-weight:700;color:#282C3F">{{ product.brand }}</div>
+        <div style="font-size:14px;color:#7E818C;margin-top:2px">{{ product.name }}</div>
+        <div style="font-size:11px;color:#7E818C;margin-top:2px">{{ product.colour }}</div>
+
+        <sc-if value="{{ product.saved }}" hint-placeholder-val="{{ false }}">
+          <div style="display:inline-block;background:#F5F5F6;border-radius:4px;padding:3px 8px;margin-top:10px;font-size:11px;color:#282C3F">Saved: {{ product.savedVariant }}</div>
+        </sc-if>
+
+        <div style="font-size:18px;font-weight:700;color:#282C3F;margin-top:12px">{{ product.priceStr }}</div>
+
+        <sc-if value="{{ product.showRecovery }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;padding:12px;border-radius:12px;border:1px solid #F0DFC0;background:#FFF6E5">
+            <div style="font-size:14px;font-weight:700;color:#7A5A1E">{{ product.recoveryTitle }}</div>
+            <div style="font-size:12px;color:#7A5A1E;margin-top:4px;line-height:1.4">{{ product.recoveryBody }}</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ product.hasConfidence }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;border:1px solid #EAEAEC;border-radius:12px">
+            <div onclick="{{ product.onToggleConfidence }}" style="display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;cursor:pointer">
+              <div style="flex:1">
+                <div style="font-size:12px;font-weight:700;color:#282C3F">Is this still right for you?</div>
+                <sc-if value="{{ product.confidenceCollapsedSummary }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11px;color:#7E818C;margin-top:2px">{{ product.confidenceCollapsedSummary }}</div>
+                </sc-if>
+              </div>
+              <span style="font-size:11px;color:#7E818C">{{ product.confidenceChevron }}</span>
+            </div>
+            <sc-if value="{{ product.confidenceExpanded }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top:1px solid #EAEAEC">
+                <sc-for list="{{ product.signals }}" as="s" hint-placeholder-count="5">
+                  <div style="border-bottom:1px solid #EAEAEC">
+                    <div onclick="{{ s.onToggle }}" style="display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;cursor:pointer">
+                      <span style="width:16px;text-align:center;font-size:13px;font-weight:700;color:{{ s.glyphColor }}">{{ s.glyph }}</span>
+                      <div style="flex:1">
+                        <div style="font-size:11px;color:#7E818C">{{ s.label }}</div>
+                        <div style="font-size:12px;color:#282C3F">{{ s.value }}</div>
+                      </div>
+                      <span style="font-size:11px;font-weight:700;color:#FF3F6C">{{ s.whyLabel }}</span>
+                    </div>
+                    <sc-if value="{{ s.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="padding:0 12px 10px 40px;font-size:11px;color:#7E818C;line-height:1.4">{{ s.source }}</div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ product.hasColours }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:700;color:#282C3F;margin-top:20px">Colour</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            <sc-for list="{{ product.colours }}" as="c" hint-placeholder-count="2">
+              <button onclick="{{ c.onTap }}" disabled="{{ c.disabled }}" style="min-height:44px;padding:0 14px;border-radius:999px;border:{{ c.border }};background:#fff;font-size:12px;color:{{ c.textColor }};font-weight:{{ c.weight }};opacity:{{ c.opacity }};cursor:pointer">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="font-size:13px;font-weight:700;color:#282C3F;margin-top:20px">Size</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+          <sc-for list="{{ product.sizeRows }}" as="sz" hint-placeholder-count="4">
+            <button onclick="{{ sz.onTap }}" disabled="{{ sz.disabled }}" style="min-width:44px;min-height:44px;padding:0 10px;border-radius:999px;border:{{ sz.border }};background:#fff;font-size:12px;color:{{ sz.textColor }};font-weight:{{ sz.weight }};opacity:{{ sz.opacity }};cursor:pointer">{{ sz.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ product.hasPairing }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;font-weight:700;color:#282C3F;margin-top:22px">Complete the look</div>
+          <div style="display:flex;gap:12px;margin-top:10px;overflow-x:auto">
+            <sc-for list="{{ product.pairing }}" as="pr" hint-placeholder-count="2">
+              <div style="width:120px;flex-shrink:0" onclick="{{ pr.onOpen }}">
+                <div style="width:100%;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:#F5F5F6">
+                  <image-slot id="{{ pr.imgId }}" placeholder="{{ pr.name }}" shape="rounded"></image-slot>
+                </div>
+                <div style="font-size:9px;font-weight:700;color:#FF3F6C;margin-top:4px">FROM YOUR WISHLIST</div>
+                <div style="font-size:11px;color:#282C3F;margin-top:2px">{{ pr.brand }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="font-size:13px;font-weight:700;color:#282C3F;margin-top:22px">Product details</div>
+        <div style="font-size:12px;color:#7E818C;margin-top:6px;line-height:1.5">{{ product.description }}</div>
+        <div style="font-size:11px;color:#7E818C;margin-top:6px">Fit, material and usage are derived from catalog attributes.</div>
+
+        <sc-if value="{{ product.addedState }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:20px;padding:14px;border:1px solid #EAEAEC;border-radius:12px;background:#F5F5F6">
+            <div style="font-size:14px;font-weight:700;color:#282C3F">{{ product.addedTitle }}</div>
+            <div style="font-size:12px;color:#7E818C;margin-top:2px">{{ product.addedVariant }}</div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button onclick="{{ product.onAfterAddBag }}" style="flex:1;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#FF3F6C;color:#fff;font-weight:700;font-size:12px;cursor:pointer">View Bag</button>
+              <button onclick="{{ product.onAfterAddCompare }}" style="flex:1;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#fff;color:#FF3F6C;font-weight:700;font-size:12px;cursor:pointer">Keep Comparing</button>
+            </div>
+            <button onclick="{{ product.onAfterAddBrowse }}" style="border:none;background:none;color:#7E818C;font-weight:700;font-size:12px;margin-top:10px;cursor:pointer;display:block;width:100%;text-align:center;min-height:32px">Keep Browsing</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ product.showBuyRow }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:20px">
+            <button onclick="{{ product.onMoveToBag }}" style="width:100%;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#FF3F6C;color:#fff;font-weight:700;font-size:13px;cursor:pointer">{{ product.ctaLabel }}</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ product.noSizeAvailable }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:20px;font-size:12px;color:#7E818C">Pick a size that is in stock to continue.</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- WISHLIST -->
+    <sc-if value="{{ isWishlist }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 16px 0;font-size:20px;font-weight:700;color:#282C3F">Wishlist</div>
+      <div style="padding:0 4px 0 12px;font-size:12px;color:#7E818C;margin:4px 12px 0">{{ wishlistCount }} items saved</div>
+      <div style="display:flex;flex-wrap:wrap;padding:8px 12px 24px">
+        <sc-for list="{{ wishlistItems }}" as="p" hint-placeholder-count="4">
+          <dc-import name="ProductTile" p="{{ p }}" hint-size="50%,220px" style="width:50%;padding:4px;box-sizing:border-box"></dc-import>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- BAG -->
+    <sc-if value="{{ isBag }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ bag.empty }}" hint-placeholder-val="{{ false }}">
+        <div style="height:400px;display:flex;align-items:center;justify-content:center;color:#7E818C;font-size:13px">Your bag is empty</div>
+      </sc-if>
+      <sc-if value="{{ bag.hasItems }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <sc-for list="{{ bag.lines }}" as="l" hint-placeholder-count="2">
+            <div style="display:flex;gap:12px">
+              <div style="width:88px;height:112px;border-radius:8px;overflow:hidden;background:#F5F5F6;flex-shrink:0">
+                <image-slot id="{{ l.imgId }}" placeholder="{{ l.name }}" shape="rounded"></image-slot>
+              </div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:700;color:#282C3F">{{ l.brand }}</div>
+                <div style="font-size:12px;color:#7E818C;margin-top:2px">{{ l.name }}</div>
+                <div style="font-size:11px;color:#7E818C;margin-top:4px">{{ l.meta }}</div>
+                <div style="font-size:13px;font-weight:700;color:#282C3F;margin-top:6px">{{ l.priceStr }}</div>
+              </div>
+            </div>
+          </sc-for>
+          <div style="border-top:1px solid #EAEAEC;padding-top:14px;display:flex;justify-content:space-between">
+            <span style="font-size:13px;color:#7E818C">Total</span>
+            <span style="font-size:15px;font-weight:700;color:#282C3F">{{ bag.totalStr }}</span>
+          </div>
+          <button onclick="{{ goCheckout }}" style="width:100%;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#FF3F6C;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Proceed to Checkout</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- CHECKOUT -->
+    <sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ checkout.placed }}" hint-placeholder-val="{{ false }}">
+        <div style="height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center">
+          <div style="font-size:34px">✓</div>
+          <div style="font-size:16px;font-weight:700;color:#282C3F">Order placed</div>
+          <div style="font-size:12px;color:#7E818C">You'll get delivery updates on this order.</div>
+          <button onclick="{{ checkout.onContinue }}" style="margin-top:16px;min-height:44px;padding:0 20px;border-radius:4px;border:1px solid #FF3F6C;background:#FF3F6C;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Continue Shopping</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ checkout.pending }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="border:1px solid #EAEAEC;border-radius:12px;padding:14px">
+            <div style="font-size:12px;font-weight:700;color:#7E818C">DELIVER TO</div>
+            <div style="font-size:13px;color:#282C3F;margin-top:6px">Home · 400001<br></br>221B, Marine Drive, Mumbai</div>
+          </div>
+          <div style="border:1px solid #EAEAEC;border-radius:12px;padding:14px">
+            <div style="font-size:12px;font-weight:700;color:#7E818C">PAYMENT METHOD</div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <div style="flex:1;padding:10px;border-radius:8px;border:2px solid #FF3F6C;text-align:center;font-size:12px;color:#FF3F6C;font-weight:700">UPI</div>
+              <div style="flex:1;padding:10px;border-radius:8px;border:1px solid #EAEAEC;text-align:center;font-size:12px;color:#7E818C">Card</div>
+              <div style="flex:1;padding:10px;border-radius:8px;border:1px solid #EAEAEC;text-align:center;font-size:12px;color:#7E818C">COD</div>
+            </div>
+          </div>
+          <div style="border:1px solid #EAEAEC;border-radius:12px;padding:14px">
+            <div style="font-size:12px;font-weight:700;color:#7E818C">ORDER SUMMARY</div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:#282C3F"><span>{{ bag.count }} items</span><span>{{ bag.totalStr }}</span></div>
+          </div>
+          <button onclick="{{ checkout.onPlace }}" style="width:100%;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#FF3F6C;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Place Order</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- PROFILE -->
+    <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #EAEAEC">
+        <div style="width:48px;height:48px;border-radius:24px;background:#F5F5F6"></div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#282C3F">Hi, Shopper</div>
+          <div style="font-size:11px;color:#7E818C">shopper@example.com</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{ profileRows }}" as="r" hint-placeholder-count="6">
+          <button onclick="{{ r.onTap }}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:none;background:none;border-bottom:1px solid #EAEAEC;font-size:13px;color:#282C3F;cursor:pointer;min-height:44px;text-align:left">
+            <span>{{ r.label }}</span><span style="color:#7E818C">›</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- STUB -->
+    <sc-if value="{{ isStub }}" hint-placeholder-val="{{ false }}">
+      <div style="height:400px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#7E818C">
+        <div style="font-size:28px">🚧</div>
+        <div style="font-size:13px">{{ stubReason }}</div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <!-- ===== SHEET OVERLAY ===== -->
+  <sc-if value="{{ sheet.open }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:20" onclick="{{ sheet.onClose }}"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;z-index:21;background:#fff;border-radius:16px 16px 0 0;max-height:70%;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;padding:16px 16px 10px;border-bottom:1px solid #EAEAEC">
+        <div style="flex:1;font-size:15px;font-weight:700;color:#282C3F">{{ sheet.title }}</div>
+        <button onclick="{{ sheet.onClose }}" style="min-width:44px;min-height:44px;border:none;background:none;font-size:16px;color:#7E818C;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:16px;overflow-y:auto">
+
+        <sc-if value="{{ sheet.isWhy }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;color:#282C3F;line-height:1.5">{{ sheet.whyBody }}</div>
+          <button onclick="{{ sheet.onHideSearch }}" style="width:100%;min-height:44px;border-radius:4px;border:1px solid #FF3F6C;background:#fff;color:#FF3F6C;font-weight:700;font-size:13px;margin-top:16px;cursor:pointer">Hide for this search</button>
+          <button onclick="{{ sheet.onHideForever }}" style="width:100%;min-height:44px;border:none;background:none;color:#7E818C;font-size:12px;margin-top:10px;cursor:pointer">Don't show wishlist items in search</button>
+        </sc-if>
+
+        <sc-if value="{{ sheet.isCompare }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:12px">
+            <sc-for list="{{ sheet.compareItems }}" as="ci" hint-placeholder-count="2">
+              <div style="flex:1">
+                <div style="width:100%;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:#F5F5F6">
+                  <image-slot id="{{ ci.imgId }}" placeholder="{{ ci.name }}" shape="rounded"></image-slot>
+                </div>
+                <sc-if value="{{ ci.isSaved }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:9px;font-weight:700;color:#FF3F6C;margin-top:6px">YOUR SAVED ITEM</div>
+                </sc-if>
+                <div style="font-size:12px;font-weight:700;color:#282C3F;margin-top:2px">{{ ci.brand }}</div>
+                <div style="font-size:11px;color:#7E818C;margin-top:1px">{{ ci.priceStr }}</div>
+                <div style="font-size:11px;color:#7E818C;margin-top:6px">★ {{ ci.rating }} ({{ ci.reviews }})</div>
+                <div style="font-size:11px;color:#7E818C;margin-top:4px">{{ ci.delivery }}</div>
+                <div style="font-size:11px;color:#7E818C;margin-top:4px">{{ ci.material }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:#7E818C;margin-top:14px;line-height:1.4">Price stays visible for reference but is not used to rank these options.</div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== BOTTOM NAV ===== -->
+  <div style="display:flex;border-top:1px solid #EAEAEC;flex-shrink:0;background:#fff">
+    <sc-for list="{{ bottomTabs }}" as="bt" hint-placeholder-count="5">
+      <button onclick="{{ bt.onTap }}" style="flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;cursor:pointer;position:relative">
+        <div style="width:20px;height:20px;position:relative">
+          <sc-if value="{{ bt.icon.home }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:2px;top:6px;width:16px;height:12px;border:1.6px solid {{ bt.color }};border-top:none"></div>
+            <div style="position:absolute;left:1px;top:3px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:8px solid {{ bt.color }}"></div>
+          </sc-if>
+          <sc-if value="{{ bt.icon.tag }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:2px;top:2px;width:15px;height:15px;border:1.6px solid {{ bt.color }};border-radius:3px;transform:rotate(45deg)"></div>
+            <div style="position:absolute;left:7px;top:7px;width:4px;height:4px;border-radius:2px;background:{{ bt.color }}"></div>
+          </sc-if>
+          <sc-if value="{{ bt.icon.clock }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:1px;top:1px;width:17px;height:17px;border:1.6px solid {{ bt.color }};border-radius:9px"></div>
+            <div style="position:absolute;left:9px;top:5px;width:1.6px;height:6px;background:{{ bt.color }}"></div>
+            <div style="position:absolute;left:9px;top:10px;width:5px;height:1.6px;background:{{ bt.color }}"></div>
+          </sc-if>
+          <sc-if value="{{ bt.icon.crown }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:1px;top:6px;width:17px;height:10px;border:1.6px solid {{ bt.color }};border-top:none"></div>
+            <div style="position:absolute;left:1px;top:3px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid {{ bt.color }}"></div>
+            <div style="position:absolute;left:8px;top:1px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid {{ bt.color }}"></div>
+            <div style="position:absolute;left:14px;top:3px;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid {{ bt.color }}"></div>
+          </sc-if>
+          <sc-if value="{{ bt.icon.bag }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:2px;top:6px;width:16px;height:12px;border:1.6px solid {{ bt.color }};border-radius:2px"></div>
+            <div style="position:absolute;left:6px;top:2px;width:8px;height:6px;border:1.6px solid {{ bt.color }};border-bottom:none;border-radius:4px 4px 0 0"></div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ bt.badge }}" hint-placeholder-val="{{ false }}">
+          <span style="position:absolute;top:0;right:20%;min-width:16px;height:16px;border-radius:8px;background:#FF3F6C;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px">{{ bt.badge }}</span>
+        </sc-if>
+        <span style="font-size:10px;color:{{ bt.color }}">{{ bt.caption }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {
+    tab: 'home',
+    stack: [{ name: 'home' }],
+    genderTab: 'all',
+    searchQuery: '',
+    searchInput: '',
+    dismissed: {},
+    undoVisible: {},
+    hiddenForever: {},
+    selSize: {},
+    selColour: {},
+    added: {},
+    panelExpanded: {},
+    signalOpen: {},
+    sheet: null,
+    compareSeen: {},
+    resumeDismissed: {},
+    bag: [],
+    checkoutPlaced: false,
+    stubReason: ''
+  };
+
+  catalog = [
+    { id: 1, brand: 'Roadster', name: 'Men Blue Casual Shirt', gender: 'men', price: 899, mrp: 1499, colour: 'Blue', colours: ['Blue', 'White'], sizes: ['S', 'M', 'L', 'XL'], sizesInStock: ['S', 'L', 'XL'], saved: true, savedColour: 'Blue', savedSize: 'M', rating: 4.2, reviews: 1345, material: 'Cotton', fit: 'Regular Fit', usage: 'Casual', delivery: 'Delivered by 2 Sep', seller: 'Roadster Retail' },
+    { id: 2, brand: 'HRX', name: 'Men Slim Fit Jeans', gender: 'men', price: 1299, mrp: 1999, colour: 'Indigo', colours: ['Indigo'], sizes: ['30', '32', '34', '36'], sizesInStock: ['30', '32', '34', '36'], saved: false, rating: 4.0, reviews: 823, material: 'Denim', fit: 'Slim Fit', usage: 'Casual', delivery: 'Delivered by 3 Sep', seller: 'HRX Retail' },
+    { id: 3, brand: 'Anouk', name: 'Women Yellow Printed Kurta', gender: 'women', price: 1299, mrp: 2199, colour: 'Yellow', colours: ['Yellow', 'Pink'], sizes: ['S', 'M', 'L'], sizesInStock: ['S', 'M', 'L'], saved: true, savedColour: 'Yellow', savedSize: 'M', rating: 4.5, reviews: 2103, material: 'Cotton blend', fit: 'Regular Fit', usage: 'Ethnic', delivery: 'Delivered by 3 Sep', seller: 'Anouk Fashions', pairing: [4, 5] },
+    { id: 4, brand: 'Lavie', name: 'Women Structured Handbag', gender: 'women', price: 1599, mrp: 2399, colour: 'Tan', colours: ['Tan'], sizes: ['One Size'], sizesInStock: ['One Size'], saved: true, savedColour: 'Tan', savedSize: 'One Size', rating: 4.3, reviews: 512, material: 'Vegan leather', fit: '—', usage: 'Ethnic', delivery: 'Delivered by 4 Sep', seller: 'Lavie Store' },
+    { id: 5, brand: 'Catwalk', name: 'Women Block Heels', gender: 'women', price: 1899, mrp: 2799, colour: 'Nude', colours: ['Nude'], sizes: ['36', '37', '38', '39'], sizesInStock: ['36', '37', '38', '39'], saved: true, savedColour: 'Nude', savedSize: '38', rating: 4.1, reviews: 340, material: 'Synthetic', fit: '—', usage: 'Ethnic', delivery: 'Delivered by 4 Sep', seller: 'Catwalk Store' },
+    { id: 6, brand: 'H&M', name: 'Women Floral Dress', gender: 'women', price: 1499, mrp: 2299, colour: 'Multi', colours: ['Multi'], sizes: ['XS', 'S', 'M', 'L'], sizesInStock: ['XS', 'S', 'M', 'L'], saved: false, rating: 4.0, reviews: 615, material: 'Rayon', fit: 'Regular Fit', usage: 'Casual', delivery: 'Delivered by 5 Sep', seller: 'H&M India' },
+    { id: 7, brand: 'YK', name: 'Boys Printed T-Shirt', gender: 'kids', price: 499, mrp: 799, colour: 'Green', colours: ['Green'], sizes: ['4-5Y', '6-7Y', '8-9Y'], sizesInStock: ['4-5Y', '6-7Y', '8-9Y'], saved: false, rating: 3.9, reviews: 210, material: 'Cotton', fit: 'Regular Fit', usage: 'Casual', delivery: 'Delivered by 3 Sep', seller: 'YK Kids' },
+    { id: 8, brand: 'Campus', name: 'Unisex Running Sneakers', gender: 'all', price: 899, mrp: 1499, colour: 'Grey', colours: ['Grey'], sizes: ['7', '8', '9', '10'], sizesInStock: ['7', '8', '9', '10'], saved: false, rating: 4.0, reviews: 980, material: 'Mesh', fit: 'True to size', usage: 'Sports', delivery: 'Delivered by 2 Sep', seller: 'Campus Shoes' },
+    { id: 9, brand: 'Fossil', name: 'Chronograph Watch', gender: 'all', price: 8999, mrp: 12999, colour: 'Brown', colours: ['Brown'], sizes: ['One Size'], sizesInStock: ['One Size'], saved: false, rating: 4.4, reviews: 145, material: 'Leather', fit: '—', usage: 'Formal', delivery: 'Delivered by 6 Sep', seller: 'Fossil India' },
+    { id: 10, brand: 'Tommy Hilfiger', name: 'Men Polo T-Shirt', gender: 'men', price: 1899, mrp: 2599, colour: 'Navy', colours: ['Navy'], sizes: ['S', 'M', 'L', 'XL'], sizesInStock: ['S', 'M', 'L', 'XL'], saved: false, rating: 4.3, reviews: 402, material: 'Pique Cotton', fit: 'Regular Fit', usage: 'Casual', delivery: 'Delivered by 5 Sep', seller: 'TH Retail' }
+  ];
+
+  fmt(n) { return '₹' + n.toLocaleString('en-IN'); }
+  discount(price, mrp) { return Math.round((1 - price / mrp) * 100); }
+  find(id) { return this.catalog.find(p => p.id === id); }
+
+  top() { return this.state.stack[this.state.stack.length - 1]; }
+  push(screen) { this.setState(s => ({ stack: [...s.stack, screen] })); }
+  onBack = () => this.setState(s => (s.stack.length > 1 ? { stack: s.stack.slice(0, -1) } : {}));
+  switchTab(tab, root) { this.setState({ tab, stack: [root] }); }
+
+  goProfile = () => this.push({ name: 'profile' });
+  goWishlist = () => this.push({ name: 'wishlist' });
+  goCheckout = () => this.push({ name: 'checkout' });
+  openSearch = () => this.push({ name: 'searchEntry' });
+  openProductScreen(id) { this.push({ name: 'product', id }); }
+
+  onSearchInput = (e) => this.setState({ searchInput: e.target.value });
+  onSearchKeydown = (e) => { if (e.key === 'Enter') this.submitSearch(this.state.searchInput); };
+  onSubmitSearch = () => this.submitSearch(this.state.searchInput);
+  submitSearch(q) {
+    const query = (q || '').trim();
+    if (!query) return;
+    this.setState(s => ({
+      searchQuery: query,
+      stack: [...s.stack.slice(0, -1), { name: 'results' }],
+      dismissed: { ...s.dismissed, [query]: false },
+      undoVisible: { ...s.undoVisible, [query]: false }
+    }));
+  }
+
+  matchTiles(query) {
+    const q = query.toLowerCase();
+    return this.catalog.filter(p => (p.brand + ' ' + p.name + ' ' + p.gender).toLowerCase().includes(q));
+  }
+
+  buildTileVM(p) {
+    return {
+      id: p.id, brand: p.brand, name: p.name, rating: p.rating.toFixed(1), reviews: p.reviews.toLocaleString('en-IN'),
+      priceStr: this.fmt(p.price), mrpStr: this.fmt(p.mrp), discount: this.discount(p.price, p.mrp) + '% OFF',
+      imgId: 'img-' + p.id, onOpen: () => this.openProductScreen(p.id)
+    };
+  }
+
+  dismissModule = () => {
+    const q = this.state.searchQuery;
+    this.setState(s => ({ dismissed: { ...s.dismissed, [q]: true }, undoVisible: { ...s.undoVisible, [q]: true } }));
+    setTimeout(() => this.setState(s => ({ undoVisible: { ...s.undoVisible, [q]: false } })), 5000);
+  };
+  undoDismiss = () => {
+    const q = this.state.searchQuery;
+    this.setState(s => ({ dismissed: { ...s.dismissed, [q]: false }, undoVisible: { ...s.undoVisible, [q]: false } }));
+  };
+  hideForever = () => {
+    const q = this.state.searchQuery;
+    this.setState(s => ({ hiddenForever: { ...s.hiddenForever, [q]: true } }));
+  };
+
+  openWhySheet(primary) {
+    this.setState({
+      sheet: {
+        isWhy: true, isCompare: false,
+        title: 'Why am I seeing this?',
+        body: `You saved ${primary.name} in ${primary.savedColour} · ${primary.savedSize}. It shows here because it matches "${this.state.searchQuery}" — not because of price or promotion.`
+      }
+    });
+  }
+  closeSheet = () => this.setState({ sheet: null });
+  openCompareSheet(primary) {
+    const alt = this.catalog.find(p => p.gender === primary.gender && p.id !== primary.id && !p.saved) || primary;
+    this.setState(s => ({
+      sheet: { isWhy: false, isCompare: true, title: 'Compare options', items: [primary, alt] },
+      compareSeen: { ...s.compareSeen, [this.state.searchQuery]: true }
+    }));
+  }
+
+  chooseSize(id, size) { this.setState(s => ({ selSize: { ...s.selSize, [id]: size } })); }
+  chooseColour(id, colour) { this.setState(s => ({ selColour: { ...s.selColour, [id]: colour } })); }
+  toggleConfidence(id) { this.setState(s => ({ panelExpanded: { ...s.panelExpanded, [id]: !(s.panelExpanded[id] ?? true) } })); }
+  toggleSignal(id, key) {
+    const k = id + ':' + key;
+    this.setState(s => ({ signalOpen: { ...s.signalOpen, [k]: !s.signalOpen[k] } }));
+  }
+  moveToBag(p, size, colour) {
+    const already = this.state.bag.find(l => l.id === p.id && l.size === size && l.colour === colour);
+    this.setState(s => ({
+      bag: already ? s.bag : [...s.bag, { id: p.id, size, colour, qty: 1 }],
+      added: { ...s.added, [p.id]: already ? 'duplicate' : 'added' }
+    }));
+  }
+  afterAdd(id, next) {
+    this.setState(s => ({ added: { ...s.added, [id]: null } }));
+    if (next === 'bag') this.push({ name: 'bag' });
+    else if (next === 'compare') { const p = this.find(id); this.openCompareSheet(p); }
+  }
+  placeOrder = () => this.setState({ checkoutPlaced: true });
+  continueShopping = () => this.setState({ checkoutPlaced: false, bag: [], tab: 'home', stack: [{ name: 'home' }] });
+
+  renderVals() {
+    const s = this.state;
+    const screen = this.top();
+    const name = screen.name;
+
+    const GENDERS = [{ key: 'all', label: 'ALL' }, { key: 'men', label: 'MEN' }, { key: 'women', label: 'WOMEN' }, { key: 'kids', label: 'KIDS' }];
+    const genderTabs = GENDERS.map(g => ({
+      key: g.key, label: g.label, active: s.genderTab === g.key,
+      bg: s.genderTab === g.key ? '#FF3F6C' : '#F5F5F6', color: s.genderTab === g.key ? '#fff' : '#282C3F',
+      onTap: () => this.setState({ genderTab: g.key })
+    }));
+    const categories = ['Fashion', 'Beauty', 'Kids', 'Footwear', 'Accessories', 'Home'].map(label => ({ label, imgId: 'cat-' + label }));
+
+    const homeTiles = this.catalog
+      .filter(p => s.genderTab === 'all' || p.gender === s.genderTab || p.gender === 'all')
+      .map(p => this.buildTileVM(p));
+
+    const banners = [
+      { imgId: 'banner-1', imgHint: 'End of Season Sale', bg: '#FFE1E9', tag: 'LIMITED TIME', headline: 'End of Season Sale · Up to 70% Off', textColor: '#282C3F' },
+      { imgId: 'banner-2', imgHint: 'New Arrivals', bg: '#E7E4FF', tag: 'JUST IN', headline: 'New Arrivals from Roadster', textColor: '#282C3F' },
+      { imgId: 'banner-3', imgHint: 'Luxury Edit', bg: '#EFEFEF', tag: 'CURATED', headline: 'The Luxury Edit', textColor: '#282C3F' }
+    ];
+    const bannerDots = banners.map((b, i) => ({ color: i === 0 ? '#FF3F6C' : '#EAEAEC' }));
+
+    const brandStrip = ['Roadster', 'Anouk', 'HRX', 'H&M', 'Tommy Hilfiger'].map(name => ({
+      name, tagline: 'Min. 40% off', onTap: () => this.setState({ genderTab: 'all' })
+    }));
+
+    const savedForTeaser = this.catalog.filter(p => p.saved);
+    const homeReconnection = savedForTeaser.length > 0 ? {
+      show: true, count: savedForTeaser.length, imgId: 'img-' + savedForTeaser[0].id, name: savedForTeaser[0].name,
+      onOpen: this.goWishlist
+    } : { show: false };
+    const noop = (e) => e && e.preventDefault && e.preventDefault();
+
+    const recentChips = ['kurta', 'shirt', 'sneakers', 'jeans'].map(q => ({ label: q, onTap: () => this.submitSearch(q) }));
+
+    // ---- SEARCH RESULTS ----
+    let results = { query: '', tiles: [], empty: false, reconnection: { show: false }, resumeBar: { show: false } };
+    if (name === 'results') {
+      const query = s.searchQuery;
+      const tiles = this.matchTiles(query);
+      const savedMatches = tiles.filter(p => p.saved);
+      const dismissedNow = !!s.dismissed[query];
+      const undoVisibleNow = !!s.undoVisible[query];
+      const hiddenForeverNow = !!s.hiddenForever[query];
+      const showRecon = savedMatches.length > 0 && !hiddenForeverNow;
+
+      let reconnection = { show: showRecon };
+      if (showRecon) {
+        const primary = savedMatches[0];
+        const overflow = savedMatches.length - 1;
+        const multi = savedMatches.length > 1;
+        reconnection = {
+          show: true,
+          dismissed: dismissedNow,
+          undoVisible: undoVisibleNow,
+          undoText: hiddenForeverNow ? "You won't see wishlist matches like this again" : 'Hidden for this search',
+          onUndo: this.undoDismiss,
+          onHideForever: this.hideForever,
+          showModule: !dismissedNow,
+          multi, single: !multi,
+          subtitle: multi ? `${savedMatches.length} saved items match "${query}"` : `You saved this in ${primary.savedColour} · size ${primary.savedSize}`,
+          matches: savedMatches.slice(0, 3).map(m => ({
+            imgId: 'img-' + m.id, brand: m.brand, name: m.name, savedVariant: `${m.savedColour} · ${m.savedSize}`,
+            onOpen: () => this.openProductScreen(m.id)
+          })),
+          primary: {
+            imgId: 'img-' + primary.id, brand: primary.brand, name: primary.name,
+            savedVariant: `${primary.savedColour} · ${primary.savedSize}`,
+            metaLine: primary.sizesInStock.includes(primary.savedSize) ? `${this.fmt(primary.price)} · ${primary.delivery}` : 'Saved size unavailable',
+            fitLine: `Size ${primary.savedSize} · check size guide for fit`,
+            onOpen: () => this.openProductScreen(primary.id)
+          },
+          overflowLabel: overflow > 0 ? `View all ${savedMatches.length} saved matches` : null,
+          primaryAction: primary.sizesInStock.includes(primary.savedSize) ? 'Buy from Wishlist' : 'See available sizes',
+          secondaryAction: 'Compare options',
+          onPrimary: () => this.openProductScreen(primary.id),
+          onSecondary: () => this.openCompareSheet(primary),
+          onDismiss: this.dismissModule,
+          onWhy: () => this.openWhySheet(primary)
+        };
+      }
+
+      const compareActive = !!s.compareSeen[query] && !s.resumeDismissed[query];
+      results = {
+        query: `"${query}"`, tiles: tiles.map(p => this.buildTileVM(p)), empty: tiles.length === 0,
+        reconnection,
+        resumeBar: {
+          show: compareActive,
+          count: 'Comparing 2 items',
+          detail: 'Resume where you left off',
+          onResume: () => { const primary = savedMatches[0] || tiles[0]; if (primary) this.openCompareSheet(primary); },
+          onDismiss: () => this.setState(st => ({ resumeDismissed: { ...st.resumeDismissed, [query]: true } }))
+        }
+      };
+    }
+
+    // ---- BROWSE ----
+    let browse = { title: '', count: 0, tiles: [] };
+    if (name === 'browse') {
+      const isLux = screen.filter === 'luxury';
+      const tiles = this.catalog.filter(p => isLux ? p.price >= 1800 : p.price < 999);
+      browse = { title: isLux ? 'Luxury' : 'Under ₹999', count: tiles.length, tiles: tiles.map(p => this.buildTileVM(p)) };
+    }
+
+    // ---- PRODUCT DETAIL ----
+    let product = null;
+    if (name === 'product') {
+      const p = this.find(screen.id);
+      const selSize = s.selSize[p.id] ?? p.savedSize ?? p.sizes[0];
+      const selColour = s.selColour[p.id] ?? p.savedColour ?? p.colour;
+      const purchasable = p.sizesInStock.includes(selSize);
+      const savedSizeBlocked = p.saved && selSize === p.savedSize && !purchasable;
+      const deviates = p.saved && (selSize !== p.savedSize || selColour !== p.savedColour);
+      const addedState = s.added[p.id] || null;
+
+      const signalDefs = [
+        { key: 'availability', label: 'Availability', value: purchasable ? 'In stock' : 'Saved size unavailable', status: purchasable ? 'ok' : 'blocked', source: 'Checked against live inventory at the moment you opened this screen.' },
+        { key: 'price', label: 'Price', value: this.fmt(p.price), status: 'ok', source: 'Live price check — this may have changed since you saved the item.' },
+        { key: 'delivery', label: 'Delivery', value: p.delivery, status: 'ok', source: `Estimated from ${p.seller}'s location and your saved pincode.` },
+        { key: 'fit', label: 'Fit', value: 'Check size guide', status: 'unknown', source: 'This catalog has no size chart, so no fit score is claimed — the size guide is the only fit statement the data supports.' },
+        { key: 'reviews', label: 'Reviews', value: `${p.rating} · ${p.reviews.toLocaleString('en-IN')} ratings`, status: 'ok', source: 'The count and average as reported — no quality verdict is drawn from them.' }
+      ];
+      const GLYPH = { ok: '✓', attention: '!', blocked: '×', unknown: '?' };
+      const GCOLOR = { ok: '#1B7A55', attention: '#7A5A1E', blocked: '#B3261E', unknown: '#7E818C' };
+      const expanded = s.panelExpanded[p.id] ?? true;
+      const signals = signalDefs.map(sig => {
+        const open = !!s.signalOpen[p.id + ':' + sig.key];
+        return { ...sig, glyph: GLYPH[sig.status], glyphColor: GCOLOR[sig.status], open, whyLabel: open ? 'Hide' : 'Why', onToggle: () => this.toggleSignal(p.id, sig.key) };
+      });
+      const blockingSummary = signals.filter(x => x.status === 'blocked').map(x => x.value).join(' · ');
+
+      const pairingIds = p.pairing || [];
+      const pairing = pairingIds.map(pid => { const pp = this.find(pid); return { imgId: 'img-' + pp.id, brand: pp.brand, name: pp.name, onOpen: () => this.openProductScreen(pp.id) }; });
+
+      const colours = p.colours.length > 1 ? p.colours.map(c => {
+        const selected = c === selColour, isSaved = c === p.savedColour;
+        return {
+          label: isSaved ? c + ' — saved' : c, selected, disabled: false,
+          border: selected ? '2px solid #FF3F6C' : '1px solid #EAEAEC', textColor: selected ? '#FF3F6C' : '#282C3F',
+          weight: selected ? '700' : '400', opacity: '1', onTap: () => this.chooseColour(p.id, c)
+        };
+      }) : [];
+
+      const sizeRows = p.sizes.map(sz => {
+        const available = p.sizesInStock.includes(sz), selected = sz === selSize;
+        return {
+          label: sz, disabled: !available,
+          border: selected ? '2px solid #FF3F6C' : '1px solid #EAEAEC', textColor: selected ? '#FF3F6C' : '#282C3F',
+          weight: selected ? '700' : '400', opacity: available ? '1' : '0.35',
+          onTap: () => this.chooseSize(p.id, sz)
+        };
+      });
+
+      product = {
+        id: p.id, imgId: 'img-' + p.id, brand: p.brand, name: p.name, colour: p.colour,
+        saved: p.saved, savedVariant: p.saved ? `${p.savedColour} · ${p.savedSize}` : '',
+        priceStr: this.fmt(p.price),
+        showRecovery: savedSizeBlocked,
+        recoveryTitle: 'Your saved size is no longer available',
+        recoveryBody: `${p.savedSize} in ${p.savedColour} is sold out. Pick another size to continue — nothing is substituted for you.`,
+        hasConfidence: p.saved, confidenceExpanded: expanded,
+        confidenceChevron: expanded ? '▲' : '▼',
+        confidenceCollapsedSummary: expanded ? null : (blockingSummary || signals.filter(x => x.status === 'ok').slice(0, 2).map(x => x.value).join(' · ')),
+        onToggleConfidence: () => this.toggleConfidence(p.id),
+        signals,
+        hasColours: colours.length > 0, colours,
+        sizeRows,
+        hasPairing: pairing.length > 0, pairing,
+        description: `${p.brand} ${p.name} — ${p.material} · ${p.fit} · ${p.colour} · ${p.usage}.`,
+        addedState,
+        addedTitle: addedState === 'duplicate' ? 'Already in your Bag' : 'Added from Wishlist',
+        addedVariant: `${selColour} · ${selSize}`,
+        onAfterAddBag: () => this.afterAdd(p.id, 'bag'),
+        onAfterAddCompare: () => this.afterAdd(p.id, 'compare'),
+        onAfterAddBrowse: () => this.afterAdd(p.id, 'browse'),
+        showBuyRow: !addedState && purchasable,
+        noSizeAvailable: !addedState && !purchasable,
+        ctaLabel: deviates ? `Move to Bag · ${selColour} · ${selSize}` : (p.saved ? 'Move to Bag' : `Move to Bag · ${selColour} · ${selSize}`),
+        onMoveToBag: () => this.moveToBag(p, selSize, selColour)
+      };
+    }
+
+    // ---- WISHLIST ----
+    const wishlistCatalog = this.catalog.filter(p => p.saved);
+    const wishlistItems = wishlistCatalog.map(p => this.buildTileVM(p));
+
+    // ---- BAG ----
+    const bagLines = s.bag.map(l => {
+      const p = this.find(l.id);
+      return { imgId: 'img-' + p.id, brand: p.brand, name: p.name, meta: `${l.colour} · ${l.size} · Qty ${l.qty}`, priceStr: this.fmt(p.price * l.qty), total: p.price * l.qty };
+    });
+    const bagTotal = bagLines.reduce((sum, l) => sum + l.total, 0);
+    const bag = { empty: s.bag.length === 0, hasItems: s.bag.length > 0, lines: bagLines, totalStr: this.fmt(bagTotal), count: s.bag.length };
+
+    // ---- CHECKOUT ----
+    const checkout = { placed: s.checkoutPlaced, pending: !s.checkoutPlaced, onPlace: this.placeOrder, onContinue: this.continueShopping };
+
+    // ---- PROFILE ----
+    const profileRows = [
+      { label: 'My Orders', onTap: () => { this.setState({ stubReason: 'Order history is coming soon.' }); this.push({ name: 'stub' }); } },
+      { label: 'Wishlist', onTap: this.goWishlist },
+      { label: 'Addresses', onTap: () => { this.setState({ stubReason: 'Saved addresses are coming soon.' }); this.push({ name: 'stub' }); } },
+      { label: 'Payment Methods', onTap: () => { this.setState({ stubReason: 'Saved payment methods are coming soon.' }); this.push({ name: 'stub' }); } },
+      { label: 'Help Center', onTap: () => { this.setState({ stubReason: 'Help Center is coming soon.' }); this.push({ name: 'stub' }); } },
+      { label: 'Logout', onTap: () => { this.setState({ stubReason: 'Logout is coming soon.' }); this.push({ name: 'stub' }); } }
+    ];
+
+    // ---- SHEET ----
+    let sheet = { open: !!s.sheet };
+    if (s.sheet) {
+      if (s.sheet.isWhy) {
+        sheet = {
+          open: true, title: s.sheet.title, onClose: this.closeSheet, isWhy: true, isCompare: false,
+          whyBody: s.sheet.body,
+          onHideSearch: () => { this.dismissModule(); this.closeSheet(); },
+          onHideForever: () => { this.hideForever(); this.closeSheet(); }
+        };
+      } else if (s.sheet.isCompare) {
+        sheet = {
+          open: true, title: s.sheet.title, onClose: this.closeSheet, isWhy: false, isCompare: true,
+          compareItems: s.sheet.items.map(p => ({
+            imgId: 'img-' + p.id, brand: p.brand, priceStr: this.fmt(p.price), rating: p.rating.toFixed(1),
+            reviews: p.reviews.toLocaleString('en-IN'), delivery: p.delivery, material: p.material,
+            isSaved: p.saved, name: p.name
+          }))
+        };
+      }
+    }
+
+    // ---- BOTTOM NAV ----
+    const TABS = [
+      { key: 'home', icon: 'home', caption: 'Home', root: { name: 'home' } },
+      { key: 'under999', icon: 'tag', caption: 'Under ₹999', root: { name: 'browse', filter: 'under999' } },
+      { key: 'search', icon: 'clock', caption: 'From 30 min', root: { name: 'searchEntry' } },
+      { key: 'luxury', icon: 'crown', caption: 'Luxury', root: { name: 'browse', filter: 'luxury' } },
+      { key: 'bag', icon: 'bag', caption: 'Bag', root: { name: 'bag' } }
+    ];
+    const bottomTabs = TABS.map(t => ({
+      key: t.key, caption: t.caption,
+      icon: { home: t.icon === 'home', tag: t.icon === 'tag', clock: t.icon === 'clock', crown: t.icon === 'crown', bag: t.icon === 'bag' },
+      color: s.tab === t.key ? '#FF3F6C' : '#282C3F',
+      badge: t.key === 'bag' && s.bag.length > 0 ? s.bag.length : null,
+      onTap: () => this.switchTab(t.key, t.root)
+    }));
+
+    return {
+      showHomeHeader: name === 'home',
+      showBackHeader: name !== 'home' && name !== 'searchEntry',
+      onBack: this.onBack, openSearch: this.openSearch, goWishlist: this.goWishlist, goProfile: this.goProfile, goCheckout: this.goCheckout,
+      isHome: name === 'home', isSearchEntry: name === 'searchEntry', isResults: name === 'results', isBrowse: name === 'browse',
+      isProduct: name === 'product', isWishlist: name === 'wishlist', isBag: name === 'bag', isCheckout: name === 'checkout',
+      isProfile: name === 'profile', isStub: name === 'stub', stubReason: s.stubReason,
+      genderTabs, categories, homeTiles, banners, bannerDots, brandStrip, homeReconnection, noop,
+      searchQuery: s.searchInput, onSearchInput: this.onSearchInput, onSearchKeydown: this.onSearchKeydown, onSubmitSearch: this.onSubmitSearch,
+      recentChips, results, browse, product,
+      wishlistCount: wishlistCatalog.length, wishlistItems,
+      bag, checkout, profileRows, sheet, bottomTabs
+    };
+  }
+}
+
+</script>
+</body>
+</html>

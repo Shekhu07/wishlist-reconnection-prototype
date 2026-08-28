@@ -160,6 +160,7 @@ describe("reaching the wishlist from the homepage", () => {
         onOpenWishlist={() => {
           opened += 1;
         }}
+        onOpenProfile={() => {}}
         wishlistCount={wishlist.items.length}
       />
     );
@@ -174,6 +175,7 @@ describe("reaching the wishlist from the homepage", () => {
         onBack={() => {}}
         onOpenSearch={() => {}}
         onOpenWishlist={() => {}}
+        onOpenProfile={() => {}}
         wishlistCount={wishlist.items.length}
       />
     );
@@ -188,6 +190,7 @@ describe("reaching the wishlist from the homepage", () => {
         onBack={() => {}}
         onOpenSearch={() => {}}
         onOpenWishlist={() => {}}
+        onOpenProfile={() => {}}
         wishlistCount={0}
       />
     );

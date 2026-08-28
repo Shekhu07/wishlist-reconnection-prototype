@@ -1,16 +1,17 @@
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { MIN_TOUCH_TARGET, color, space, type } from "@/design/tokens";
+import { color, space, type } from "@/design/tokens";
 import type { Tab } from "./nav";
-import { MyntraMark } from "./MyntraMark";
+import { NavIcon, type NavIconName } from "./NavIcons";
 
-// The "From 30 min" wordmark reads "mnow" in the screenshot, not "now" --
-// deviation from the brief's literal code, corrected against the source image.
-const ITEMS: { tab: Tab; label: string; caption: string }[] = [
-  { tab: "home", label: "Home", caption: "Home" },
-  { tab: "under999", label: "fwd", caption: "Under ₹999" },
-  { tab: "search", label: "mnow", caption: "From 30 min" },
-  { tab: "luxury", label: "LUXE", caption: "Luxury" },
-  { tab: "bag", label: "Bag", caption: "Bag" },
+// The design spec replaces the screenshot's text wordmarks ("fwd", "mnow",
+// "LUXE") with drawn icons. The captions are unchanged: they are what the
+// tabs are actually called, and they carry the accessible name.
+const ITEMS: { tab: Tab; icon: NavIconName; caption: string }[] = [
+  { tab: "home", icon: "home", caption: "Home" },
+  { tab: "under999", icon: "tag", caption: "Under ₹999" },
+  { tab: "search", icon: "clock", caption: "From 30 min" },
+  { tab: "luxury", icon: "crown", caption: "Luxury" },
+  { tab: "bag", icon: "bag", caption: "Bag" },
 ];
 
 export function BottomNav({
@@ -36,16 +37,10 @@ export function BottomNav({
             style={styles.item}
           >
             <View>
-              {item.tab === "home" ? (
-                <MyntraMark size={16} />
-              ) : item.tab === "bag" ? (
-                <View style={styles.bagGlyph}>
-                  <View style={styles.bagBody} />
-                  <View style={styles.bagHandle} />
-                </View>
-              ) : (
-                <Text style={[styles.glyph, active && styles.activeText]}>{item.label}</Text>
-              )}
+              <NavIcon
+                name={item.icon}
+                color={active ? color.brandPink : color.textPrimary}
+              />
               {item.tab === "bag" && bagCount > 0 ? (
                 <View style={styles.badge} testID="bag-badge">
                   <Text style={styles.badgeText}>{bagCount}</Text>
@@ -72,35 +67,16 @@ const styles = StyleSheet.create({
   },
   item: {
     flex: 1,
-    minHeight: MIN_TOUCH_TARGET,
+    // The spec's 52pt row, which clears MIN_TOUCH_TARGET rather than
+    // replacing it: 44 is the launch gate, 52 is the design.
+    minHeight: 52,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: space.xs,
-    gap: 2,
+    gap: 3,
   },
-  glyph: { ...type.brand, color: color.textPrimary },
-  caption: { ...type.chip, color: color.textSecondary },
+  caption: { fontSize: 10, color: color.textSecondary },
   activeText: { color: color.brandPink },
-  bagGlyph: { width: 18, height: 16, alignItems: "center" },
-  bagBody: {
-    width: 16,
-    height: 12,
-    borderWidth: 1.5,
-    borderColor: color.textPrimary,
-    borderRadius: 2,
-    marginTop: 4,
-  },
-  bagHandle: {
-    position: "absolute",
-    top: 0,
-    width: 8,
-    height: 6,
-    borderWidth: 1.5,
-    borderColor: color.textPrimary,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
   badge: {
     position: "absolute",
     top: -6,

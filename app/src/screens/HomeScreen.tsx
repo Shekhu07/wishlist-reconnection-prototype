@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { BannerCarousel } from "@/components/home/BannerCarousel";
+import { BrandStrip } from "@/components/home/BrandStrip";
 import { CategoryRail } from "@/components/home/CategoryRail";
-import { PartnerStrip } from "@/components/home/PartnerStrip";
+import { SaleStrip } from "@/components/home/SaleStrip";
+import { SectionHeader } from "@/components/home/SectionHeader";
+import { WishlistTeaser } from "@/components/home/WishlistTeaser";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import type { Catalog } from "@/data/types";
 import { color, radius, space, type } from "@/design/tokens";
@@ -16,9 +19,22 @@ export interface HomeScreenProps {
   onOpenSearch: () => void;
   onSelectCategory: (key: CategoryKey) => void;
   onSelectTile: (tile: BrowseTile) => void;
+  onSelectBrand: (brand: string) => void;
+  /**
+   * The reconnection teaser. Absent means the arm withholds wishlist surfaces
+   * (see experiment/surfaces.ts) -- not that the user has saved nothing.
+   */
+  wishlist?: { count: number; imageId: number | null; onOpen: () => void };
 }
 
-export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTile }: HomeScreenProps) {
+export function HomeScreen({
+  catalog,
+  onOpenSearch,
+  onSelectCategory,
+  onSelectTile,
+  onSelectBrand,
+  wishlist,
+}: HomeScreenProps) {
   const [tab, setTab] = useState<GenderTab>("all");
   // overview, not byGender: same products, ordered so the top of the grid is
   // a cross-section of the shop instead of the first shelf in the file.
@@ -33,12 +49,17 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="home-screen">
-      <View style={styles.tabRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabRow}
+      >
         {TABS.map((t) => (
           <Pressable
             key={t}
             accessibilityRole="button"
             accessibilityLabel={`Show ${t.toUpperCase()}`}
+            accessibilityState={{ selected: tab === t }}
             onPress={() => setTab(t)}
             style={[styles.tab, tab === t ? styles.tabActive : null]}
           >
@@ -47,13 +68,26 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
             </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
 
       <CategoryRail catalog={catalog} onSelectCategory={onSelectCategory} />
 
       <BannerCarousel />
 
-      <PartnerStrip catalog={catalog} />
+      <SectionHeader title="Shop by Brand" />
+      <BrandStrip catalog={catalog} onSelectBrand={onSelectBrand} />
+
+      <SaleStrip />
+
+      {wishlist ? (
+        <WishlistTeaser
+          count={wishlist.count}
+          imageId={wishlist.imageId}
+          onOpen={wishlist.onOpen}
+        />
+      ) : null}
+
+      <SectionHeader title="Trending Now" />
 
       <View style={styles.grid}>
         {tiles.map((tile) => (
@@ -61,6 +95,7 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
             key={tile.colourway.product_id}
             testID={`home-tile-${tile.parent.parent_product_id}`}
             accessibilityRole="button"
+            accessibilityLabel={`${tile.parent.brand} ${tile.colourway.display_name}`}
             style={styles.gridItem}
             onPress={() => onSelectTile(tile)}
           >
@@ -76,23 +111,26 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.surface },
   content: { paddingBottom: space.xl },
   tabRow: {
-    flexDirection: "row",
     gap: space.sm,
     paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.xs,
   },
   tab: {
-    paddingHorizontal: space.md,
+    paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
     backgroundColor: color.surfaceMuted,
+    flexShrink: 0,
   },
+  tabLabel: { ...type.tileBrand, letterSpacing: 0.4, color: color.textPrimary },
   tabActive: { backgroundColor: color.brandPink },
-  tabLabel: { ...type.brand, color: color.textPrimary },
   tabLabelActive: { color: color.surface },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: space.md,
+    paddingTop: space.xs,
   },
   gridItem: { width: "50%", padding: space.xs, marginBottom: space.md },
 });

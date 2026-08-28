@@ -18,6 +18,8 @@ export type Screen =
   | { name: "category"; key: CategoryKey }
   /** Everything the user saved, opened from the heart on the home header. */
   | { name: "wishlist" }
+  /** The account screen, opened from the person icon on the home header. */
+  | { name: "profile" }
   | { name: "stub"; reason: string };
 
 export interface Nav {
@@ -84,6 +86,8 @@ export function pathFor(nav: Nav, query: string): string {
       return `/category/${screen.key}`;
     case "wishlist":
       return "/wishlist";
+    case "profile":
+      return "/profile";
     case "stub":
       return "/soon";
   }

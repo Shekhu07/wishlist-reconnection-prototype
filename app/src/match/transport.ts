@@ -10,6 +10,7 @@ import { buildIndex, match, type MatchIndex } from "./matcher";
 import { SuppressionStore, queryFamily } from "./suppression";
 import type { Catalog, Wishlist } from "@/data/types";
 import type { EventLog, ExperimentArm } from "@/analytics/events";
+import { wishlistSurfaceVisible } from "@/experiment/surfaces";
 import type { CommerceState } from "@/commerce/reconcile";
 import { PreferenceStore } from "@/preferences/store";
 
@@ -175,7 +176,7 @@ export class MatchClient {
     // the treatment has something to be compared against, but nothing renders.
     // Without this the flag exists and does not gate anything -- assignment
     // that no code consults is decoration.
-    const withhold = this.shadowMode || this.arm === "control";
+    const withhold = !wishlistSurfaceVisible(this.arm, this.shadowMode);
     if (withhold && capped.matches.length > 0) {
       return this.finish(
         request,

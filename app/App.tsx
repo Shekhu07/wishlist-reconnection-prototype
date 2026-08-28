@@ -48,6 +48,7 @@ import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
 import { CategoryScreen } from "@/screens/CategoryScreen";
 import { WishlistScreen } from "@/screens/WishlistScreen";
+import { ProfileScreen } from "@/screens/ProfileScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { AlternativeProductScreen } from "@/screens/AlternativeProductScreen";
 import { ProductScreen } from "@/screens/ProductScreen";
@@ -59,6 +60,7 @@ import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScr
 import { StubScreen } from "@/screens/StubScreen";
 import { StateSwitcher } from "@/harness/StateSwitcher";
 import { resolveHarnessEnabled } from "@/harness/enabled";
+import { wishlistSurfaceVisible } from "@/experiment/surfaces";
 import { AppShell } from "@/shell/AppShell";
 import { HarnessPill } from "@/shell/HarnessPill";
 import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
@@ -647,6 +649,7 @@ export default function App() {
         onBack={() => setNav(pop(nav))}
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
         onOpenWishlist={() => setNav(push(nav, { name: "wishlist" }))}
+        onOpenProfile={() => setNav(push(nav, { name: "profile" }))}
         wishlistCount={wishlist.items.length}
         sheet={
           <>
@@ -865,6 +868,25 @@ export default function App() {
                 push(prev, { name: "product", productId: tile.colourway.product_id })
               );
             }}
+            onSelectBrand={(brand) => {
+              // A brand card is a search for that brand, not a new screen --
+              // the results grid already ranks by brand and the wishlist
+              // module already knows what to do with a brand query.
+              setContext((prev) => contextFromQuery(brand, prev, prev.seq + 1));
+              setRecents((prev) => [brand, ...prev.filter((q) => q !== brand)].slice(0, 8));
+              setNav((prev) => push(prev, { name: "results" }));
+            }}
+            // Withheld for control and in shadow mode: a control user who sees
+            // a wishlist surface is no longer a control user.
+            wishlist={
+              wishlistSurfaceVisible(client.arm, shadowMode) && wishlist.items.length > 0
+                ? {
+                    count: wishlist.items.length,
+                    imageId: wishlistResults[0]?.colourway.product_id ?? null,
+                    onOpen: () => setNav((prev) => push(prev, { name: "wishlist" })),
+                  }
+                : undefined
+            }
           />
         ) : screen.name === "searchEntry" ? (
           <SearchEntryScreen
@@ -1281,6 +1303,29 @@ export default function App() {
               );
               setNav((current) => push(current, { name: "results" }));
             }}
+          />
+        ) : screen.name === "profile" ? (
+          <ProfileScreen
+            rows={[
+              { key: "orders", label: "My Orders", onOpen: null },
+              {
+                key: "wishlist",
+                label: "Wishlist",
+                onOpen: () => setNav((prev) => push(prev, { name: "wishlist" })),
+              },
+              { key: "addresses", label: "Addresses", onOpen: null },
+              { key: "payments", label: "Payment Methods", onOpen: null },
+              { key: "help", label: "Help Center", onOpen: null },
+              { key: "logout", label: "Logout", onOpen: null },
+            ]}
+            onStub={(label) =>
+              setNav((prev) =>
+                push(prev, {
+                  name: "stub",
+                  reason: `${label} is not in this prototype.`,
+                })
+              )
+            }
           />
         ) : screen.name === "wishlist" ? (
           <WishlistScreen

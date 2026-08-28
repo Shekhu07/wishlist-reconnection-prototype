@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
+import { BrandWordmark } from "./BrandWordmark";
 import { MyntraMark } from "./MyntraMark";
 import type { Screen } from "./nav";
 
@@ -15,12 +16,14 @@ export function TopBar({
   onBack,
   onOpenSearch,
   onOpenWishlist,
+  onOpenProfile,
   wishlistCount = 0,
 }: {
   screen: Screen;
   onBack: () => void;
   onOpenSearch: () => void;
   onOpenWishlist: () => void;
+  onOpenProfile: () => void;
   /** Saved-item count on the heart. Neutral state, never an incentive (C-1). */
   wishlistCount?: number;
 }) {
@@ -30,6 +33,7 @@ export function TopBar({
       <HomeHeader
         onOpenSearch={onOpenSearch}
         onOpenWishlist={onOpenWishlist}
+        onOpenProfile={onOpenProfile}
         wishlistCount={wishlistCount}
       />
     );
@@ -40,20 +44,23 @@ export function TopBar({
 function HomeHeader({
   onOpenSearch,
   onOpenWishlist,
+  onOpenProfile,
   wishlistCount,
 }: {
   onOpenSearch: () => void;
   onOpenWishlist: () => void;
+  onOpenProfile: () => void;
   wishlistCount: number;
 }) {
   return (
     <View style={styles.homeHeader} testID="home-header">
       <View style={styles.deliverRow}>
+        <BrandWordmark />
+        <View style={styles.divider} />
         <PinGlyph />
         <Text style={styles.deliverText} numberOfLines={1}>
-          Deliver to <Text style={styles.deliverBold}>Home - 400001</Text>
+          Home · 400001
         </Text>
-        <ChevronDown />
         <View style={styles.walletPill} accessibilityRole="text" accessibilityLabel="Wallet balance ₹0">
           <Text style={styles.walletText}>₹0</Text>
         </View>
@@ -103,9 +110,10 @@ function HomeHeader({
           ) : null}
         </Pressable>
         <Pressable
+          testID="open-profile"
           accessibilityRole="button"
           accessibilityLabel="Profile"
-          onPress={() => {}}
+          onPress={onOpenProfile}
           style={styles.iconButton}
         >
           <ProfileGlyph />
@@ -140,10 +148,6 @@ function PinGlyph() {
       <View style={pin.tail} />
     </View>
   );
-}
-
-function ChevronDown() {
-  return <View style={chevron.down} />;
 }
 
 function BackArrowGlyph() {
@@ -204,13 +208,12 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   deliverText: {
-    ...type.body,
+    ...type.chip,
+    fontWeight: "400",
     color: color.textPrimary,
     flexShrink: 1,
   },
-  deliverBold: {
-    fontWeight: "700",
-  },
+  divider: { width: 1, height: 16, backgroundColor: color.borderSubtle },
   walletPill: {
     marginLeft: "auto",
     flexDirection: "row",
@@ -305,14 +308,6 @@ const pin = StyleSheet.create({
 });
 
 const chevron = StyleSheet.create({
-  down: {
-    width: 7,
-    height: 7,
-    borderBottomWidth: 1.5,
-    borderRightWidth: 1.5,
-    borderColor: color.textSecondary,
-    transform: [{ rotate: "45deg" }],
-  },
   back: {
     width: 10,
     height: 10,

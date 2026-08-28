@@ -68,13 +68,15 @@ export function ProductTileBody({
 const styles = StyleSheet.create({
   imageWrap: { position: "relative" },
   image: {
-    borderRadius: radius.card - 6,
+    borderRadius: radius.tile,
     backgroundColor: color.surfaceMuted,
   },
   heart: {
+    // 6px from the corner, not space.xs -- the spec insets the heart slightly
+    // further than the 4pt grid so it clears the image's 6px radius.
     position: "absolute",
-    top: space.xs,
-    right: space.xs,
+    top: 6,
+    right: 6,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -83,8 +85,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.85)",
   },
   heartGlyph: { fontSize: 15, color: color.textPrimary },
-  brand: { ...type.brand, color: color.textPrimary, marginTop: space.sm },
-  name: { ...type.body, color: color.textSecondary, marginTop: 2 },
+  brand: { ...type.tileBrand, color: color.textPrimary, marginTop: space.sm },
+  name: { ...type.tileName, color: color.textSecondary, marginTop: 2 },
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -96,11 +98,11 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: space.xs,
+    gap: 6,
     marginTop: space.xs,
     flexWrap: "wrap",
   },
-  price: { ...type.body, fontWeight: "700", color: color.textPrimary },
+  price: { ...type.tilePrice, color: color.textPrimary },
   mrp: {
     ...type.chip,
     color: color.textSecondary,
