@@ -405,8 +405,13 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   sizes: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.sm },
-  // Wider than a size pill because it carries a word plus the "— saved" tag.
+  // Wider than a size pill because it carries a word plus the "— saved" tag,
+  // but it still needs the same floor: a short colour name like "Red" would
+  // otherwise render a target narrower than a fingertip. The size pills had
+  // this and the colour pills, added later, did not -- which is what the C-7
+  // gate found the first time it ran.
   colour: {
+    minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: space.md,
     alignItems: "center",

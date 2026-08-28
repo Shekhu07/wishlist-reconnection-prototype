@@ -88,18 +88,24 @@ export function assign(userId: string, options: AssignmentOptions): Assignment {
 
   // Arm choice is independent of the ramp, so a user's arm is fixed from the
   // moment they first qualify.
+  //
+  // Three equal treatments now that C exists. Adding an arm does move users
+  // between A and B compared with the two-arm split -- unavoidable, and
+  // harmless before launch, but it is *not* the monotonicity property: that
+  // one is about the ramp, the exposure hash is untouched, and nobody already
+  // exposed becomes unexposed. The experiment report measures it either way
+  // rather than taking this paragraph's word for it.
   const armRoll = bucket(userId, salt, "arm");
-  return {
-    arm: armRoll < 0.5 ? "treatment_a" : "treatment_b",
-    exposed: true,
-    overridden: false,
-  };
+  const arm: ExperimentArm =
+    armRoll < 1 / 3 ? "treatment_a" : armRoll < 2 / 3 ? "treatment_b" : "treatment_c";
+  return { arm, exposed: true, overridden: false };
 }
 
 export interface ArmCounts {
   control: number;
   treatment_a: number;
   treatment_b: number;
+  treatment_c: number;
   exposed: number;
   total: number;
 }
@@ -109,6 +115,7 @@ export function tally(userIds: string[], options: AssignmentOptions): ArmCounts 
     control: 0,
     treatment_a: 0,
     treatment_b: 0,
+    treatment_c: 0,
     exposed: 0,
     total: userIds.length,
   };

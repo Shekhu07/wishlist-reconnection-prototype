@@ -37,8 +37,21 @@ export interface BaseEvent {
   arm: ExperimentArm;
 }
 
-/** Control sees no module. A is reconnection only; B adds variant continuity. */
-export type ExperimentArm = "control" | "treatment_a" | "treatment_b";
+/**
+ * Control sees no module. A is reconnection only; B adds variant continuity;
+ * C is B plus the Decision Confidence Layer.
+ *
+ * C is its own arm rather than being folded into B on purpose. Section 7
+ * splits the arms to learn *where* a lift comes from, read off the
+ * Buy-from-Wishlist and Compare-options rates -- and B minus A is only
+ * interpretable if B differs from A in exactly one thing. Adding evidence to B
+ * would make that difference two mechanisms wide and the read-out unusable.
+ *
+ * The cost is real and is stated rather than hidden: the panel now splits four
+ * ways instead of three, so every arm is smaller and `docs/panel-sizing.md`
+ * gets worse. That is the price of an answerable question.
+ */
+export type ExperimentArm = "control" | "treatment_a" | "treatment_b" | "treatment_c";
 
 export interface SearchPerformed extends BaseEvent {
   type: "search_performed";

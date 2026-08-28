@@ -12,10 +12,10 @@ where one is needed at all.
 
 | Ramp | Exposed | Treatment A | Treatment B |
 |---|---|---|---|
-| 1% | 0.96% | 257 | 222 |
-| 5% | 5.05% | 1,267 | 1,256 |
-| 20% | 20.36% | 5,040 | 5,140 |
-| 50% | 49.94% | 12,391 | 12,579 |
+| 1% | 0.96% | 164 | 162 |
+| 5% | 5.05% | 841 | 839 |
+| 20% | 20.36% | 3,376 | 3,408 |
+| 50% | 49.94% | 8,312 | 8,341 |
 
 ### Monotonicity
 
@@ -73,8 +73,8 @@ Peeking inflates the fixed-horizon error rate to 33.7% — 6.7× its nominal lev
 
 | Method | Difference (B − control) | Interval | Significant |
 |---|---|---|---|
-| Fixed-horizon | 4.30pp | 0.91 to 7.69pp | yes |
-| Always-valid | 4.30pp | -1.21 to 9.81pp | no |
+| Fixed-horizon | 4.65pp | 0.66 to 8.64pp | yes |
+| Always-valid | 4.65pp | -2.04 to 11.34pp | no |
 
 The always-valid interval is wider at every moment. That width is the price
 of being allowed to stop whenever you like, and it is cheaper than the

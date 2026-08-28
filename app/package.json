@@ -48,7 +48,7 @@
     },
     "testMatch": [
       "<rootDir>/__tests__/**/*.test.ts?(x)",
-      "<rootDir>/gates/**/*.gate.test.ts",
+      "<rootDir>/gates/**/*.gate.test.ts?(x)",
       "<rootDir>/reports/**/*.report.test.ts"
     ],
     "globalSetup": "<rootDir>/gates/globalSetup.js",

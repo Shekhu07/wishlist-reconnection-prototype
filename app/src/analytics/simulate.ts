@@ -30,6 +30,13 @@ export interface SimulationConfig {
   /** Percentage-point lift added for each treatment arm. */
   liftTreatmentA: number;
   liftTreatmentB: number;
+  /**
+   * C is B plus the confidence layer, so its planted lift is set above B's.
+   * The cohort model is validated by checking it recovers a lift that was
+   * planted by hand -- a model that cannot find an effect you put there will
+   * not find one you did not.
+   */
+  liftTreatmentC: number;
   /** Probability any given search produces at least one candidate. */
   matchOpportunity: number;
   /** Of exposures, how often the user acts / dismisses. */
@@ -50,6 +57,7 @@ export const DEFAULT_SIMULATION: SimulationConfig = {
   baseConversion: 0.18,
   liftTreatmentA: 0.03,
   liftTreatmentB: 0.05,
+  liftTreatmentC: 0.06,
   matchOpportunity: 0.32,
   actionRate: 0.22,
   dismissRate: 0.08,
@@ -64,7 +72,7 @@ function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-const ARMS: ExperimentArm[] = ["control", "treatment_a", "treatment_b"];
+const ARMS: ExperimentArm[] = ["control", "treatment_a", "treatment_b", "treatment_c"];
 const QUERIES = [
   "check shirt",
   "casual shoes",
@@ -105,7 +113,9 @@ export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationR
         ? config.liftTreatmentA
         : arm === "treatment_b"
           ? config.liftTreatmentB
-          : 0;
+          : arm === "treatment_c"
+            ? config.liftTreatmentC
+            : 0;
 
     // Entry is spread across the first two thirds of the run so that most
     // users have a closed 30-day window by the end, and some deliberately
@@ -329,6 +339,7 @@ export function simulate(overrides: Partial<SimulationConfig> = {}): SimulationR
       control: 0,
       treatment_a: config.liftTreatmentA,
       treatment_b: config.liftTreatmentB,
+      treatment_c: config.liftTreatmentC,
     },
   };
 }

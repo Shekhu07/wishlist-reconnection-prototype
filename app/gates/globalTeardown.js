@@ -8,6 +8,9 @@ const ALL_GATES = [
   ["E3-latency", "Match latency"],
   ["E8-privacy", "Wishlist leakage"],
   ["E13-ranking", "Multi-match ranking"],
+  ["DC-provenance", "Signal provenance"],
+  ["CR-staleness", "Comparison staleness"],
+  ["C7-accessibility", "Accessibility"],
 ];
 
 module.exports = () => {

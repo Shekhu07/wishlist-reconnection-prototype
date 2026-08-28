@@ -23,7 +23,7 @@ Matching ran 1,092 times across three modalities and rendered nothing.
 ### Search latency delta — the S8 gate
 
 Search alone: **0.05 ms** per query.
-Search with matching in the same tick: **0.05 ms**.
+Search with matching in the same tick: **0.06 ms**.
 Delta: **+0.01 ms** per query, against a 120 ms budget.
 
 At this magnitude the delta is indistinguishable from measurement
@@ -83,21 +83,21 @@ buying back transcription and recognition error the score cannot see.
 
 ## 3. Metric read-out — simulated
 
-3,000 synthetic users over 45 days, evenly assigned across three arms.
+3,000 synthetic users over 45 days, evenly assigned across four arms.
 
-| Metric | Role | Control | Treatment A | Treatment B |
-|---|---|---|---|---|
-| Match exposure rate | Opportunity | 0.0% | 32.1% | 31.4% |
-| Match precision | Quality gate | n/a | 73.7% | 74.8% |
-| Buy-from-Wishlist rate | Mechanism | n/a | 8.8% | 16.2% |
-| Compare-options rate | Mechanism | n/a | 13.4% | 7.3% |
-| Saved-item purchase rate | Direct impact | 5.8% | 9.1% | 9.5% |
-| Search-to-purchase rate | **Guardrail** | 4.2% | 6.5% | 6.6% |
-| Dismissal rate | Relevance | n/a | 7.9% | 7.9% |
-| Duplicate-add rate | Flow integrity | n/a | 1.1% | 0.6% |
-| Variant recovery rate | Fashion quality | n/a | 33.3% | 71.0% |
+| Metric | Role | Control | Treatment A | Treatment B | Treatment C |
+|---|---|---|---|---|---|
+| Match exposure rate | Opportunity | 0.0% | 32.1% | 31.9% | 33.7% |
+| Match precision | Quality gate | n/a | 74.0% | 74.7% | 76.4% |
+| Buy-from-Wishlist rate | Mechanism | n/a | 8.6% | 16.9% | 9.1% |
+| Compare-options rate | Mechanism | n/a | 13.9% | 7.6% | 11.7% |
+| Saved-item purchase rate | Direct impact | 6.7% | 8.0% | 9.0% | 9.8% |
+| Search-to-purchase rate | **Guardrail** | 4.8% | 5.4% | 6.3% | 7.2% |
+| Dismissal rate | Relevance | n/a | 7.9% | 8.3% | 6.4% |
+| Duplicate-add rate | Flow integrity | n/a | 3.0% | 1.5% | 4.1% |
+| Variant recovery rate | Fashion quality | n/a | 46.2% | 75.0% | 70.6% |
 
-Latency p50 / p95 / p99: **75.1 / 115.7 / 119.3 ms**. Error rate **0.3%** (timeouts 33 / 10558).
+Latency p50 / p95 / p99: **75.4 / 115.7 / 119.3 ms**. Error rate **0.3%** (timeouts 35 / 10558).
 
 ## 4. Cohort model validation
 
@@ -107,11 +107,11 @@ recovers an effect that was planted.
 
 | Arm | Entered | Converted | Rate | Injected lift | Recovered lift |
 |---|---|---|---|---|---|
-| Control | 496 | 73 | 14.7% | — | — |
-| Treatment A | 506 | 127 | 25.1% | +3.0pp | **+10.4pp** |
-| Treatment B | 494 | 111 | 22.5% | +5.0pp | **+7.8pp** |
+| Control | 367 | 68 | 18.5% | — | — |
+| Treatment A | 386 | 77 | 19.9% | +3.0pp | **+1.4pp** |
+| Treatment B | 377 | 91 | 24.1% | +5.0pp | **+5.6pp** |
 
-1504 users were censored — their 30-day window had not closed by 2026-08-15. Counting them as non-conversions would depress the rate and then let it drift upward for a month, which is indistinguishable from a real effect.
+1120 users were censored — their 30-day window had not closed by 2026-08-15. Counting them as non-conversions would depress the rate and then let it drift upward for a month, which is indistinguishable from a real effect.
 
 ## What this report is not evidence for
 
