@@ -23,6 +23,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     backgroundColor: color.accentAssistantSurface,
   },
-  eyebrow: { ...type.brand, color: color.accentAssistant },
+  eyebrow: { ...type.tileBrand, letterSpacing: 0.4, color: color.accentAssistant },
   prompt: { ...type.body, color: color.textPrimary, marginTop: space.xs },
 });

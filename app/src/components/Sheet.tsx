@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
     maxWidth: FRAME_MAX_WIDTH,
     maxHeight: "70%",
     backgroundColor: color.surface,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
   },
   header: {
     flexDirection: "row",
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: color.borderSubtle,
   },
-  title: { ...type.moduleHeader, color: color.textPrimary, flex: 1 },
+  title: { ...type.railHeader, color: color.textPrimary, flex: 1 },
   close: {
     minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,

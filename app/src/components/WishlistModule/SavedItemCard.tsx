@@ -2,7 +2,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import type { Match } from "@/match/contract";
 import { FIT_PROMPT, NOT_DELIVERABLE, formatDelivery, formatPrice } from "@/copy/bundle";
 import { CATALOG_IMAGES } from "@/data/images";
-import { CARD_IMAGE, color, radius, space, type } from "@/design/tokens";
+import { CARD_IMAGE, CAROUSEL_CARD_WIDTH, color, radius, space, type } from "@/design/tokens";
 
 /**
  * The single-match card: 96x128 image left, details right (section 4.3).
@@ -48,10 +48,10 @@ export function SavedItemCard({
         importantForAccessibility="no"
       />
       <View style={[styles.details, compact && styles.detailsCompact]}>
-        <Text style={styles.brand} numberOfLines={1}>
+        <Text style={[styles.brand, compact && styles.brandCompact]} numberOfLines={1}>
           {match.display.brand.toUpperCase()}
         </Text>
-        <Text style={styles.name} numberOfLines={2}>
+        <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
           {match.display.name}
         </Text>
         <View style={styles.chip}>
@@ -105,7 +105,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.card - 6,
     backgroundColor: color.surfaceMuted,
   },
-  imageCompact: { width: "100%", height: 176 },
+  // 3:4 at the 156pt carousel width, per the spec. The old 176 was a round
+  // number rather than the card's own aspect ratio.
+  imageCompact: { width: "100%", height: Math.round((CAROUSEL_CARD_WIDTH * 4) / 3) },
   details: { flex: 1, justifyContent: "flex-start" },
   // In the column layout `flex: 0` resolves to a zero flex-basis, which
   // collapses this box to zero height and clips the brand line. Sizing to
@@ -113,6 +115,10 @@ const styles = StyleSheet.create({
   detailsCompact: { flexGrow: 0, flexShrink: 0, flexBasis: "auto" },
   brand: { ...type.brand, color: color.textPrimary },
   name: { ...type.body, color: color.textSecondary, marginTop: 2 },
+  // The carousel card runs one step down from the single card: the spec sets
+  // 12/700 over 11 there and 14/700 over 12 in the wide single layout.
+  brandCompact: { ...type.tileBrand },
+  nameCompact: { ...type.tileName, marginTop: 1 },
   chip: {
     alignSelf: "flex-start",
     backgroundColor: color.surfaceMuted,

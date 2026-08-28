@@ -15,7 +15,7 @@ export function RecentSearches({ recents, onSubmit, onClearRecents }: RecentSear
   return (
     <View style={styles.wrap} testID="recent-searches">
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Recent searches</Text>
+        <Text style={styles.heading}>RECENT SEARCHES</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Clear All"
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  heading: { ...type.moduleHeader, color: color.textPrimary },
+  heading: { ...type.tileBrand, letterSpacing: 0.4, color: color.textSecondary },
   clearButton: {
     minHeight: MIN_TOUCH_TARGET,
     justifyContent: "center",

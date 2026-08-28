@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { RESUME_DISMISS, RESUME_LABEL, STALE_TITLE, STALE_TITLE_MANY } from "@/copy/bundle";
-import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
+import { MIN_TOUCH_TARGET, color, radius, space, spec, type } from "@/design/tokens";
 
 /**
  * CR-02: the quiet re-entry point.
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     // a coloured box on a results screen reads as promotion.
     backgroundColor: color.surface,
   },
-  barStale: { borderColor: "#F0DFC0", backgroundColor: "#FFF6E5" },
+  barStale: { borderColor: spec.recoveryBorder, backgroundColor: spec.recoverySurface },
   text: { flex: 1 },
   count: { ...type.body, fontWeight: "700", color: color.textPrimary },
   detail: { ...type.chip, color: color.textSecondary, marginTop: 1 },

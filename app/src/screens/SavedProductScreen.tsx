@@ -17,7 +17,7 @@ import { Button } from "@/components/Button";
 import { ConfidencePanel } from "@/components/ConfidencePanel";
 import { signalsFor } from "@/confidence/signals";
 import { CATALOG_IMAGES } from "@/data/images";
-import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
+import { MIN_TOUCH_TARGET, color, radius, space, spec, type } from "@/design/tokens";
 import type { RevalidationResult } from "@/revalidation/revalidate";
 
 /**
@@ -388,11 +388,11 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: "#F0DFC0",
-    backgroundColor: "#FFF6E5",
+    borderColor: spec.recoveryBorder,
+    backgroundColor: spec.recoverySurface,
   },
-  recoveryTitle: { ...type.body, fontSize: 14, fontWeight: "700", color: "#7A5A1E" },
-  recoveryBody: { ...type.body, color: "#7A5A1E", marginTop: space.xs, lineHeight: 17 },
+  recoveryTitle: { ...type.body, fontSize: 14, fontWeight: "700", color: spec.recoveryText },
+  recoveryBody: { ...type.body, color: spec.recoveryText, marginTop: space.xs, lineHeight: 17 },
   recoveryActions: { flexDirection: "row", gap: space.sm, marginTop: space.md },
   advisory: {
     marginTop: space.sm,

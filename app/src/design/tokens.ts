@@ -30,6 +30,8 @@ export const radius = {
   tile: 6,
   /** Banner and section cards on the home screen. */
   banner: 14,
+  /** The bottom sheet's top corners. */
+  sheet: 16,
 } as const;
 
 /**

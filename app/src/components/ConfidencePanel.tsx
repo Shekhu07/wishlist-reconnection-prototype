@@ -8,7 +8,7 @@ import {
   SIGNAL_STATUS_LABEL,
 } from "@/copy/bundle";
 import type { ConfidenceSignal, SignalStatus } from "@/confidence/signals";
-import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
+import { MIN_TOUCH_TARGET, color, radius, space, spec, type } from "@/design/tokens";
 
 /**
  * DC-03 / DC-04: the decision confidence section.
@@ -32,9 +32,9 @@ const GLYPH: Record<SignalStatus, string> = {
 };
 
 const GLYPH_COLOUR: Record<SignalStatus, string> = {
-  ok: "#1B7A55",
-  attention: "#7A5A1E",
-  blocked: "#B3261E",
+  ok: spec.signalOk,
+  attention: spec.signalAttention,
+  blocked: spec.signalBlocked,
   unknown: color.textSecondary,
 };
 

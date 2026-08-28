@@ -99,6 +99,15 @@ export function SearchEntryScreen({
             placeholderTextColor={color.textSecondary}
             style={styles.input}
           />
+          <Pressable
+            testID="search-go"
+            accessibilityRole="button"
+            accessibilityLabel="Search"
+            onPress={submit}
+            style={styles.goButton}
+          >
+            <Text style={styles.goText}>Go</Text>
+          </Pressable>
         </View>
 
         <Pressable
@@ -165,17 +174,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   backGlyph: { fontSize: 24, color: color.textPrimary },
+  // The spec puts the active field in brandPink at radius 8, not the pill the
+  // home header uses: this one is focused and being typed into, and reading
+  // differently from the dormant field is the point.
   inputWrap: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
     minHeight: MIN_TOUCH_TARGET,
-    justifyContent: "center",
     paddingHorizontal: space.md,
-    borderRadius: radius.pill,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: color.borderSubtle,
+    borderColor: color.brandPink,
     backgroundColor: color.surface,
   },
-  input: { ...type.body, fontSize: 14, color: color.textPrimary, padding: 0 },
+  input: { flex: 1, fontSize: 13, color: color.textPrimary, padding: 0 },
+  goButton: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: "center",
+    paddingLeft: space.sm,
+  },
+  goText: { fontSize: 13, fontWeight: "700", color: color.brandPink },
   iconButton: {
     minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,

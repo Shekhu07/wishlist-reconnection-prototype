@@ -10,7 +10,7 @@ import {
 } from "@/copy/bundle";
 import { Button } from "@/components/Button";
 import { Sheet } from "@/components/Sheet";
-import { color, space, type } from "@/design/tokens";
+import { color, space, spec, type } from "@/design/tokens";
 import type { SessionChange } from "@/state/comparisonSession";
 
 /**
@@ -108,12 +108,12 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#F0DFC0",
-    backgroundColor: "#FFF6E5",
+    borderColor: spec.recoveryBorder,
+    backgroundColor: spec.recoverySurface,
     gap: space.xs,
   },
-  changesTitle: { ...type.body, fontWeight: "700", color: "#7A5A1E" },
-  change: { ...type.body, color: "#7A5A1E", lineHeight: 17 },
-  reassure: { ...type.chip, color: "#7A5A1E", marginTop: space.xs, lineHeight: 15 },
+  changesTitle: { ...type.body, fontWeight: "700", color: spec.recoveryText },
+  change: { ...type.body, color: spec.recoveryText, lineHeight: 17 },
+  reassure: { ...type.chip, color: spec.recoveryText, marginTop: space.xs, lineHeight: 15 },
   actions: { flexDirection: "row", gap: space.sm, marginTop: space.md },
 });
