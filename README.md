@@ -9,13 +9,16 @@ built against three specs that are really one plan at three altitudes:
 | [`Implementation Prompt_ Improve Myntra Wishlist Reconnection Prototype.md`](./Implementation%20Prompt_%20Improve%20Myntra%20Wishlist%20Reconnection%20Prototype.md) | Ten improvements on the deployed prototype, plus harness, analytics and validation requirements. |
 | [`Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md`](./Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md) | The UX blueprint for improvements 1 and 8 — eleven wireframes, interaction rules, an edge-case matrix and measurement hooks. |
 
-All ten improvements are built. The reconnection module answers *"did I save
-this?"*; the Decision Confidence Layer answers *"is it still right for me?"*;
-comparison re-entry means the answer survives leaving the screen.
+All ten improvements are built, plus a later feature spec on top. The
+reconnection module answers *"did I save this?"*; the Decision Confidence Layer
+answers *"is it still right for me?"*; comparison re-entry means the answer
+survives leaving the screen; and cross-category pairing answers the third
+question a shopper actually has — *"what do I already own that goes with
+this?"*
 
 **Live:** https://wishlist-reconnection-prototype.vercel.app
 
-521 tests, nine measured acceptance gates, four generated reports.
+546 tests, ten measured acceptance gates, four generated reports.
 
 ## Running it
 
@@ -52,6 +55,8 @@ suppression is never mistaken for a broken build.
 | **Compare** — a priority reorders the rows and hides none, with a derived reason line per alternative and the saved variant as the anchor. | **Help me decide** — restates the evidence on the chosen axes, marks any axis that separates nothing, and names no winner. |
 | ![Added from Wishlist](docs/added-confirmation.png) | ![Stale comparison](docs/cr05-stale-comparison.png) |
 | **Improvement 3** — the add is a decision point with three real next moves, not a toast that vanishes in 2.6 seconds. | **CR-02/05** — the quiet resume bar, and the sheet naming what changed before the user commits to going back. |
+| ![Typeahead](docs/typeahead-saved-first.png) | ![Complete the look](docs/pdp-complete-the-look.png) |
+| **Typeahead** — saved matches above organic suggestions, composed as layout rather than as ranking so FR-2 stays structural. The saved group is fail-open and simply absent if matching misses. | **Complete the look** — price, then the pairing, then the description. A women's Kurta pairs with the saved Handbag and Heels: an outfit the old pairwise table could never find. |
 
 ## The Decision Confidence Layer
 
@@ -164,6 +169,89 @@ precision story rests on, and the false positives are exactly what C-4 calls
 worse than misses. A stub that admits what it is beats a demo implying a
 capability the system does not have.
 
+## Cross-category pairing, and a product page to put it on
+
+The third question a shopper has, after "did I save this?" and "is it still
+right for me?": **what do I already own that goes with this?**
+
+### Slots, not pairs
+
+The complement table this replaced was O(types²) to maintain and had already
+rotted in silence. Four of its ten pairs named article types the catalog does
+not contain, so `Kurtas` mapped only to `Leggings` and could never fire, and
+**thirteen of twenty-one types returned nothing at all**.
+
+An outfit is modelled as slots instead — `top`, `bottom`, `full_body`, `feet`,
+`carry`, `finishing` — and two items complement each other when their slots
+differ. A new article type joins by being assigned one slot. That is the whole
+cost of extending it.
+
+One exception is why the model earns its keep: **`full_body` conflicts with
+both `top` and `bottom`**, because a dress already occupies the torso and the
+legs. A pairwise table gets that wrong unless somebody remembers to think of it.
+
+It fixed the demo as well as the maintenance. A saved Kurta paired with nothing
+before; under slots it pairs with the saved Handbag and Heels — a women's
+outfit the wishlist has contained all along and the shipped code could not find.
+
+### Three gates that reject rather than score
+
+A wrong suggestion costs more than a missing one, so each gate rejects.
+
+**Gender coherence** exists for a specific trap in this catalog: gender is
+perfectly confounded with article type, and `Tops` and `Dresses` are tagged
+**Girls**, not Women. So the most natural-looking pair in the whole dataset —
+Dresses with Heels — silently crosses kidswear into adult footwear. Nothing
+about the article types reveals that.
+
+**Usage coherence** keeps sportswear out of formalwear, over a real dataset
+column. **Lifecycle** runs through `commerce/reconcile.ts` rather than a flag,
+so an item leaving the bag becomes eligible again — the property a stored flag
+could not deliver.
+
+Suggestions are drawn **only from the user's own wishlist**, never the catalog.
+Reaching into the catalog would turn a memory feature into the basket-size
+recommender the improvement prompt forbids, so when nothing saved fits, the
+section is absent.
+
+### Two new surfaces
+
+**The product detail page** did not exist. Search tiles were not tappable at
+all, Home routed to a stub and discarded the tile, and Browse turned a tile
+into a search query — every product-shaped route required a wishlist item id,
+so the pairing had nowhere to live. Section order is the spec's: price, then
+the pairing, then the description.
+
+**The description is composed, not written.** No description field exists
+anywhere in the data model and the raw dataset has no copy column, so it is
+assembled from material, fit, colour, usage and season, and labelled. Inventing
+a paragraph of marketing tone would be the one genuinely dishonest thing that
+screen could do — a shopper cannot tell invented tone from a real description.
+
+**The typeahead** shows saved matches above organic suggestions. The two groups
+are composed at the component level and never inside `search()`, because
+`__tests__/search.test.ts` enforces FR-2 by reading the ranker's own source for
+the words *wishlist*, *saved* and *match*. That test still passes **unmodified**,
+which was the tripwire: if it had needed editing, the design had drifted into
+organic ranking and should have stopped.
+
+The saved group is fail-open. If the match call misses its grace period the
+dropdown simply shows organic suggestions — a typeahead that waited on matching
+would breach C-3 in the surface where latency is most visible, between two
+keystrokes.
+
+### What the catalog cannot demonstrate
+
+The engine is universal; the demo is not, and the gate's caveat says so rather
+than letting "0 violations across 497 suggestions" read as broader coverage
+than it has.
+
+The request that prompted this named *trousers* and *watches*: bottomwear here
+is Jeans and Track Pants, and accessories are handbags only. The shipped
+wishlist demonstrates two chains — men's shirt → jeans, and women's kurta →
+handbag → heels. Girls' items have nothing saved to pair with, Boys have
+T-shirts only, the `finishing` slot is empty, and Home is excluded by design.
+
 ## Acceptance gates
 
 The plan attaches a `✅ Gate` line to every P0 epic. Nine things code can
@@ -181,6 +269,7 @@ measure, and `npm run gates` measures them, writing
 | DC | every signal cites a source; every generated field is labelled as such |
 | CR-05 | every changed compared item is marked, and no unchanged one is |
 | C-7 | every control labelled, every touch target ≥44pt |
+| Pairing | no suggestion crosses gender, clashes a slot, resurfaces a bought item, or comes from outside the wishlist |
 
 Each new gate was **confirmed to fail against a planted violation** before it
 was trusted. A gate nobody has watched fail is a gate nobody should trust, and
@@ -248,23 +337,30 @@ The plan guesses 300–500 recruited testers (§7.4) and nothing had checked it.
 [`docs/panel-sizing.md`](docs/panel-sizing.md) does.
 
 **A panel of 400 cannot answer the primary question, and cannot answer the
-B − A question at all.** Detecting a 5pp lift needs ~15,500; establishing
-whether variant continuity is the mechanism needs ~98,200.
+B − A question at all.** Detecting a 5pp lift needs ~19,400; establishing
+whether variant continuity is the mechanism needs ~122,800.
 
 The gap is not the sample-size formula. It is three multipliers between a
-recruited person and a usable observation: the panel splits four ways before
+recruited person and a usable observation: the panel splits five ways before
 anything happens; a treatment user who never sees the module behaves like
 control, so the observed effect is scaled by exposure and sample size scales
 with its square; and B − A is a *smaller* effect than either arm's lift,
 measured between two treatment groups rather than against the whole control.
 
-**Adding treatment C made this a third worse** — 11,634 → 15,512 and 73,673 →
-98,230, the 4/3 ratio of splitting four ways instead of three. That is the
-price of an answerable question rather than a regression, and it is stated here
-because the alternative was a report that kept publishing a three-arm sizing
-while the code ran four. Two places would have done exactly that:
-`panel.report.test.ts` hardcoded `arms: 3`, and the shadow report's metric
-table had no treatment C column at all.
+**Every arm costs a third more panel**, and the number is published rather
+than absorbed:
+
+| | 5pp lift | B − A |
+|---|---|---|
+| Three arms | 11,634 | 73,673 |
+| + treatment C (confidence) | 15,512 | 98,230 |
+| + treatment D (pairing) | **19,390** | **122,787** |
+
+That is the price of an answerable question rather than a regression. It is
+stated because the alternative was a report that kept publishing a three-arm
+sizing while the code ran four — and two places would have done exactly that:
+`panel.report.test.ts` hardcoded its arm count, and the shadow report's metric
+table had no column for the new arm at all.
 
 The sizing is validated rather than asserted — at the computed size, 2,000
 simulated experiments detected the effect 79.1% of the time against a target of
@@ -366,8 +462,9 @@ order:
 `npm run experiment` writes [`docs/experiment-report.md`](docs/experiment-report.md).
 The harness bar carries an arm selector, the ramp, and a kill-switch drill.
 
-**Four arms.** Control sees no module. A is reconnection only; B adds variant
-continuity; **C is B plus the Decision Confidence Layer**. C is its own arm
+**Five arms.** Control sees no module. A is reconnection only; B adds variant
+continuity; **C is B plus the Decision Confidence Layer**; **D adds
+cross-category pairing**. Each is its own arm
 rather than folded into B because §7 splits the arms to learn *where* a lift
 comes from, and B − A is interpretable only if B differs from A in exactly one
 thing. Adding evidence to B would make that difference two mechanisms wide and
@@ -460,13 +557,14 @@ app/src/match/     contract, rules-based query parser, tier 1+2 matcher,
                    suppression, circuit breaker, fail-open transport, modality modes
 app/src/confidence/   the signal model: value, status, source, provenance
 app/src/compare/   priority, derived reasons, and the trade-off restatement
-app/src/wishlist/  intent tags and look completion, both later-phase
+app/src/wishlist/  intent tags, the outfit slot model and the pairing engine
 app/src/state/     search context, the match hook, the comparison session
 app/src/components/WishlistModule/   the module
-app/src/components/   Sheet, Button, ConfidencePanel, ResumeBar, ResumeSheet
+app/src/components/   Sheet, Button, ConfidencePanel, ResumeBar, ResumeSheet,
+                   LookStrip, SearchSuggestions
 app/src/harness/   the E12 state switcher
 app/src/data/      generated — never hand-edit
-app/gates/         the nine acceptance gates
+app/gates/         the ten acceptance gates
 ```
 
 ## What clicking through found that the tests did not
@@ -474,8 +572,8 @@ app/gates/         the nine acceptance gates
 This is the most transferable thing in the repository, so it is written down
 rather than left in commit messages.
 
-The suite is at 521 tests and nine measured gates, and it has still never been
-the thing that caught a user-facing defect first. Seven were found only by
+The suite is at 546 tests and ten measured gates, and it has still never been
+the thing that caught a user-facing defect first. Ten were found only by
 opening a browser:
 
 | Defect | Why no test saw it |
@@ -487,6 +585,9 @@ opening a browser:
 | `pointerEvents` as a prop is deprecated in react-native-web | A console warning is invisible to Jest. |
 | Colour and tag pills had no `minWidth` floor | Found by the C-7 gate on its first run — a gate written *because* the browser passes kept finding things. |
 | "View Bag" opened the product page | `copy.test.ts` asserted the label. `navigation.test.tsx` asserted the destination. Nothing asserted they agree, and the bug lived in the gap between two correct tests. |
+| A pairing reason read "Wears under this tshirt" | Per-slot verbs were true of trousers under a shirt and wrong for jeans, and de-pluralising article types would have produced "this casual shoes". A string assertion would have pinned the wrong string. |
+| The suggestion row nested a `<button>` inside a `<button>` | Invalid HTML, and two overlapping targets a keyboard user cannot separate. A test renderer has no HTML validator. |
+| Two colourways of one product filled half the dropdown with identical rows | Keys were unique, so React was satisfied; only a person could see the same suggestion twice. |
 
 The last one is the sharpest. It had been there since Slice 1, behind two green
 tests, and no amount of adding cases to either would have closed it — the
@@ -509,8 +610,17 @@ now routine:
   read entirely off synthetic data while looking like it measured the product.
 - The C-8 threshold ladder was a claim until it was measured: "shirt" matches
   three items under text and zero under voice.
+- The C-8 threshold ladder was a claim until it was measured: "shirt" matches
+  three items under text and zero under voice.
 - Every new gate was watched failing against a planted violation before it was
-  believed.
+  believed — including the pairing gate, checked against a planted gender
+  crossing that produced "Shirts/Men → Handbags/Women".
+- Adding a fifth arm pushed the cohort test's 3pp planted lift below
+  significance. The fix was to separate the two claims it had been conflating —
+  the model is *unbiased* for every arm, and *powered* only where the effect is
+  large enough — rather than inflating the population until a marginal effect
+  passed, which would answer a question about the model with a fact about the
+  ramp.
 
 ## The constraints, and where they are enforced
 
@@ -530,3 +640,5 @@ now routine:
 | §4.16 user control | `preferences.showWishlistInSearch`, enforced in `match/transport.ts` before the matcher runs — a preference the UI honours but the service ignores is not a control |
 | §5 privacy of intent | The DC-02 sheet explains the *match* and never why an item was saved; intent tags have their own display control |
 | A button does what it says | `destinationFor()` in `match/contract.ts` routes by copy, not by position, asserted in `__tests__/actionDestination.test.ts` |
+| FR-2 wishlist never boosts organic ranking | `search()` takes no wishlist argument; `__tests__/search.test.ts` reads its source for the words *wishlist*, *saved* and *match*. Priority is expressed as layout — two labelled groups — never as ranking |
+| Pairing suggests only what the user saved | `wishlist/lookCompletion.ts` never reads the catalog for candidates; `gates/pairing.gate.test.ts` sweeps every seed for a suggestion from outside the wishlist |
