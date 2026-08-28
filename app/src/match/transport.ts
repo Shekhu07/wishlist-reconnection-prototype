@@ -74,7 +74,7 @@ export interface MatchClientOptions {
 }
 
 export class MatchClient {
-  private readonly index: MatchIndex;
+  private index: MatchIndex;
   private readonly breaker: CircuitBreaker;
   readonly suppression = new SuppressionStore();
   readonly shadow: ShadowRecord[] = [];
@@ -111,6 +111,20 @@ export class MatchClient {
 
   get today(): string {
     return this.options.catalog.today;
+  }
+
+  /**
+   * Re-read the wishlist after the user saved or unsaved something.
+   *
+   * Only the index is rebuilt. Suppression, the breaker and the frequency
+   * caps are session state that a new client would silently erase -- which is
+   * exactly why the app builds one client for the session -- so a save must
+   * not be allowed to reset them. Dismissing the module for "shirt" and then
+   * hearting a watch should not bring the module back for "shirt".
+   */
+  setWishlist(wishlist: Wishlist): void {
+    this.options.wishlist = wishlist;
+    this.index = buildIndex(this.options.catalog, wishlist, this.options.commerce);
   }
 
   /**

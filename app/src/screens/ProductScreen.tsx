@@ -39,6 +39,13 @@ export interface ProductScreenProps {
   onChooseSize: (size: string) => void;
   onBack: () => void;
   onMoveToBag: (size: string) => void;
+  /**
+   * Saving from here records the size and colour the user actually chose,
+   * which is the honest version of the grid heart's guess. Absent leaves the
+   * control undrawn rather than drawn dead.
+   */
+  saved?: boolean;
+  onToggleSave?: (size: string) => void;
   added: boolean;
   /** "Complete the look" — sits between the price and the description. */
   pairing?: ReactNode;
@@ -53,6 +60,8 @@ export function ProductScreen({
   onChooseSize,
   onBack,
   onMoveToBag,
+  saved = false,
+  onToggleSave,
   added,
   pairing,
 }: ProductScreenProps) {
@@ -134,6 +143,23 @@ export function ProductScreen({
             );
           })}
         </View>
+
+        {onToggleSave ? (
+          <View style={styles.saveRow}>
+            <Button
+              testID="product-save"
+              filled={false}
+              grow
+              label={saved ? "♥  Saved to Wishlist" : "♡  Save to Wishlist"}
+              accessibilityLabel={
+                saved
+                  ? `Remove ${parent.brand} ${colourway.display_name} from Wishlist`
+                  : `Save ${parent.brand} ${colourway.display_name} to Wishlist, ${colourway.colour}${selectedSize ? `, size ${selectedSize}` : ""}`
+              }
+              onPress={() => onToggleSave(selectedSize ?? parent.sizes[0])}
+            />
+          </View>
+        ) : null}
 
         {added ? (
           <View
@@ -246,6 +272,7 @@ const styles = StyleSheet.create({
   sizeDisabled: { opacity: 0.35, backgroundColor: color.surfaceMuted },
   sizeText: { ...type.body, color: color.textPrimary },
   sizeTextSelected: { color: color.brandPink, fontWeight: "700" },
+  saveRow: { marginTop: space.lg },
   buyRow: { flexDirection: "row", marginTop: space.lg },
   noSize: { ...type.body, color: color.textSecondary, marginTop: space.lg },
   added: {

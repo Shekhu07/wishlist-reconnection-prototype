@@ -6,7 +6,7 @@ import ordersJson from "@/data/orders.json";
 import savedForLaterJson from "@/data/saved-for-later.json";
 import scenariosJson from "@/data/scenarios.json";
 import wishlistJson from "@/data/wishlist.json";
-import type { Catalog, Scenario, Wishlist } from "@/data/types";
+import type { Catalog, Colourway, ParentProduct, Scenario, Wishlist } from "@/data/types";
 import type { MatchRequest } from "@/match/contract";
 import { MatchClient } from "@/match/transport";
 import {
@@ -38,6 +38,7 @@ import {
   findProduct,
 } from "@/state/comparisonSession";
 import { TagStore, surfacedCopy, type IntentTag } from "@/wishlist/tags";
+import { WishlistStore, defaultSizeFor } from "@/wishlist/store";
 import { completeTheLook } from "@/wishlist/lookCompletion";
 import { LookStrip } from "@/components/LookStrip";
 import { LOOK_HEADING_PDP } from "@/copy/bundle";
@@ -141,6 +142,14 @@ export default function App() {
   // Improvement 7: runtime, because data/wishlist.json is generated and must
   // not be hand-edited. Seeded empty -- a tag exists only if someone wrote it.
   const tagStore = useRef(new TagStore()).current;
+  /**
+   * The wishlist at runtime. Seeded from the generated fixture and layered
+   * with the user's own saves for the session -- see wishlist/store.ts. Until
+   * this existed the heart on every tile was a decoration and nothing could
+   * be saved from anywhere in the app.
+   */
+  const wishlistStore = useRef(new WishlistStore(wishlist)).current;
+  const [wishlistVersion, setWishlistVersion] = useState(0);
   const [context, setContext] = useState<SearchContext>(() =>
     contextFromScenario(scenarios[1] ?? scenarios[0], 1, sessionId)
   );
@@ -228,7 +237,7 @@ export default function App() {
   // FR-8 says dismissal already is.
   const preferences = useMemo(() => new PreferenceStore(), []);
   const client = useMemo(
-    () => new MatchClient({ catalog, wishlist, events, commerce, preferences }),
+    () => new MatchClient({ catalog, wishlist: wishlistStore.asWishlist(), events, commerce, preferences }),
     [events, commerce, preferences]
   );
   // The flag owns the ramp and the kill switch. The harness overrides the arm
@@ -308,9 +317,44 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  /**
+   * Save or unsave a product.
+   *
+   * The size question is the interesting part. A grid tile has no size
+   * control, so hearting from one has to choose -- `defaultSizeFor` prefers a
+   * size actually in stock, and the toast names what was recorded so "Saved:
+   * Blue · M" is never the first time the user learns which size they have.
+   * The product screen passes the size the user really picked, so saving from
+   * there needs no guess at all. For the accessories the ladder is a single
+   * "Onesize" and the question does not arise.
+   *
+   * The client is told rather than rebuilt: a new MatchClient would silently
+   * erase suppression, the breaker and the frequency caps.
+   */
+  const toggleSave = useCallback(
+    (parent: ParentProduct, colourway: Colourway, size?: string) => {
+      const chosen =
+        size ?? defaultSizeFor(parent, inventory.sizesInStock(parent, colourway.product_id));
+      const outcome = wishlistStore.toggle(parent, colourway, chosen, catalog.today);
+      client.setWishlist(wishlistStore.asWishlist());
+      setWishlistVersion((v) => v + 1);
+      setToast(
+        outcome === "added"
+          ? `Saved to Wishlist · ${colourway.colour} · ${chosen}`
+          : "Removed from Wishlist"
+      );
+    },
+    [client, inventory, wishlistStore]
+  );
+
+  const savedProductIds = useMemo(
+    () => wishlistStore.savedProductIds(),
+    [wishlistStore, wishlistVersion]
+  );
+
   const itemFor = useCallback(
-    (sku: string) => wishlist.items.find((candidate) => candidate.sku === sku),
-    []
+    (sku: string) => wishlistStore.items.find((candidate) => candidate.sku === sku),
+    [wishlistVersion]
   );
 
   const screen = top(nav);
@@ -320,7 +364,7 @@ export default function App() {
   // and CR-04 has to know which comparison to return to.
   const activeItem =
     screen.name === "saved" || screen.name === "compare" || screen.name === "alternative"
-      ? wishlist.items.find((candidate) => candidate.item_id === screen.itemId)
+      ? wishlistStore.items.find((candidate) => candidate.item_id === screen.itemId)
       : undefined;
 
   /**
@@ -524,7 +568,7 @@ export default function App() {
    */
   const comparison = comparisons.current(sessionId);
   const comparisonItem = comparison
-    ? wishlist.items.find((candidate) => candidate.item_id === comparison.savedItemId)
+    ? wishlistStore.items.find((candidate) => candidate.item_id === comparison.savedItemId)
     : undefined;
   const comparisonChanges = useMemo(
     () =>
@@ -564,10 +608,10 @@ export default function App() {
   // stay advisory until the binding read at the action boundary.
   const wishlistResults = useMemo(
     () =>
-      wishlist.items
+      wishlistStore.items
         .map((item) => revalidate(item, catalog, inventory, pincode))
         .filter((result): result is NonNullable<typeof result> => result !== null),
-    [inventory, pincode, stockVersion]
+    [inventory, pincode, stockVersion, wishlistVersion]
   );
 
   // The other half of the pair: emitted when a blocking state actually renders,
@@ -654,7 +698,7 @@ export default function App() {
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
         onOpenWishlist={() => setNav(push(nav, { name: "wishlist" }))}
         onOpenProfile={() => setNav(push(nav, { name: "profile" }))}
-        wishlistCount={wishlist.items.length}
+        wishlistCount={wishlistStore.items.length}
         sheet={
           <>
           {comparison && comparisonItem ? (
@@ -882,10 +926,12 @@ export default function App() {
             }}
             // Withheld for control and in shadow mode: a control user who sees
             // a wishlist surface is no longer a control user.
+            savedProductIds={savedProductIds}
+            onToggleSave={(tile) => toggleSave(tile.parent, tile.colourway)}
             wishlist={
-              wishlistSurfaceVisible(client.arm, shadowMode) && wishlist.items.length > 0
+              wishlistSurfaceVisible(client.arm, shadowMode) && wishlistStore.items.length > 0
                 ? {
-                    count: wishlist.items.length,
+                    count: wishlistStore.items.length,
                     imageId: wishlistResults[0]?.colourway.product_id ?? null,
                     onOpen: () => setNav((prev) => push(prev, { name: "wishlist" })),
                   }
@@ -970,7 +1016,7 @@ export default function App() {
                 },
               ];
               const skus = commerce.bag.items.map((line) => line.sku);
-              const savedSkus = wishlist.items
+              const savedSkus = wishlistStore.items
                 .filter((item) => skus.includes(item.sku))
                 .map((item) => item.sku);
               commerce.bag.items = [];
@@ -1023,6 +1069,8 @@ export default function App() {
                 parent={found.parent}
                 colourway={found.colourway}
                 sizesInStock={sizes}
+                saved={savedProductIds.has(found.colourway.product_id)}
+                onToggleSave={(size) => toggleSave(found.parent, found.colourway, size)}
                 deliveryBy={
                   deliverable ? deliveryDateFor(catalog.today, found.colourway.product_id) : null
                 }
@@ -1368,6 +1416,8 @@ export default function App() {
           <BrowseScreen
             catalog={catalog}
             filter={screen.filter}
+            savedProductIds={savedProductIds}
+            onToggleSave={(tile) => toggleSave(tile.parent, tile.colourway)}
             onSelectTile={(tile) => {
               setContext((prev) =>
                 contextFromQuery(`${tile.parent.brand} ${tile.parent.articleType}`, prev, prev.seq + 1)
@@ -1415,6 +1465,8 @@ export default function App() {
           <CategoryScreen
             catalog={catalog}
             categoryKey={screen.key}
+            savedProductIds={savedProductIds}
+            onToggleSave={(tile) => toggleSave(tile.parent, tile.colourway)}
             onSelectTile={(tile) => {
               // Straight to the product, the way a home tile goes. Browse
               // routes through a search instead; that is Browse's own
@@ -1432,6 +1484,8 @@ export default function App() {
           <SearchResultsScreen
             catalog={catalog}
             query={context.query}
+            savedProductIds={savedProductIds}
+            onToggleSave={(tile) => toggleSave(tile.parent, tile.colourway)}
             matchResponse={response}
             onDismiss={() => dismissModule("Dismissal logged as a relevance signal")}
             onUndo={undo}

@@ -7,6 +7,7 @@ import { SaleStrip } from "@/components/home/SaleStrip";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { WishlistTeaser } from "@/components/home/WishlistTeaser";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
+import { SaveHeart } from "@/components/catalog/SaveHeart";
 import type { Catalog } from "@/data/types";
 import { color, radius, space, type } from "@/design/tokens";
 import { overview, type BrowseTile, type CategoryKey, type GenderTab } from "@/search/catalogBrowse";
@@ -25,6 +26,9 @@ export interface HomeScreenProps {
    * (see experiment/surfaces.ts) -- not that the user has saved nothing.
    */
   wishlist?: { count: number; imageId: number | null; onOpen: () => void };
+  /** Absent leaves the grid read-only: no heart is drawn at all. */
+  savedProductIds?: Set<number>;
+  onToggleSave?: (tile: BrowseTile) => void;
 }
 
 export function HomeScreen({
@@ -34,6 +38,8 @@ export function HomeScreen({
   onSelectTile,
   onSelectBrand,
   wishlist,
+  savedProductIds,
+  onToggleSave,
 }: HomeScreenProps) {
   const [tab, setTab] = useState<GenderTab>("all");
   // overview, not byGender: same products, ordered so the top of the grid is
@@ -91,16 +97,24 @@ export function HomeScreen({
 
       <View style={styles.grid}>
         {tiles.map((tile) => (
-          <Pressable
-            key={tile.colourway.product_id}
-            testID={`home-tile-${tile.parent.parent_product_id}`}
-            accessibilityRole="button"
-            accessibilityLabel={`${tile.parent.brand} ${tile.colourway.display_name}`}
-            style={styles.gridItem}
-            onPress={() => onSelectTile(tile)}
-          >
-            <ProductTileBody tile={tile} size={tileSize} />
-          </Pressable>
+          <View key={tile.colourway.product_id} style={styles.gridItem}>
+            <Pressable
+              testID={`home-tile-${tile.parent.parent_product_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${tile.parent.brand} ${tile.colourway.display_name}`}
+              onPress={() => onSelectTile(tile)}
+            >
+              <ProductTileBody tile={tile} size={tileSize} />
+            </Pressable>
+            {onToggleSave ? (
+              <SaveHeart
+                tile={tile}
+                saved={savedProductIds?.has(tile.colourway.product_id) ?? false}
+                onToggle={() => onToggleSave(tile)}
+                inset={space.xs + 6}
+              />
+            ) : null}
+          </View>
         ))}
       </View>
     </ScrollView>

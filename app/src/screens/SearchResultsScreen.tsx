@@ -3,6 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } fr
 import type { MatchResponse } from "@/match/contract";
 import { WishlistModule } from "@/components/WishlistModule";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
+import { SaveHeart } from "@/components/catalog/SaveHeart";
+import type { BrowseTile } from "@/search/catalogBrowse";
 import type { Catalog } from "@/data/types";
 import { FRAME_MAX_WIDTH, color, radius, space, type } from "@/design/tokens";
 import { buildSearchIndex, search } from "@/search/localSearch";
@@ -23,6 +25,9 @@ export { FRAME_MAX_WIDTH } from "@/design/tokens";
 
 export interface SearchResultsScreenProps {
   catalog: Catalog;
+  /** Absent leaves the grid read-only: no heart is drawn at all. */
+  savedProductIds?: Set<number>;
+  onToggleSave?: (tile: BrowseTile) => void;
   query: string;
   matchResponse: MatchResponse | null;
   onDismiss: () => void;
@@ -78,6 +83,8 @@ export function SearchResultsScreen({
   scrollOffset = 0,
   onScrollOffset,
   swapFills,
+  savedProductIds,
+  onToggleSave,
 }: SearchResultsScreenProps) {
   const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
   const results = useMemo(() => search(query, index), [query, index]);
@@ -146,16 +153,24 @@ export function SearchResultsScreen({
 
       <View style={styles.grid}>
         {results.map((result) => (
-          <Pressable
-            key={result.colourway.product_id}
-            testID={`result-tile-${result.colourway.product_id}`}
-            accessibilityRole="button"
-            accessibilityLabel={`${result.parent.brand} ${result.colourway.display_name}, ${result.colourway.colour}`}
-            onPress={() => onOpenProduct?.(result.colourway.product_id)}
-            style={styles.gridItem}
-          >
-            <ProductTileBody tile={result} size={tile} />
-          </Pressable>
+          <View key={result.colourway.product_id} style={styles.gridItem}>
+            <Pressable
+              testID={`result-tile-${result.colourway.product_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${result.parent.brand} ${result.colourway.display_name}, ${result.colourway.colour}`}
+              onPress={() => onOpenProduct?.(result.colourway.product_id)}
+            >
+              <ProductTileBody tile={result} size={tile} />
+            </Pressable>
+            {onToggleSave ? (
+              <SaveHeart
+                tile={result}
+                saved={savedProductIds?.has(result.colourway.product_id) ?? false}
+                onToggle={() => onToggleSave(result)}
+                inset={space.xs + 6}
+              />
+            ) : null}
+          </View>
         ))}
         {results.length === 0 ? (
           <Text style={styles.empty}>No results for “{query}”.</Text>

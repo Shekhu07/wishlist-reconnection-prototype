@@ -13,10 +13,10 @@ import type { BrowseTile } from "@/search/catalogBrowse";
  * props: those differ per screen and are load-bearing for existing tests, so
  * this component owns layout only, never the wrapper.
  *
- * The wishlist heart is decorative, not a Pressable -- wiring it to actually
- * save/unsave is a separate feature, and an unwired tap target reads as a
- * broken control (see Task 9's review, which flagged exactly that class of
- * defect elsewhere in this shell).
+ * The save heart is NOT here -- see SaveHeart. Every caller wraps this body
+ * in a Pressable that opens the product, so a heart rendered inside it would
+ * be a button nested inside a button. It is a sibling of that Pressable
+ * instead.
  */
 export function ProductTileBody({
   tile,
@@ -34,13 +34,6 @@ export function ProductTileBody({
           style={[styles.image, size]}
           resizeMode="cover"
         />
-        <View
-          style={styles.heart}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          <Text style={styles.heartGlyph}>♡</Text>
-        </View>
       </View>
       <Text style={styles.brand} numberOfLines={1}>
         {parent.brand.toUpperCase()}
@@ -71,20 +64,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.tile,
     backgroundColor: color.surfaceMuted,
   },
-  heart: {
-    // 6px from the corner, not space.xs -- the spec insets the heart slightly
-    // further than the 4pt grid so it clears the image's 6px radius.
-    position: "absolute",
-    top: 6,
-    right: 6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.85)",
-  },
-  heartGlyph: { fontSize: 15, color: color.textPrimary },
   brand: { ...type.tileBrand, color: color.textPrimary, marginTop: space.sm },
   name: { ...type.tileName, color: color.textSecondary, marginTop: 2 },
   ratingRow: {

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
+import { SaveHeart } from "@/components/catalog/SaveHeart";
 import type { Catalog } from "@/data/types";
 import { byCategory, categoryLabel, overview, type BrowseTile, type CategoryKey } from "@/search/catalogBrowse";
 import { color, space, type } from "@/design/tokens";
@@ -21,10 +22,15 @@ export function CategoryScreen({
   catalog,
   categoryKey,
   onSelectTile,
+  savedProductIds,
+  onToggleSave,
 }: {
   catalog: Catalog;
   categoryKey: CategoryKey;
   onSelectTile: (tile: BrowseTile) => void;
+  /** Absent leaves the grid read-only: no heart is drawn at all. */
+  savedProductIds?: Set<number>;
+  onToggleSave?: (tile: BrowseTile) => void;
 }) {
   const tiles = useMemo(() => {
     const inCategory = byCategory(catalog, categoryKey);
@@ -47,17 +53,25 @@ export function CategoryScreen({
       <Text style={styles.count}>{tiles.length} items</Text>
       <View style={styles.grid}>
         {tiles.map((tile) => (
-          <Pressable
-            key={tile.parent.parent_product_id}
-            testID={`category-tile-${tile.parent.parent_product_id}`}
-            accessibilityRole="button"
-            accessibilityLabel={`${tile.parent.brand} ${tile.colourway.display_name}`}
-            accessibilityValue={{ text: String(tile.colourway.price) }}
-            onPress={() => onSelectTile(tile)}
-            style={styles.tile}
-          >
-            <ProductTileBody tile={tile} size={size} />
-          </Pressable>
+          <View key={tile.parent.parent_product_id} style={styles.tile}>
+            <Pressable
+              testID={`category-tile-${tile.parent.parent_product_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${tile.parent.brand} ${tile.colourway.display_name}`}
+              accessibilityValue={{ text: String(tile.colourway.price) }}
+              onPress={() => onSelectTile(tile)}
+            >
+              <ProductTileBody tile={tile} size={size} />
+            </Pressable>
+            {onToggleSave ? (
+              <SaveHeart
+                tile={tile}
+                saved={savedProductIds?.has(tile.colourway.product_id) ?? false}
+                onToggle={() => onToggleSave(tile)}
+                inset={space.xs + 6}
+              />
+            ) : null}
+          </View>
         ))}
       </View>
     </ScrollView>
