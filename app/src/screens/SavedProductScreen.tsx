@@ -7,7 +7,10 @@ import {
   AFTER_ADD_KEEP_COMPARING,
   AFTER_ADD_VIEW_BAG,
   RECOVERY_COPY,
+  TAGS_HEADING,
+  TAGS_OPTIONAL,
 } from "@/copy/bundle";
+import { INTENT_TAGS, type IntentTag } from "@/wishlist/tags";
 import { Button } from "@/components/Button";
 import { ConfidencePanel } from "@/components/ConfidencePanel";
 import { signalsFor } from "@/confidence/signals";
@@ -46,6 +49,9 @@ export interface SavedProductScreenProps {
    */
   added?: "added" | "duplicate" | null;
   onAfterAdd?: (next: "bag" | "compare" | "browse") => void;
+  /** Improvement 7. Absent means the feature is off, not that there are none. */
+  tags?: IntentTag[];
+  onToggleTag?: (tag: IntentTag) => void;
 }
 
 export function SavedProductScreen({
@@ -63,6 +69,8 @@ export function SavedProductScreen({
   onSignalExpand,
   added = null,
   onAfterAdd,
+  tags,
+  onToggleTag,
 }: SavedProductScreenProps) {
   const { parent, colourway, current, blocking, advisories, item } = result;
   const activeColour = selectedColour ?? item.colour;
@@ -244,6 +252,37 @@ export function SavedProductScreen({
           })}
         </View>
 
+        {/* Improvement 7: optional, and *after* the save rather than in front
+            of it. The prompt forbids interrupting the initial Save with a
+            mandatory form, so this lives here, on an item already saved, and
+            says plainly that it is optional. Nothing infers a tag. */}
+        {tags && onToggleTag ? (
+          <View style={styles.tags} testID="intent-tags">
+            <Text style={styles.sizeHeading}>{TAGS_HEADING}</Text>
+            <Text style={styles.tagsNote}>{TAGS_OPTIONAL}</Text>
+            <View style={styles.sizes}>
+              {INTENT_TAGS.map((entry) => {
+                const selected = tags.includes(entry.key);
+                return (
+                  <Pressable
+                    key={entry.key}
+                    testID={`tag-${entry.key}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={entry.label}
+                    accessibilityState={{ selected }}
+                    onPress={() => onToggleTag(entry.key)}
+                    style={[styles.colour, selected && styles.sizeSelected]}
+                  >
+                    <Text style={[styles.sizeText, selected && styles.sizeTextSelected]}>
+                      {entry.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
         {/* Improvement 3, steps 6 and 7. The add is a decision point, not a
             notification: the user has just committed and now has three
             genuinely different next moves. A toast that vanishes in 2.6
@@ -377,6 +416,8 @@ const styles = StyleSheet.create({
     borderColor: color.borderSubtle,
   },
   buyRow: { flexDirection: "row", marginTop: space.lg },
+  tags: { marginTop: space.lg },
+  tagsNote: { ...type.chip, color: color.textSecondary, marginTop: 2 },
   added: {
     marginTop: space.lg,
     padding: space.md,

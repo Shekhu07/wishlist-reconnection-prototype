@@ -12,7 +12,16 @@ import { CARD_IMAGE, color, radius, space, type } from "@/design/tokens";
  * quietly showing a different one.
  */
 
-export function SavedItemCard({ match, compact = false }: { match: Match; compact?: boolean }) {
+export function SavedItemCard({
+  match,
+  compact = false,
+  intent,
+}: {
+  match: Match;
+  compact?: boolean;
+  /** Improvement 7: at most one line, and only if the user wrote it. */
+  intent?: string | null;
+}) {
   const savedVariant = `${match.saved.color} · ${match.saved.size}`;
   const unavailable =
     match.current.state === "variant_unavailable" ||
@@ -69,6 +78,14 @@ export function SavedItemCard({ match, compact = false }: { match: Match; compac
             is no size chart in this catalog, so "check the size guide" is the
             only fit statement the data supports for any item. Widening the wire
             contract to carry a field that cannot change would be ceremony. */}
+        {/* The user's own words about their own item. Never inferred, and
+            never more than one line -- a card carrying three intent lines
+            stops being a reminder and becomes a profile read back at them. */}
+        {intent ? (
+          <Text style={styles.intent} numberOfLines={1} testID="intent-tag">
+            {intent}
+          </Text>
+        ) : null}
         {!unavailable ? (
           <Text style={styles.summary} numberOfLines={1} testID="confidence-summary">
             {`Size ${match.saved.size} available · ${FIT_PROMPT}`}
@@ -109,4 +126,5 @@ const styles = StyleSheet.create({
   // line. Constraint C-1 is enforced here as much as in the copy bundle.
   meta: { ...type.body, color: color.textSecondary, marginTop: space.sm },
   summary: { ...type.chip, color: color.textSecondary, marginTop: 2 },
+  intent: { ...type.chip, color: color.brandPink, marginTop: space.xs, fontWeight: "500" },
 });

@@ -35,6 +35,9 @@ import {
   describeSession,
   findProduct,
 } from "@/state/comparisonSession";
+import { TagStore, surfacedCopy, type IntentTag } from "@/wishlist/tags";
+import { completeTheLook } from "@/wishlist/lookCompletion";
+import { LookStrip } from "@/components/LookStrip";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ResumeSheet } from "@/components/ResumeSheet";
 import { BagScreen } from "@/screens/BagScreen";
@@ -125,6 +128,9 @@ export default function App() {
   // Session-scoped, like suppression: in memory, Redis-shaped key, cleared
   // with the session rather than persisted (wireframes section 11).
   const comparisons = useRef(new ComparisonStore()).current;
+  // Improvement 7: runtime, because data/wishlist.json is generated and must
+  // not be hand-edited. Seeded empty -- a tag exists only if someone wrote it.
+  const tagStore = useRef(new TagStore()).current;
   const [context, setContext] = useState<SearchContext>(() =>
     contextFromScenario(scenarios[1] ?? scenarios[0], 1, sessionId)
   );
@@ -163,6 +169,14 @@ export default function App() {
   // Until treatment_c exists it lives behind the harness, off, so it is never
   // a third co-equal action competing with Buy and Compare (FR-5).
   const [helpMeDecide, setHelpMeDecide] = useState(false);
+  // Improvements 7, 9 and 10, all later-phase and all off unless asked for.
+  const [tagsOn, setTagsOn] = useState(false);
+  const [lookCompletion, setLookCompletion] = useState(false);
+  // Write-only on purpose. The tag store lives outside React, so the setter is
+  // the re-render; the values themselves are read inline during render rather
+  // than through a memo, so nothing needs to depend on this. Same reason
+  // stockVersion and bagVersion exist, minus the memo.
+  const [, setTagVersion] = useState(0);
   const [resumeOpen, setResumeOpen] = useState(false);
   // Bumped when the comparison session mutates, because the store lives
   // outside React -- same pattern as stockVersion and bagVersion.
@@ -617,6 +631,24 @@ export default function App() {
         }}
         helpMeDecide={helpMeDecide}
         onToggleHelpMeDecide={setHelpMeDecide}
+        tagsOn={tagsOn}
+        onToggleTags={(value) => {
+          setTagsOn(value);
+          // Seeded on first enable so a researcher sees the state without
+          // typing seven tags. Real tags stay whatever the user set.
+          if (value && tagStore.taggedCount === 0) {
+            tagStore.seedDemo(wishlist.items.slice(0, 3).map((item) => item.item_id));
+          }
+          setTagVersion((v) => v + 1);
+        }}
+        lookCompletion={lookCompletion}
+        onToggleLookCompletion={setLookCompletion}
+        modality={context.modality}
+        onModalityChange={(modality) => {
+          // A real threshold change, not a label: tau is already per-modality
+          // in the contract (C-8), so switching mode genuinely raises the bar.
+          setContext((prev) => ({ ...prev, modality, seq: prev.seq + 1 }));
+        }}
         onSellOutSizeSilently={() => {
           const target = activeItem ?? firstMatchItem;
           if (!target) return setToast("No saved item in view to sell out");
@@ -836,6 +868,15 @@ export default function App() {
               onSignalExpand={(signal) =>
                 emitConfidence("confidence_signal_expanded", { signal_type: signal })
               }
+              tags={tagsOn ? tagStore.for(activeItem.item_id) : undefined}
+              onToggleTag={
+                tagsOn
+                  ? (tag: IntentTag) => {
+                      tagStore.toggle(activeItem.item_id, tag);
+                      setTagVersion((v) => v + 1);
+                    }
+                  : undefined
+              }
               added={added}
               onAfterAdd={(next) => {
                 setAdded(null);
@@ -1048,6 +1089,42 @@ export default function App() {
             onScrollOffset={(offset) => {
               resultsOffset.current = offset;
             }}
+            intentFor={
+              tagsOn
+                ? (sku: string) => {
+                    const item = itemFor(sku);
+                    if (!item) return null;
+                    const tag = tagStore.surfacedFor(item.item_id);
+                    return tag ? surfacedCopy(tag) : null;
+                  }
+                : undefined
+            }
+            lookCompletion={
+              lookCompletion ? (
+                <LookStrip
+                  suggestions={completeTheLook(
+                    // The article type the search actually landed on, so the
+                    // pairing is about what the user is looking at rather than
+                    // about a category guessed from the query string.
+                    response?.matches.length
+                      ? (itemFor(response.matches[0].sku)
+                          ? catalog.parents.find(
+                              (p) =>
+                                p.parent_product_id ===
+                                itemFor(response.matches[0].sku)?.parent_product_id
+                            )?.articleType ?? ""
+                          : "")
+                      : "",
+                    wishlist,
+                    catalog,
+                    response?.matches.map((m) => itemFor(m.sku)?.item_id ?? "") ?? []
+                  )}
+                  onOpen={(itemId) =>
+                    setNav((prev) => push(prev, { name: "saved", itemId }))
+                  }
+                />
+              ) : null
+            }
             resumeBar={
               comparison && comparisonItem && !comparison.barDismissed ? (
                 <ResumeBar

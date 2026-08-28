@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ExperimentArm } from "@/analytics/events";
+import type { Modality } from "@/match/contract";
+import { MODALITY_MODES } from "@/match/modality";
 import type { Scenario } from "@/data/types";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 
@@ -45,6 +47,13 @@ export interface StateSwitcherProps {
   /** Improvement 5: optional, off by default, never a third co-equal action. */
   helpMeDecide: boolean;
   onToggleHelpMeDecide: (value: boolean) => void;
+  /** Improvements 7, 9, 10 -- later-phase states, each off by default. */
+  tagsOn: boolean;
+  onToggleTags: (value: boolean) => void;
+  lookCompletion: boolean;
+  onToggleLookCompletion: (value: boolean) => void;
+  modality: Modality;
+  onModalityChange: (modality: Modality) => void;
   onResetStock: () => void;
   stockChanged: boolean;
   /** Section 4.16: the per-user control, so it can be shown working. */
@@ -100,6 +109,12 @@ export function StateSwitcher({
   onSellOutSizeSilently,
   helpMeDecide,
   onToggleHelpMeDecide,
+  tagsOn,
+  onToggleTags,
+  lookCompletion,
+  onToggleLookCompletion,
+  modality,
+  onModalityChange,
   onResetStock,
   stockChanged,
   showWishlistInSearch,
@@ -220,6 +235,72 @@ export function StateSwitcher({
                 </Pressable>
               ))}
             </View>
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Later phase</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show optional intent tags"
+                accessibilityState={{ checked: tagsOn }}
+                onPress={() => onToggleTags(!tagsOn)}
+                style={[styles.chip, tagsOn && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, tagsOn && styles.chipTextActive]}>
+                  Intent tags
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show wishlist look completion"
+                accessibilityState={{ checked: lookCompletion }}
+                onPress={() => onToggleLookCompletion(!lookCompletion)}
+                style={[styles.chip, lookCompletion && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, lookCompletion && styles.chipTextActive]}>
+                  Complete the look
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Improvement 10. Every mode here is out of the primary
+                experiment and held to a stricter threshold than text (C-8).
+                The one that is not what its name suggests says so. */}
+            <View style={styles.group}>
+              <Text style={styles.controlLabel}>Input mode</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Use typed text, the primary mode"
+                accessibilityState={{ selected: modality === "text" }}
+                onPress={() => onModalityChange("text")}
+                style={[styles.chip, modality === "text" && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, modality === "text" && styles.chipTextActive]}>
+                  Text
+                </Text>
+              </Pressable>
+              {MODALITY_MODES.map((mode) => {
+                const active = modality === mode.modality;
+                return (
+                  <Pressable
+                    key={mode.modality}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${mode.label}. ${mode.note}`}
+                    accessibilityState={{ selected: active }}
+                    onPress={() => onModalityChange(mode.modality)}
+                    style={[
+                      styles.chip,
+                      active && styles.chipActive,
+                      !mode.genuine && styles.chipWarn,
+                    ]}
+                  >
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                      {mode.label}
+                      {mode.genuine ? "" : " ⚠"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
             <View style={styles.group}>
               <Text style={styles.controlLabel}>Stock</Text>
               <Pressable

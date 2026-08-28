@@ -41,6 +41,8 @@ export interface WishlistModuleProps {
   onSecondary: (sku: string) => void;
   /** Raises DC-02. The shell renders the sheet; see AppShell's `sheet` slot. */
   onWhy?: () => void;
+  /** Improvement 7: at most one intent line per card, by sku. Never inferred. */
+  intentFor?: (sku: string) => string | null;
   /**
    * A dismissal raised from outside the module -- today, DC-02's "Hide for this
    * search".
@@ -67,6 +69,7 @@ export function WishlistModule({
   onPrimary,
   onSecondary,
   onWhy,
+  intentFor,
   externalDismiss = 0,
   swapFills,
 }: WishlistModuleProps) {
@@ -190,12 +193,12 @@ export function WishlistModule({
         >
           {response.matches.map((match) => (
             <View key={match.sku} style={styles.carouselCard}>
-              <SavedItemCard match={match} compact />
+              <SavedItemCard match={match} compact intent={intentFor?.(match.sku)} />
             </View>
           ))}
         </ScrollView>
       ) : (
-        <SavedItemCard match={primary} />
+        <SavedItemCard match={primary} intent={intentFor?.(primary.sku)} />
       )}
 
       {overflow > 0 ? (

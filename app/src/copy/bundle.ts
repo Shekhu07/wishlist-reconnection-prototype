@@ -254,6 +254,31 @@ export const SIGNAL_SOURCE: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ *
+ * Improvement 7 -- optional intent tags
+ * ------------------------------------------------------------------ */
+
+export const TAGS_HEADING = "Why did you save this?";
+export const TAGS_OPTIONAL = "Optional. Only you see this, and you can remove it any time.";
+
+/* ------------------------------------------------------------------ *
+ * Improvement 9 -- look completion (later phase, off by default)
+ * ------------------------------------------------------------------ */
+
+export const LOOK_HEADING = "From your Wishlist, to go with this";
+export const LOOK_NOTE = "Later-phase prototype. Drawn only from items you already saved.";
+
+/* ------------------------------------------------------------------ *
+ * Improvement 10 -- later-phase input modes
+ * ------------------------------------------------------------------ */
+
+/**
+ * Shown on any mode that is a labelled stand-in rather than the capability its
+ * name implies. A demo that implies a capability the system does not have is
+ * worse than no demo, because someone will make a decision on it.
+ */
+export const MODE_NOT_REAL = "Prototype state — not the capability this names.";
+
+/* ------------------------------------------------------------------ *
  * Part B -- comparison re-entry (CR-01 .. CR-05)
  * ------------------------------------------------------------------ */
 

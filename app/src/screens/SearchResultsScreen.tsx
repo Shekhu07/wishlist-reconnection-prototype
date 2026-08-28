@@ -33,6 +33,9 @@ export interface SearchResultsScreenProps {
   onWhy?: () => void;
   /** Bumped when a dismissal is raised from the DC-02 sheet. */
   externalDismiss?: number;
+  intentFor?: (sku: string) => string | null;
+  /** Improvement 9: later-phase, off by default, rendered below the module. */
+  lookCompletion?: ReactNode;
   /**
    * CR-02's resume bar.
    *
@@ -65,7 +68,9 @@ export function SearchResultsScreen({
   onHideForever,
   onWhy,
   externalDismiss,
+  intentFor,
   resumeBar,
+  lookCompletion,
   onAction,
   scrollOffset = 0,
   onScrollOffset,
@@ -126,12 +131,15 @@ export function SearchResultsScreen({
           onUndo={onUndo}
           onHideForever={onHideForever}
           onWhy={onWhy}
+          intentFor={intentFor}
           externalDismiss={externalDismiss}
           onPrimary={(sku) => onAction("primary", sku)}
           onSecondary={(sku) => onAction("secondary", sku)}
           swapFills={swapFills}
         />
       ) : null}
+
+      {lookCompletion}
 
       <View style={styles.grid}>
         {results.map((result) => (
