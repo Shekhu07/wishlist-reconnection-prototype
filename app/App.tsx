@@ -58,6 +58,7 @@ import { SearchEntryScreen } from "@/screens/SearchEntryScreen";
 import { FRAME_MAX_WIDTH, SearchResultsScreen } from "@/screens/SearchResultsScreen";
 import { StubScreen } from "@/screens/StubScreen";
 import { StateSwitcher } from "@/harness/StateSwitcher";
+import { resolveHarnessEnabled } from "@/harness/enabled";
 import { AppShell } from "@/shell/AppShell";
 import { HarnessPill } from "@/shell/HarnessPill";
 import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
@@ -151,6 +152,9 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [nav, setNav] = useState<Nav>({ tab: "home", stack: [rootFor("home")] });
   const [harnessOpen, setHarnessOpen] = useState(false);
+  // Resolved once per mount, not per render: the answer depends on the URL the
+  // researcher arrived on, and the app rewrites that URL as it navigates.
+  const [harnessOn] = useState(resolveHarnessEnabled);
   // DC-02 lives in the shell's sheet slot, not in the module: an overlay
   // rendered inside the module is clipped to the module.
   const [whyOpen, setWhyOpen] = useState(false);
@@ -712,6 +716,7 @@ export default function App() {
           </>
         }
         harness={
+          !harnessOn ? null : (
           <HarnessPill
             stateNumber={scenarios.indexOf(scenario) + 1}
             suppression={suppressionReason}
@@ -842,6 +847,7 @@ export default function App() {
         }}
           />
           </HarnessPill>
+          )
         }
       >
       <View style={styles.frame}>

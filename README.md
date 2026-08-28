@@ -43,6 +43,13 @@ Phase 5. When the module is absent, the harness says why — timed out, breaker
 open, dismissed, or resolved past the render grace — so an intentional
 suppression is never mistaken for a broken build.
 
+The pill is **on under `npm run web` and off in a deployed build**, so a link
+sent to a participant or a stakeholder carries no research chrome. Add
+`?harness=1` to get it back — the answer is remembered for the rest of the
+browser tab, because the app rewrites its own URL as it navigates and would
+otherwise drop the flag on the first tap. `?harness=0` turns it off again. A
+native build always has it: there is no URL there to carry a flag.
+
 | | |
 |---|---|
 | ![One exact match](docs/dc01-module-summary.png) | ![Why this appeared](docs/dc02-why-appeared.png) |
