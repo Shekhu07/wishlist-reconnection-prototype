@@ -339,6 +339,18 @@ export const CHANGE_COPY: Record<string, string> = {
  * Wishlist" and "Added to Bag from comparison" are different sentences,
  * because where the decision came from is the thing this feature measures.
  */
+/**
+ * The saved-item screen is reachable from search results, from a comparison,
+ * and from the Wishlist page. A hardcoded "Back to results" names a place the
+ * user may never have been, so the caller says which one it was.
+ */
+export const BACK_LABELS = {
+  results: { text: "← Back to results", accessibilityLabel: "Back to search results" },
+  wishlist: { text: "← Back to Wishlist", accessibilityLabel: "Back to Wishlist" },
+} as const;
+
+export type BackOrigin = keyof typeof BACK_LABELS;
+
 export const ADDED_FROM_WISHLIST = "Added to Bag from Wishlist";
 export const ADDED_FROM_COMPARISON = "Added to Bag from comparison";
 export const ADDED_DUPLICATE = "Already in your Bag — not added twice";

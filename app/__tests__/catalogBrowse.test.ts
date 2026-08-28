@@ -1,8 +1,19 @@
 import catalogJson from "@/data/catalog.json";
 import type { Catalog } from "@/data/types";
-import { brandRail, byCategory, byGender, byPrice } from "@/search/catalogBrowse";
+import {
+  CATEGORIES,
+  brandRail,
+  byCategory,
+  byGender,
+  byPrice,
+  categoryCover,
+  categoryLabel,
+  overview,
+} from "@/search/catalogBrowse";
 
 const catalog = catalogJson as unknown as Catalog;
+
+const KIDS = new Set(["Boys", "Girls"]);
 
 describe("browsing the catalog", () => {
   it("fills every gender tab, kids included", () => {
@@ -59,6 +70,82 @@ describe("browsing the catalog", () => {
     const expectedCount = allPrices.filter((price) => price >= expectedFloor).length;
     expect(cheapest).toBe(expectedFloor);
     expect(luxe.length).toBe(expectedCount);
+  });
+
+  it("reorders the overview without dropping or duplicating a product", () => {
+    for (const tab of ["all", "men", "women", "kids"] as const) {
+      const ids = byGender(catalog, tab).map((tile) => tile.parent.parent_product_id);
+      const mixed = overview(catalog, tab).map((tile) => tile.parent.parent_product_id);
+      expect(mixed.length).toBe(ids.length);
+      expect([...mixed].sort()).toEqual([...ids].sort());
+    }
+  });
+
+  it("opens the overview on men, women and kids rather than one shelf", () => {
+    // A row of the grid is two tiles, so four tiles is the first two rows --
+    // what someone sees before scrolling at all.
+    const opening = overview(catalog, "all").slice(0, 4).map((tile) => tile.parent);
+    expect(opening.some((parent) => parent.gender === "Men")).toBe(true);
+    expect(opening.some((parent) => parent.gender === "Women")).toBe(true);
+    expect(opening.some((parent) => KIDS.has(parent.gender))).toBe(true);
+  });
+
+  it("reaches every category, and every gender+type shelf, in one screenful", () => {
+    // The failure this guards is the one the file order had: 39 men's
+    // garments before the first women's product. Anything that clumps the
+    // grid by shelf again pushes a family past this window and fails here.
+    const shelves = new Set(
+      catalog.parents.map((parent) => `${parent.gender}|${parent.articleType}`)
+    );
+    const head = overview(catalog, "all").slice(0, shelves.size * 2);
+
+    const seenShelves = new Set(
+      head.map((tile) => `${tile.parent.gender}|${tile.parent.articleType}`)
+    );
+    expect(seenShelves.size).toBe(shelves.size);
+
+    const categoryIds = CATEGORIES.map(({ key }) => ({
+      key,
+      ids: new Set(byCategory(catalog, key).map((t) => t.parent.parent_product_id)),
+    }));
+    for (const { key, ids } of categoryIds) {
+      const present = head.some((tile) => ids.has(tile.parent.parent_product_id));
+      expect([key, present]).toEqual([key, true]);
+    }
+  });
+
+  it("keeps a gender tab honest after the reorder", () => {
+    for (const tile of overview(catalog, "kids")) {
+      expect(KIDS.has(tile.parent.gender)).toBe(true);
+    }
+    for (const tile of overview(catalog, "men")) {
+      expect(tile.parent.gender).toBe("Men");
+    }
+  });
+
+  it("gives every category circle a cover photo", () => {
+    for (const { key } of CATEGORIES) {
+      expect(categoryCover(catalog, key)).not.toBeNull();
+    }
+  });
+
+  it("takes each cover from the category it fronts", () => {
+    // A cover is only honest if it comes from that category: a lipstick on
+    // the Footwear circle would still be "a photo".
+    for (const { key } of CATEGORIES) {
+      const ids = new Set(
+        byCategory(catalog, key).map((tile) => tile.colourway.product_id)
+      );
+      expect([key, ids.has(categoryCover(catalog, key)!)]).toEqual([key, true]);
+    }
+  });
+
+  it("names every category exactly once", () => {
+    const keys = CATEGORIES.map(({ key }) => key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const { key, label } of CATEGORIES) {
+      expect(categoryLabel(key)).toBe(label);
+    }
   });
 
   it("shows one tile per product in the brand rail", () => {

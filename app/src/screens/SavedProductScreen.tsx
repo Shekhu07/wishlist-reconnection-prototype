@@ -3,6 +3,8 @@ import {
   ADDED_DUPLICATE,
   ADDED_FROM_WISHLIST,
   ADVISORY_COPY,
+  BACK_LABELS,
+  type BackOrigin,
   AFTER_ADD_KEEP_BROWSING,
   AFTER_ADD_KEEP_COMPARING,
   AFTER_ADD_VIEW_BAG,
@@ -32,6 +34,8 @@ export interface SavedProductScreenProps {
   result: RevalidationResult;
   pincode: string;
   onBack: () => void;
+  /** Which surface opened this screen, so Back names where it actually goes. */
+  backFrom?: BackOrigin;
   onMoveToBag: () => void;
   onRecoveryPrimary: () => void;
   onRecoverySecondary: () => void;
@@ -58,6 +62,7 @@ export function SavedProductScreen({
   result,
   pincode,
   onBack,
+  backFrom = "results",
   onMoveToBag,
   onRecoveryPrimary,
   onRecoverySecondary,
@@ -107,14 +112,16 @@ export function SavedProductScreen({
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="saved-product">
       <Pressable
+        // testID stays `back-to-results` whatever the label says: it is the
+        // back control, and three suites already reach for it by this name.
         testID="back-to-results"
         accessibilityRole="button"
-        accessibilityLabel="Back to search results"
+        accessibilityLabel={BACK_LABELS[backFrom].accessibilityLabel}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         onPress={onBack}
         style={styles.back}
       >
-        <Text style={styles.backText}>← Back to results</Text>
+        <Text style={styles.backText}>{BACK_LABELS[backFrom].text}</Text>
       </Pressable>
 
       <Image

@@ -46,6 +46,8 @@ import { ResumeSheet } from "@/components/ResumeSheet";
 import { BagScreen } from "@/screens/BagScreen";
 import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
+import { CategoryScreen } from "@/screens/CategoryScreen";
+import { WishlistScreen } from "@/screens/WishlistScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { AlternativeProductScreen } from "@/screens/AlternativeProductScreen";
 import { ProductScreen } from "@/screens/ProductScreen";
@@ -546,6 +548,18 @@ export default function App() {
     [activeItem, inventory, pincode, stockVersion]
   );
 
+  // Every saved item, for the Wishlist screen. Deliberately the same
+  // revalidate() the detail screen runs, against the same inventory and the
+  // same pincode -- so a row and the screen it opens cannot disagree, and both
+  // stay advisory until the binding read at the action boundary.
+  const wishlistResults = useMemo(
+    () =>
+      wishlist.items
+        .map((item) => revalidate(item, catalog, inventory, pincode))
+        .filter((result): result is NonNullable<typeof result> => result !== null),
+    [inventory, pincode, stockVersion]
+  );
+
   // The other half of the pair: emitted when a blocking state actually renders,
   // once per (item, reason), so the rate has a denominator that is not the
   // number of times React re-rendered.
@@ -628,6 +642,8 @@ export default function App() {
         }
         onBack={() => setNav(pop(nav))}
         onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
+        onOpenWishlist={() => setNav(push(nav, { name: "wishlist" }))}
+        wishlistCount={wishlist.items.length}
         sheet={
           <>
           {comparison && comparisonItem ? (
@@ -833,14 +849,7 @@ export default function App() {
           <HomeScreen
             catalog={catalog}
             onOpenSearch={() => setNav(push(nav, { name: "searchEntry" }))}
-            onSelectCategory={() =>
-              setNav(
-                push(nav, {
-                  name: "stub",
-                  reason: "Browsing by category is not in this prototype.",
-                })
-              )
-            }
+            onSelectCategory={(key) => setNav(push(nav, { name: "category", key }))}
             onSelectTile={(tile) => {
               // This used to discard the tile and route to a stub. There is a
               // product screen now.
@@ -1035,6 +1044,11 @@ export default function App() {
             <SavedProductScreen
               result={revalidation}
               pincode={pincode}
+              // Back names where it actually goes. The screen below this one
+              // on the stack is the Wishlist when the user came from there.
+              backFrom={
+                nav.stack[nav.stack.length - 2]?.name === "wishlist" ? "wishlist" : "results"
+              }
               selectedSize={selectedSize ?? activeItem.size}
               selectedColour={selectedColour ?? activeItem.colour}
               onBack={goBack}
@@ -1260,6 +1274,34 @@ export default function App() {
                 contextFromQuery(`${tile.parent.brand} ${tile.parent.articleType}`, prev, prev.seq + 1)
               );
               setNav((current) => push(current, { name: "results" }));
+            }}
+          />
+        ) : screen.name === "wishlist" ? (
+          <WishlistScreen
+            results={wishlistResults}
+            pincode={pincode}
+            onSelectItem={(itemId) => {
+              // Reset the variant selection the way every other route into the
+              // saved screen does; carrying the last item's size across would
+              // preselect something this item may not stock.
+              setSelectedSize(null);
+              setSelectedColour(null);
+              setNav((prev) => push(prev, { name: "saved", itemId }));
+            }}
+          />
+        ) : screen.name === "category" ? (
+          <CategoryScreen
+            catalog={catalog}
+            categoryKey={screen.key}
+            onSelectTile={(tile) => {
+              // Straight to the product, the way a home tile goes. Browse
+              // routes through a search instead; that is Browse's own
+              // behaviour and not worth copying into a category grid.
+              setAltSize(null);
+              setAltAdded(false);
+              setNav((prev) =>
+                push(prev, { name: "product", productId: tile.colourway.product_id })
+              );
             }}
           />
         ) : screen.name === "stub" ? (

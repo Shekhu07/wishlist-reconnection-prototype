@@ -1,3 +1,5 @@
+import type { CategoryKey } from "@/search/catalogBrowse";
+
 export type Tab = "home" | "search" | "under999" | "luxury" | "bag";
 
 export type Screen =
@@ -12,6 +14,10 @@ export type Screen =
   | { name: "product"; productId: number }
   | { name: "bag" }
   | { name: "browse"; filter: "under999" | "luxury" }
+  /** A home category circle: Fashion, Beauty, Kids, Footwear, ... */
+  | { name: "category"; key: CategoryKey }
+  /** Everything the user saved, opened from the heart on the home header. */
+  | { name: "wishlist" }
   | { name: "stub"; reason: string };
 
 export interface Nav {
@@ -74,6 +80,10 @@ export function pathFor(nav: Nav, query: string): string {
       return "/bag";
     case "browse":
       return `/browse/${screen.filter}`;
+    case "category":
+      return `/category/${screen.key}`;
+    case "wishlist":
+      return "/wishlist";
     case "stub":
       return "/soon";
   }

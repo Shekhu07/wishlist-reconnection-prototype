@@ -6,7 +6,7 @@ import { PartnerStrip } from "@/components/home/PartnerStrip";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import type { Catalog } from "@/data/types";
 import { color, radius, space, type } from "@/design/tokens";
-import { byGender, type BrowseTile, type CategoryKey, type GenderTab } from "@/search/catalogBrowse";
+import { overview, type BrowseTile, type CategoryKey, type GenderTab } from "@/search/catalogBrowse";
 import { FRAME_MAX_WIDTH } from "@/screens/SearchResultsScreen";
 
 const TABS: GenderTab[] = ["all", "men", "women", "kids"];
@@ -20,7 +20,9 @@ export interface HomeScreenProps {
 
 export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTile }: HomeScreenProps) {
   const [tab, setTab] = useState<GenderTab>("all");
-  const tiles = useMemo(() => byGender(catalog, tab), [catalog, tab]);
+  // overview, not byGender: same products, ordered so the top of the grid is
+  // a cross-section of the shop instead of the first shelf in the file.
+  const tiles = useMemo(() => overview(catalog, tab), [catalog, tab]);
 
   // Tile sizing is explicit rather than aspectRatio: on web, react-native-web
   // lets an Image's intrinsic 384x512 size win over aspectRatio, blowing out
@@ -47,7 +49,7 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
         ))}
       </View>
 
-      <CategoryRail onSelectCategory={onSelectCategory} />
+      <CategoryRail catalog={catalog} onSelectCategory={onSelectCategory} />
 
       <BannerCarousel />
 

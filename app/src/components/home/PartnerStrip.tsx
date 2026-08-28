@@ -1,25 +1,47 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import type { Catalog } from "@/data/types";
+import { CATALOG_IMAGES } from "@/data/images";
+import { brandRail, categoryCoverIds } from "@/search/catalogBrowse";
 import { color, radius, space, type } from "@/design/tokens";
 
-/** Two distinct brand names drawn from the catalog, not hardcoded strings. */
-function pickBrands(catalog: Catalog): string[] {
-  const brands: string[] = [];
-  for (const parent of catalog.parents) {
-    if (!brands.includes(parent.brand)) {
-      brands.push(parent.brand);
-    }
-    if (brands.length === 2) break;
-  }
-  return brands;
+/**
+ * Two distinct brands drawn from the catalog, not hardcoded strings.
+ *
+ * Skipping the products already on the category rail is not fussiness: the
+ * first brand in the catalog also wins the Fashion circle by review count,
+ * so taking the first two outright put the same photo twice on one screen,
+ * a hand's width apart.
+ */
+function pickBrands(catalog: Catalog) {
+  const onTheRail = categoryCoverIds(catalog);
+  return brandRail(catalog, 12)
+    .filter((tile) => !onTheRail.has(tile.colourway.product_id))
+    .slice(0, 2)
+    .map((tile) => ({
+      brand: tile.parent.brand,
+      productId: tile.colourway.product_id,
+    }));
 }
 
+/**
+ * Each card carries a product shot from that brand rather than a grey
+ * rectangle -- brandRail already returns one tile per brand, so the image is
+ * the brand's own product and not a stand-in.
+ */
 export function PartnerStrip({ catalog }: { catalog: Catalog }) {
   const brands = pickBrands(catalog);
   return (
     <View style={styles.row} testID="partner-strip">
-      {brands.map((brand) => (
+      {brands.map(({ brand, productId }) => (
         <View key={brand} style={styles.card}>
+          <Image
+            testID={`partner-image-${productId}`}
+            source={CATALOG_IMAGES[productId]}
+            style={styles.image}
+            resizeMode="cover"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          />
           <Text style={styles.label} numberOfLines={1}>
             {brand}
           </Text>
@@ -38,10 +60,11 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    padding: space.md,
     borderRadius: radius.card,
     backgroundColor: color.surfaceMuted,
     alignItems: "center",
+    overflow: "hidden",
   },
-  label: { ...type.brand, color: color.textPrimary },
+  image: { width: "100%", height: 120 },
+  label: { ...type.brand, color: color.textPrimary, padding: space.md },
 });

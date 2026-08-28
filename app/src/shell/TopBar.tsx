@@ -14,17 +14,38 @@ export function TopBar({
   screen,
   onBack,
   onOpenSearch,
+  onOpenWishlist,
+  wishlistCount = 0,
 }: {
   screen: Screen;
   onBack: () => void;
   onOpenSearch: () => void;
+  onOpenWishlist: () => void;
+  /** Saved-item count on the heart. Neutral state, never an incentive (C-1). */
+  wishlistCount?: number;
 }) {
   if (screen.name === "searchEntry") return null;
-  if (screen.name === "home") return <HomeHeader onOpenSearch={onOpenSearch} />;
+  if (screen.name === "home") {
+    return (
+      <HomeHeader
+        onOpenSearch={onOpenSearch}
+        onOpenWishlist={onOpenWishlist}
+        wishlistCount={wishlistCount}
+      />
+    );
+  }
   return <BackHeader onBack={onBack} />;
 }
 
-function HomeHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
+function HomeHeader({
+  onOpenSearch,
+  onOpenWishlist,
+  wishlistCount,
+}: {
+  onOpenSearch: () => void;
+  onOpenWishlist: () => void;
+  wishlistCount: number;
+}) {
   return (
     <View style={styles.homeHeader} testID="home-header">
       <View style={styles.deliverRow}>
@@ -64,12 +85,22 @@ function HomeHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
           <BellGlyph />
         </Pressable>
         <Pressable
+          testID="open-wishlist"
           accessibilityRole="button"
-          accessibilityLabel="Wishlist"
-          onPress={() => {}}
+          // The count rides on the label rather than being a second stop: a
+          // screen reader landing on "Wishlist" then "3" reads as two controls.
+          accessibilityLabel={
+            wishlistCount > 0 ? `Wishlist, ${wishlistCount} saved` : "Wishlist"
+          }
+          onPress={onOpenWishlist}
           style={styles.iconButton}
         >
           <Text style={styles.heartGlyph}>♡</Text>
+          {wishlistCount > 0 ? (
+            <View style={styles.wishlistBadge} testID="wishlist-badge">
+              <Text style={styles.wishlistBadgeText}>{wishlistCount}</Text>
+            </View>
+          ) : null}
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -223,6 +254,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   heartGlyph: { fontSize: 20, color: color.textPrimary },
+  // Matches the bag badge in BottomNav: same size, same pink, same offset.
+  wishlistBadge: {
+    position: "absolute",
+    top: 6,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.brandPink,
+  },
+  wishlistBadgeText: {
+    ...type.chip,
+    fontSize: 10,
+    color: color.surface,
+    fontWeight: "700",
+  },
   backHeader: {
     backgroundColor: color.surface,
     paddingHorizontal: space.sm,

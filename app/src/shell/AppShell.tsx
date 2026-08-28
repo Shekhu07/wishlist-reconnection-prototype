@@ -11,6 +11,8 @@ export interface AppShellProps {
   onTab: (tab: Tab) => void;
   onBack: () => void;
   onOpenSearch: () => void;
+  onOpenWishlist: () => void;
+  wishlistCount?: number;
   /** The harness pill. Optional so shell tests can render without it. */
   harness?: ReactNode;
   /**
@@ -33,13 +35,21 @@ export function AppShell({
   onTab,
   onBack,
   onOpenSearch,
+  onOpenWishlist,
+  wishlistCount,
   harness,
   sheet,
   children,
 }: AppShellProps) {
   return (
     <SafeAreaView style={styles.root} testID="app-shell">
-      <TopBar screen={top(nav)} onBack={onBack} onOpenSearch={onOpenSearch} />
+      <TopBar
+        screen={top(nav)}
+        onBack={onBack}
+        onOpenSearch={onOpenSearch}
+        onOpenWishlist={onOpenWishlist}
+        wishlistCount={wishlistCount}
+      />
       <View style={styles.body}>{children}</View>
       {harness}
       {sheet}
