@@ -42,6 +42,9 @@ export interface StateSwitcherProps {
   onSellOutProduct: () => void;
   /** Sells out without bumping stockVersion, leaving the rendered card stale. */
   onSellOutSizeSilently: () => void;
+  /** Improvement 5: optional, off by default, never a third co-equal action. */
+  helpMeDecide: boolean;
+  onToggleHelpMeDecide: (value: boolean) => void;
   onResetStock: () => void;
   stockChanged: boolean;
   /** Section 4.16: the per-user control, so it can be shown working. */
@@ -95,6 +98,8 @@ export function StateSwitcher({
   onSellOutSize,
   onSellOutProduct,
   onSellOutSizeSilently,
+  helpMeDecide,
+  onToggleHelpMeDecide,
   onResetStock,
   stockChanged,
   showWishlistInSearch,
@@ -173,6 +178,17 @@ export function StateSwitcher({
                 </Pressable>
               ))}
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show the optional Help me decide action in comparison"
+              accessibilityState={{ checked: helpMeDecide }}
+              onPress={() => onToggleHelpMeDecide(!helpMeDecide)}
+              style={[styles.chip, helpMeDecide && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, helpMeDecide && styles.chipTextActive]}>
+                Help me decide
+              </Text>
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Swap button fills for the Phase 5 co-equality check"

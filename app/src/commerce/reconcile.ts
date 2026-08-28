@@ -161,6 +161,36 @@ export function wouldDuplicate(item: WishlistItem, commerce: CommerceState): boo
 }
 
 /** Mutating helpers, kept together so the invariants are visible in one place. */
+/**
+ * Adds something the user never saved -- an alternative chosen from the
+ * comparison.
+ *
+ * Kept separate from `addToBag` rather than made generic, because the two
+ * differ in more than their argument. Adding a *saved* item takes it out of
+ * Save for Later, since the two states are mutually exclusive for one wishlist
+ * record; an alternative has no such record and nothing to remove. Folding
+ * them together would either do the wrong thing or need a flag explaining
+ * which caller it was.
+ *
+ * Section 7 reads the mechanism off where an add came from, so
+ * "added from comparison" has to stay distinguishable at the source.
+ */
+export function addAlternativeToBag(
+  line: { sku: string; parent_product_id: string; size: string; colour: string },
+  commerce: CommerceState
+): boolean {
+  if (commerce.bag.items.some((existing) => existing.sku === line.sku)) return false;
+  commerce.bag.items.push({
+    sku: line.sku,
+    parent_product_id: line.parent_product_id,
+    size: line.size,
+    colour: line.colour,
+    added_at: new Date().toISOString().slice(0, 10),
+    quantity: 1,
+  });
+  return true;
+}
+
 export function addToBag(item: WishlistItem, size: string, commerce: CommerceState): void {
   const existing = commerce.bag.items.find((line) => line.sku === item.sku);
   if (existing) {

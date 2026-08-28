@@ -1,5 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  COMPARE_PRIORITIES,
+  PRIORITY_AXES,
+  orderedAxes,
+  type ComparePriority,
+} from "@/compare/priority";
+import { REASON_COPY, reasonFor, type ReasonKey } from "@/compare/reasons";
+import { tradeOffCaveat, tradeOffs, type DecideColumn } from "@/compare/decide";
+import { Sheet } from "@/components/Sheet";
 import {
   COMPARE_AXES,
   COMPARE_SAVED_LABEL,
@@ -39,6 +48,10 @@ export interface CompareScreenProps {
   inventory: InventorySimulator;
   onBack: () => void;
   onChoose: (productId: number) => void;
+  onPriority?: (priority: ComparePriority) => void;
+  /** Improvement 5: off by default, so it is never a third co-equal action. */
+  helpMeDecide?: boolean;
+  onHelpMeDecide?: () => void;
 }
 
 export interface CompareColumn {
@@ -47,6 +60,8 @@ export interface CompareColumn {
   colourway: Colourway;
   isSaved: boolean;
   sizeAvailable: boolean;
+  /** Why this option is on screen. Null where the data supports no claim. */
+  reason: ReasonKey | null;
 }
 
 /**
@@ -60,7 +75,8 @@ export function buildColumns(
   colourway: Colourway,
   item: WishlistItem,
   query: string,
-  inventory: InventorySimulator
+  inventory: InventorySimulator,
+  pincode: string
 ): CompareColumn[] {
   const index = buildSearchIndex(catalog);
   const relevant = search(query, index, 80).filter(
@@ -89,6 +105,13 @@ export function buildColumns(
       .sizesInStock(candidate, candidateColourway.product_id)
       .includes(item.size);
 
+  const reasonContext = {
+    savedParent: parent,
+    savedColourway: colourway,
+    pincode,
+    today: catalog.today,
+  };
+
   return [
     {
       key: `saved-${colourway.product_id}`,
@@ -96,6 +119,8 @@ export function buildColumns(
       colourway,
       isSaved: true,
       sizeAvailable: sizeAvailable(parent, colourway),
+      // The saved item needs no explanation for being here; it is the subject.
+      reason: null,
     },
     ...alternatives.map((result) => ({
       key: `alt-${result.colourway.product_id}`,
@@ -103,6 +128,7 @@ export function buildColumns(
       colourway: result.colourway,
       isSaved: false,
       sizeAvailable: sizeAvailable(result.parent, result.colourway),
+      reason: reasonFor(result.parent, result.colourway, reasonContext),
     })),
   ];
 }
@@ -117,11 +143,23 @@ export function CompareScreen({
   inventory,
   onBack,
   onChoose,
+  onPriority,
+  helpMeDecide = false,
+  onHelpMeDecide,
 }: CompareScreenProps) {
+  const [priority, setPriority] = useState<ComparePriority | null>(null);
+  const [decideOpen, setDecideOpen] = useState(false);
+
   const columns = useMemo(
-    () => buildColumns(catalog, parent, colourway, item, query, inventory),
-    [catalog, parent, colourway, item, query, inventory]
+    () => buildColumns(catalog, parent, colourway, item, query, inventory, pincode),
+    [catalog, parent, colourway, item, query, inventory, pincode]
   );
+
+  // Reordered, never filtered: hiding the rows a user did not prioritise would
+  // decide for them which trade-offs are allowed to exist (improvement 4).
+  const axes = orderedAxes(priority);
+  const isPrioritised = (axis: (typeof COMPARE_AXES)[number]["key"]) =>
+    priority !== null && PRIORITY_AXES[priority].includes(axis);
 
   const valueFor = (column: CompareColumn, axis: (typeof COMPARE_AXES)[number]["key"]) => {
     const { colourway: cw } = column;
@@ -172,10 +210,57 @@ export function CompareScreen({
       </Text>
       <Text style={styles.note}>{COMPARE_SYNTHETIC_NOTE}</Text>
 
+      <Text style={styles.priorityHeading}>What matters most for this purchase?</Text>
+      <View style={styles.priorities}>
+        {COMPARE_PRIORITIES.map((entry) => {
+          const active = priority === entry.key;
+          return (
+            <Pressable
+              key={entry.key}
+              testID={`priority-${entry.key}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Compare by ${entry.label}`}
+              accessibilityState={{ selected: active }}
+              onPress={() => {
+                // Tapping the active one clears it, so the user can get back to
+                // the unranked table without reloading the screen.
+                const next = active ? null : entry.key;
+                setPriority(next);
+                if (next) onPriority?.(next);
+              }}
+              style={[styles.priority, active && styles.priorityActive]}
+            >
+              <Text style={[styles.priorityText, active && styles.priorityTextActive]}>
+                {entry.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {helpMeDecide ? (
+        <Pressable
+          testID="help-me-decide"
+          accessibilityRole="button"
+          accessibilityLabel="Help me decide"
+          onPress={() => {
+            if (!priority) return;
+            setDecideOpen(true);
+            onHelpMeDecide?.();
+          }}
+          disabled={!priority}
+          style={[styles.decide, !priority && styles.decideDisabled]}
+        >
+          <Text style={styles.decideText}>
+            {priority ? "Help me decide" : "Pick what matters first"}
+          </Text>
+        </Pressable>
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.table}>
         <View style={styles.axisColumn}>
           <View style={styles.headerCell} />
-          {COMPARE_AXES.map((axis) => (
+          {axes.map((axis) => (
             <View key={axis.key} style={styles.axisCell}>
               <Text style={styles.axisLabel}>{axis.label}</Text>
             </View>
@@ -207,10 +292,28 @@ export function CompareScreen({
                 {column.colourway.display_name}
               </Text>
               <Text style={styles.colour}>{column.colourway.colour}</Text>
+              {/* Improvement 4: the saved size and colour sit against every
+                  alternative, so "does this come in what I saved" is answerable
+                  without tracking back to the first column. */}
+              <Text style={styles.against}>
+                {column.isSaved
+                  ? `Saved: ${item.colour} · ${item.size}`
+                  : `vs ${item.colour} · ${item.size}`}
+              </Text>
+              {/* No reason line where the data supports no claim. A missing
+                  explanation is a smaller problem than an invented one. */}
+              {column.reason ? (
+                <Text style={styles.reason} testID={`reason-${column.key}`}>
+                  {REASON_COPY[column.reason]}
+                </Text>
+              ) : null}
             </View>
 
-            {COMPARE_AXES.map((axis) => (
-              <View key={axis.key} style={styles.cell}>
+            {axes.map((axis) => (
+              <View
+                key={axis.key}
+                style={[styles.cell, isPrioritised(axis.key) && styles.cellPrioritised]}
+              >
                 <Text style={styles.cellText}>{valueFor(column, axis.key)}</Text>
               </View>
             ))}
@@ -234,7 +337,72 @@ export function CompareScreen({
           </View>
         ))}
       </ScrollView>
+
+      <Sheet
+        open={decideOpen}
+        title="What matters most for this purchase?"
+        onClose={() => setDecideOpen(false)}
+        testID="decide-sheet"
+      >
+        {priority ? <DecideBody columns={columns} priority={priority} valueFor={valueFor} /> : null}
+      </Sheet>
     </View>
+  );
+}
+
+/**
+ * Improvement 5's answer, which deliberately does not answer.
+ *
+ * It restates what the table already says on the axes the user picked, side by
+ * side, and names no winner. Any ranking here would be an opinion dressed as
+ * arithmetic, built on five synthesised fields, handed to someone who asked
+ * for help -- and the prompt rules it out in as many words.
+ */
+function DecideBody({
+  columns,
+  priority,
+  valueFor,
+}: {
+  columns: CompareColumn[];
+  priority: ComparePriority;
+  valueFor: (column: CompareColumn, axis: (typeof COMPARE_AXES)[number]["key"]) => string;
+}) {
+  const decideColumns: DecideColumn[] = columns.map((column) => ({
+    key: column.key,
+    // Colour is part of the name here because buildColumns deliberately
+    // backfills with other colourways of the same product -- two options
+    // reading "Mark Taylor Striped Shirt" tell the user nothing, and React
+    // saw the collision before a person did.
+    label: column.isSaved
+      ? COMPARE_SAVED_LABEL
+      : `${column.parent.brand} ${column.colourway.display_name} · ${column.colourway.colour}`,
+    isSaved: column.isSaved,
+    values: Object.fromEntries(
+      COMPARE_AXES.map((axis) => [axis.key, valueFor(column, axis.key)])
+    ),
+  }));
+  const lines = tradeOffs(decideColumns, priority);
+
+  return (
+    <>
+      {lines.map((line) => (
+        <View key={line.axis} testID={`tradeoff-${line.axis}`}>
+          <Text style={styles.tradeAxis}>
+            {line.axisLabel}
+            {line.undifferentiated ? " · the same for every option" : ""}
+          </Text>
+          {line.readings.map((reading) => (
+            <Text key={reading.key} style={styles.tradeReading}>
+              {reading.isSaved ? "★ " : "• "}
+              {reading.label}: {reading.value}
+            </Text>
+          ))}
+        </View>
+      ))}
+      <Text style={styles.tradeCaveat} testID="tradeoff-caveat">
+        {tradeOffCaveat(priority, lines)}
+      </Text>
+    </>
   );
 }
 
@@ -279,6 +447,57 @@ const styles = StyleSheet.create({
   name: { ...type.body, color: color.textSecondary },
   colour: { ...type.chip, color: color.textSecondary, marginTop: 2 },
   cell: { height: ROW_HEIGHT, justifyContent: "center" },
+  // A tint rather than a reorder alone: once the rows move, the user needs to
+  // see *which* ones moved and why, or the table just looks shuffled.
+  cellPrioritised: { backgroundColor: "#FFF7F9" },
+  priorityHeading: {
+    ...type.body,
+    fontWeight: "700",
+    color: color.textPrimary,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.xs,
+  },
+  priorities: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.md,
+  },
+  priority: {
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: space.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+  },
+  priorityActive: { borderColor: color.brandPink, borderWidth: 2 },
+  priorityText: { ...type.body, color: color.textPrimary },
+  priorityTextActive: { color: color.brandPink, fontWeight: "700" },
+  decide: {
+    minHeight: MIN_TOUCH_TARGET,
+    marginHorizontal: space.lg,
+    marginBottom: space.md,
+    borderRadius: radius.card - 8,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  decideDisabled: { opacity: 0.5 },
+  decideText: { ...type.body, fontWeight: "700", color: color.textPrimary },
+  reason: { ...type.chip, color: color.textSecondary, marginTop: 2 },
+  against: { ...type.chip, color: color.textSecondary, marginTop: 2 },
+  tradeAxis: { ...type.body, fontWeight: "700", color: color.textPrimary, marginTop: space.sm },
+  tradeReading: { ...type.body, color: color.textSecondary, marginTop: 2 },
+  tradeCaveat: {
+    ...type.chip,
+    color: color.textSecondary,
+    marginTop: space.md,
+    lineHeight: 16,
+  },
   cellText: { ...type.body, color: color.textPrimary },
   actionCell: { height: 64, justifyContent: "center" },
   choose: {

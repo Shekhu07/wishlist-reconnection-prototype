@@ -50,7 +50,7 @@ export function Sheet({
         style={styles.scrim}
         onPress={onClose}
       />
-      <View style={styles.dock} pointerEvents="box-none">
+      <View style={[styles.dock, POINTER_BOX_NONE]}>
         <View
           style={styles.sheet}
           accessibilityViewIsModal
@@ -97,7 +97,7 @@ export function SheetOverlay({
         style={styles.scrim}
         onPress={onScrimPress}
       />
-      <View style={styles.dock} pointerEvents="box-none">
+      <View style={[styles.dock, POINTER_BOX_NONE]}>
         <View style={styles.sheet}>
           <ScrollView>{children}</ScrollView>
         </View>
@@ -105,6 +105,9 @@ export function SheetOverlay({
     </View>
   );
 }
+
+/** react-native-web deprecated the `pointerEvents` prop in favour of the style. */
+const POINTER_BOX_NONE = { pointerEvents: "box-none" } as const;
 
 const styles = StyleSheet.create({
   overlay: {

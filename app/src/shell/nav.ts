@@ -6,6 +6,8 @@ export type Screen =
   | { name: "results" }
   | { name: "saved"; itemId: string }
   | { name: "compare"; itemId: string }
+  /** An alternative opened from the comparison. Not a saved item. */
+  | { name: "alternative"; itemId: string; productId: number }
   | { name: "bag" }
   | { name: "browse"; filter: "under999" | "luxury" }
   | { name: "stub"; reason: string };
@@ -62,6 +64,8 @@ export function pathFor(nav: Nav, query: string): string {
       return `/saved/${screen.itemId}`;
     case "compare":
       return `/compare/${screen.itemId}`;
+    case "alternative":
+      return `/compare/${screen.itemId}/option/${screen.productId}`;
     case "bag":
       return "/bag";
     case "browse":

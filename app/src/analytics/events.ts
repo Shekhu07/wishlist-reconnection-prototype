@@ -110,6 +110,35 @@ export interface ConfidenceInteraction extends BaseEvent {
 }
 
 /**
+ * The comparison's interactions (wireframes section 21, improvements 4 and 5).
+ *
+ * Grouped like ConfidenceInteraction, and for the same reason. `chose_saved`
+ * is the field that carries the weight: section 7 splits the arms to learn
+ * whether lift comes from reconnection or from comparison, and "opened the
+ * comparison then bought their own saved item" is a different outcome from
+ * "opened the comparison and left with something else". Collapsing them would
+ * make the compare rate unreadable.
+ */
+export type CompareEventName =
+  | "compare_view_opened"
+  | "compare_priority_selected"
+  | "comparison_item_selected"
+  | "help_me_decide_opened"
+  | "move_to_bag_from_comparison";
+
+export interface CompareInteraction extends BaseEvent {
+  type: "compare_interaction";
+  name: CompareEventName;
+  /** The saved item the comparison is anchored on. */
+  sku: string;
+  priority?: string;
+  /** For `comparison_item_selected`: did they open their own saved item? */
+  chose_saved?: boolean;
+  /** For `move_to_bag_from_comparison`: the alternative's sku. */
+  chosen_sku?: string;
+}
+
+/**
  * Every attempt to move a saved item to the bag, including the ones that do
  * not get there (improvement 3's `move_to_bag_clicked`, `move_to_bag_result`
  * and `saved_variant_revalidated`, which describe one moment and so are one
@@ -174,6 +203,7 @@ export type AnalyticsEvent =
   | ModuleDismissed
   | ModuleAction
   | ConfidenceInteraction
+  | CompareInteraction
   | MoveToBagAttempted
   | VariantRecoveryShown
   | VariantRecoveryResolved

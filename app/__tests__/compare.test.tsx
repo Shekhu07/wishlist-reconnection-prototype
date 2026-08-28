@@ -89,7 +89,8 @@ describe("compare options (E6)", () => {
       ctx.colourway,
       ctx.item,
       "shirt",
-      ctx.inventory
+      ctx.inventory,
+      PINCODE
     );
     expect(columns[0].isSaved).toBe(true);
     expect(columns.slice(1).every((column) => !column.isSaved)).toBe(true);
@@ -103,7 +104,8 @@ describe("compare options (E6)", () => {
       ctx.colourway,
       ctx.item,
       "shirt",
-      ctx.inventory
+      ctx.inventory,
+      PINCODE
     );
     expect(columns.length).toBeGreaterThan(1);
     expect(columns.length).toBeLessThanOrEqual(5);
@@ -117,7 +119,8 @@ describe("compare options (E6)", () => {
       ctx.colourway,
       ctx.item,
       "shirt",
-      ctx.inventory
+      ctx.inventory,
+      PINCODE
     );
     const alternatives = columns.slice(1);
     const parents = alternatives.map((column) => column.parent.parent_product_id);
@@ -139,7 +142,8 @@ describe("compare options (E6)", () => {
       ctx.colourway,
       ctx.item,
       "shirt",
-      ctx.inventory
+      ctx.inventory,
+      PINCODE
     );
     const ids = columns.map((column) => column.colourway.product_id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -154,7 +158,10 @@ describe("compare options (E6)", () => {
   it("renders every axis label", () => {
     renderCompare();
     for (const axis of COMPARE_AXES) {
-      expect(screen.getByText(axis.label)).toBeTruthy();
+      // getAllByText, not getByText: "Fit", "Delivery", "Reviews", "Returns"
+      // and "Occasion" are now each both an axis label and a priority chip,
+      // which is the point -- the chip names the row it promotes.
+      expect(screen.getAllByText(axis.label).length).toBeGreaterThan(0);
     }
   });
 

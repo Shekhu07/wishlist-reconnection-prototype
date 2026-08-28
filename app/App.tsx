@@ -17,6 +17,7 @@ import {
 import { PreferenceStore } from "@/preferences/store";
 import {
   addToBag,
+  addAlternativeToBag,
   wouldDuplicate,
   type Bag,
   type CommerceState,
@@ -26,11 +27,12 @@ import {
 import { RAMP_STEPS } from "@/experiment/assignment";
 import { ExperimentFlag } from "@/experiment/flags";
 import { InventorySimulator } from "@/revalidation/inventory";
-import { revalidate } from "@/revalidation/revalidate";
+import { deliveryDateFor, revalidate, servesPincode } from "@/revalidation/revalidate";
 import { BagScreen } from "@/screens/BagScreen";
 import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
 import { HomeScreen } from "@/screens/HomeScreen";
+import { AlternativeProductScreen } from "@/screens/AlternativeProductScreen";
 import { SavedProductScreen } from "@/screens/SavedProductScreen";
 import { WhySheet } from "@/components/WishlistModule/WhySheet";
 import { SearchEntryScreen } from "@/screens/SearchEntryScreen";
@@ -131,6 +133,15 @@ export default function App() {
   // Improvement 3's post-add confirmation, which replaces the Move to Bag
   // button rather than flashing past as a toast.
   const [added, setAdded] = useState<"added" | "duplicate" | null>(null);
+  // The alternative-product screen's own selection and confirmation. Kept
+  // apart from the saved item's: they are different products and conflating
+  // their state is how a size chosen for one leaks onto the other.
+  const [altSize, setAltSize] = useState<string | null>(null);
+  const [altAdded, setAltAdded] = useState(false);
+  // Improvement 5 is explicit that this is not shown to every user by default.
+  // Until treatment_c exists it lives behind the harness, off, so it is never
+  // a third co-equal action competing with Buy and Compare (FR-5).
+  const [helpMeDecide, setHelpMeDecide] = useState(false);
   // Improvement 3, step 8: the query survives a return from the saved product
   // via SearchContext, but the scroll position did not -- the results screen
   // unmounts on navigation and remounts at the top. Held here so it outlives
@@ -248,8 +259,11 @@ export default function App() {
 
   const screen = top(nav);
 
+  // The alternative screen carries the same itemId, because an alternative is
+  // only meaningful relative to the saved item it is being compared against --
+  // and CR-04 has to know which comparison to return to.
   const activeItem =
-    screen.name === "saved" || screen.name === "compare"
+    screen.name === "saved" || screen.name === "compare" || screen.name === "alternative"
       ? wishlist.items.find((candidate) => candidate.item_id === screen.itemId)
       : undefined;
 
@@ -476,6 +490,8 @@ export default function App() {
           noteStockChange();
           setToast(`Size ${target.size} is now out of stock. Tap Buy from Wishlist.`);
         }}
+        helpMeDecide={helpMeDecide}
+        onToggleHelpMeDecide={setHelpMeDecide}
         onSellOutSizeSilently={() => {
           const target = activeItem ?? firstMatchItem;
           if (!target) return setToast("No saved item in view to sell out");
@@ -596,6 +612,58 @@ export default function App() {
           />
         ) : screen.name === "bag" ? (
           <BagScreen catalog={catalog} commerce={commerce} />
+        ) : screen.name === "alternative" && activeItem ? (
+          (() => {
+            const alt = catalog.parents
+              .flatMap((p) => p.colourways.map((cw) => ({ parent: p, colourway: cw })))
+              .find((entry) => entry.colourway.product_id === screen.productId);
+            if (!alt) return <StubScreen reason="That option is no longer in the catalog." />;
+            const sizes = inventory.sizesInStock(alt.parent, alt.colourway.product_id);
+            const deliverable = servesPincode(alt.colourway.seller, pincode);
+            return (
+              <AlternativeProductScreen
+                parent={alt.parent}
+                colourway={alt.colourway}
+                savedLabel={`${activeItem.colour} · ${activeItem.size}`}
+                savedSize={activeItem.size}
+                sizesInStock={sizes}
+                deliveryBy={
+                  deliverable ? deliveryDateFor(catalog.today, alt.colourway.product_id) : null
+                }
+                selectedSize={altSize}
+                onChooseSize={setAltSize}
+                onBack={goBack}
+                added={altAdded}
+                onMoveToBag={(size) => {
+                  const sku = alt.colourway.skus.find((entry) => entry.size === size);
+                  if (!sku) return setToast("That size has no listing");
+                  const addedNow = addAlternativeToBag(
+                    {
+                      sku: sku.sku,
+                      parent_product_id: alt.parent.parent_product_id,
+                      size,
+                      colour: alt.colourway.colour,
+                    },
+                    commerce
+                  );
+                  setBagVersion((version) => version + 1);
+                  events.emit({
+                    type: "compare_interaction",
+                    ts: catalog.today,
+                    user_id: wishlist.user_id,
+                    session_id: request.session_id,
+                    arm: client.arm,
+                    sku: activeItem.sku,
+                    name: "move_to_bag_from_comparison",
+                    chosen_sku: sku.sku,
+                  });
+                  note();
+                  setAltAdded(true);
+                  if (!addedNow) setToast("Already in your Bag — not added twice");
+                }}
+              />
+            );
+          })()
         ) : (screen.name === "saved" || screen.name === "compare") && activeItem && revalidation ? (
           screen.name === "saved" ? (
             <SavedProductScreen
@@ -734,11 +802,59 @@ export default function App() {
               pincode={pincode}
               inventory={inventory}
               onBack={goBack}
-              onChoose={(productId) =>
-                productId === activeItem.product_id
-                  ? setNav((prev) => push(prev, { name: "saved", itemId: activeItem.item_id }))
-                  : setToast("Opening an alternative is outside the reconnection flow")
-              }
+              onPriority={(priority) => {
+                events.emit({
+                  type: "compare_interaction",
+                  ts: catalog.today,
+                  user_id: wishlist.user_id,
+                  session_id: request.session_id,
+                  arm: client.arm,
+                  sku: activeItem.sku,
+                  name: "compare_priority_selected",
+                  priority,
+                });
+                note();
+              }}
+              helpMeDecide={helpMeDecide}
+              onHelpMeDecide={() => {
+                events.emit({
+                  type: "compare_interaction",
+                  ts: catalog.today,
+                  user_id: wishlist.user_id,
+                  session_id: request.session_id,
+                  arm: client.arm,
+                  sku: activeItem.sku,
+                  name: "help_me_decide_opened",
+                });
+                note();
+              }}
+              onChoose={(productId) => {
+                events.emit({
+                  type: "compare_interaction",
+                  ts: catalog.today,
+                  user_id: wishlist.user_id,
+                  session_id: request.session_id,
+                  arm: client.arm,
+                  sku: activeItem.sku,
+                  name: "comparison_item_selected",
+                  chose_saved: productId === activeItem.product_id,
+                });
+                note();
+                setAltSize(null);
+                setAltAdded(false);
+                // The comparison used to dead-end on every option but the saved
+                // one, which made it a table to read rather than a decision to
+                // make -- and left CR-04 nothing to return from.
+                setNav((prev) =>
+                  productId === activeItem.product_id
+                    ? push(prev, { name: "saved", itemId: activeItem.item_id })
+                    : push(prev, {
+                        name: "alternative",
+                        itemId: activeItem.item_id,
+                        productId,
+                      })
+                );
+              }}
             />
           )
         ) : screen.name === "browse" ? (
