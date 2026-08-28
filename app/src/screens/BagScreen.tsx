@@ -4,10 +4,28 @@ import { CATALOG_IMAGES } from "@/data/images";
 import type { Catalog } from "@/data/types";
 import { color, space, type } from "@/design/tokens";
 import { formatPrice } from "@/copy/bundle";
+import { Button } from "@/components/Button";
 
 export interface BagScreenProps {
   catalog: Catalog;
   commerce: CommerceState;
+  /** Absent leaves the bag read-only, which is what it was before checkout. */
+  onCheckout?: () => void;
+}
+
+/** Line prices summed from the catalog, never from a stored total. */
+export function bagTotal(catalog: Catalog, commerce: CommerceState): number {
+  let total = 0;
+  for (const line of commerce.bag.items) {
+    const parent = catalog.parents.find(
+      (p) => p.parent_product_id === line.parent_product_id
+    );
+    const colourway = parent?.colourways.find((c) =>
+      c.skus.some((s) => s.sku === line.sku)
+    );
+    if (colourway) total += colourway.price * line.quantity;
+  }
+  return total;
 }
 
 /**
@@ -19,7 +37,7 @@ export interface BagScreenProps {
  * matching the sku inside the parent's colourways, the same shape of lookup
  * revalidate.ts uses to resolve a wishlist item's colourway.
  */
-export function BagScreen({ catalog, commerce }: BagScreenProps) {
+export function BagScreen({ catalog, commerce, onCheckout }: BagScreenProps) {
   const { items } = commerce.bag;
 
   if (items.length === 0) {
@@ -30,11 +48,24 @@ export function BagScreen({ catalog, commerce }: BagScreenProps) {
     );
   }
 
+  const total = bagTotal(catalog, commerce);
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="bag-screen">
       {items.map((line) => (
         <BagRow key={line.sku} line={line} catalog={catalog} />
       ))}
+
+      <View style={styles.totalRow}>
+        <Text style={styles.totalLabel}>Total</Text>
+        <Text style={styles.totalValue} testID="bag-total">
+          {formatPrice(total)}
+        </Text>
+      </View>
+
+      {onCheckout ? (
+        <Button label="Proceed to Checkout" filled onPress={onCheckout} testID="go-checkout" />
+      ) : null}
     </ScrollView>
   );
 }
@@ -91,4 +122,13 @@ const styles = StyleSheet.create({
   name: { ...type.body, color: color.textSecondary },
   meta: { ...type.chip, color: color.textSecondary },
   price: { ...type.body, fontWeight: "700", color: color.textPrimary, marginTop: space.xs },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: color.borderSubtle,
+    paddingTop: 14,
+  },
+  totalLabel: { fontSize: 13, color: color.textSecondary },
+  totalValue: { ...type.railHeader, color: color.textPrimary },
 });

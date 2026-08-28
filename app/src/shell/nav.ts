@@ -20,6 +20,8 @@ export type Screen =
   | { name: "wishlist" }
   /** The account screen, opened from the person icon on the home header. */
   | { name: "profile" }
+  /** Checkout, reached from the bag. */
+  | { name: "checkout" }
   | { name: "stub"; reason: string };
 
 export interface Nav {
@@ -88,6 +90,8 @@ export function pathFor(nav: Nav, query: string): string {
       return "/wishlist";
     case "profile":
       return "/profile";
+    case "checkout":
+      return "/checkout";
     case "stub":
       return "/soon";
   }

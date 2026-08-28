@@ -43,7 +43,8 @@ import { LookStrip } from "@/components/LookStrip";
 import { LOOK_HEADING_PDP } from "@/copy/bundle";
 import { ResumeBar } from "@/components/ResumeBar";
 import { ResumeSheet } from "@/components/ResumeSheet";
-import { BagScreen } from "@/screens/BagScreen";
+import { BagScreen, bagTotal } from "@/screens/BagScreen";
+import { CheckoutScreen } from "@/screens/CheckoutScreen";
 import { CompareScreen } from "@/screens/CompareScreen";
 import { BrowseScreen } from "@/screens/BrowseScreen";
 import { CategoryScreen } from "@/screens/CategoryScreen";
@@ -204,6 +205,9 @@ export default function App() {
   // not React state, so nothing re-renders when the bag changes unless
   // something forces it -- same pattern as stockVersion above.
   const [bagVersion, setBagVersion] = useState(0);
+  // Checkout's terminal state. Reset by Continue Shopping, so a second order
+  // is placeable in the same session.
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   // One client and one inventory for the session. Suppression, frequency caps,
   // the breaker and live stock are all session state; rebuilding either per
@@ -921,7 +925,74 @@ export default function App() {
             onNotImplemented={() => setToast("Not available in this prototype.")}
           />
         ) : screen.name === "bag" ? (
-          <BagScreen catalog={catalog} commerce={commerce} />
+          <BagScreen
+            catalog={catalog}
+            commerce={commerce}
+            onCheckout={() => setNav((prev) => push(prev, { name: "checkout" }))}
+          />
+        ) : screen.name === "checkout" ? (
+          <CheckoutScreen
+            summary={{
+              count: commerce.bag.items.reduce((n, line) => n + line.quantity, 0),
+              total: bagTotal(catalog, commerce),
+            }}
+            placed={orderPlaced}
+            pincode={pincode}
+            onPlaceOrder={() => {
+              // The bag becomes an order rather than simply emptying. E14's
+              // duplicate states are derived from order history, so a purchase
+              // has to land there or the module will keep offering to buy
+              // something the user just bought.
+              if (commerce.bag.items.length === 0) return;
+              const placedAt = catalog.today;
+              commerce.orders.orders = [
+                ...commerce.orders.orders,
+                {
+                  order_id: `ord_${placedAt}_${commerce.orders.orders.length + 1}`,
+                  placed_at: placedAt,
+                  delivered_at: null,
+                  lines: commerce.bag.items.map((line) => {
+                    const parent = catalog.parents.find(
+                      (p) => p.parent_product_id === line.parent_product_id
+                    );
+                    const colourway = parent?.colourways.find((c) =>
+                      c.skus.some((s) => s.sku === line.sku)
+                    );
+                    return {
+                      sku: line.sku,
+                      parent_product_id: line.parent_product_id,
+                      size: line.size,
+                      colour: line.colour,
+                      quantity: line.quantity,
+                      price_paid: colourway?.price ?? 0,
+                    };
+                  }),
+                },
+              ];
+              const skus = commerce.bag.items.map((line) => line.sku);
+              const savedSkus = wishlist.items
+                .filter((item) => skus.includes(item.sku))
+                .map((item) => item.sku);
+              commerce.bag.items = [];
+              setBagVersion((v) => v + 1);
+              setOrderPlaced(true);
+              events.emit({
+                type: "order_placed",
+                ts: placedAt,
+                user_id: wishlist.user_id,
+                session_id: request.session_id,
+                search_id: "search_1",
+                arm: client.arm,
+                skus,
+                saved_skus: savedSkus,
+                via_wishlist_module: savedSkus.length > 0,
+              });
+            }}
+            onContinueShopping={() => {
+              setOrderPlaced(false);
+              setNav({ tab: "home", stack: [rootFor("home")] });
+            }}
+          />
         ) : screen.name === "product" ? (
           (() => {
             const found = findProduct(catalog, screen.productId);
