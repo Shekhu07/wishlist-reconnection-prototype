@@ -131,6 +131,16 @@ def in_stock(sku, out_of_stock_rate=0.18):
     return _unit(sku, "stock") >= out_of_stock_rate
 
 
+def mrp_for(product_id, price):
+    """List price before the catalog's synthesized discount, 10% to 45% off.
+    Never below 10%: a listing priced at its own MRP reads as a data gap, not
+    a real one. Never above 45%: next to an ordinary rating and review count,
+    that steep a cut would read as a clearance dump rather than a normal
+    catalog page."""
+    discount = 0.10 + _unit(product_id, "discount") * 0.35
+    return int(round((price / (1 - discount)) / 10.0) * 10)
+
+
 def rating_for(product_id):
     """3.2 to 4.8, one decimal. Nothing sits below 3.2: a real catalog page
     rarely surfaces a 1-star item, and a fake outlier would dominate the
@@ -223,6 +233,7 @@ def build_parents(rows):
             }
             parents[pid] = parent
 
+        price = price_for(row["id"], row.get("masterCategory"), row["brand_key"])
         colourway = {
             "product_id": row["id"],
             "colour": row.get("baseColour") or "Unspecified",
@@ -231,7 +242,8 @@ def build_parents(rows):
             "identity_flags": row["identity_flags"],
             "season": row.get("season"),
             "usage": row.get("usage"),
-            "price": price_for(row["id"], row.get("masterCategory"), row["brand_key"]),
+            "price": price,
+            "mrp": mrp_for(row["id"], price),
             "seller": seller_for(str(row["id"])),
             "rating": rating_for(row["id"]),
             "review_count": review_count_for(row["id"]),
@@ -291,6 +303,7 @@ def build_home_parents():
                     "season": None,
                     "usage": "Home",
                     "price": price_for(product_id, "Home", brand_slug),
+                    "mrp": mrp_for(product_id, price_for(product_id, "Home", brand_slug)),
                     "seller": seller_for(str(product_id)),
                     "rating": rating_for(product_id),
                     "review_count": review_count_for(product_id),

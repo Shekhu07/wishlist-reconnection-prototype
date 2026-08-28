@@ -79,4 +79,14 @@ describe("the demo catalog covers the shell's category rail", () => {
       .map((colourway) => colourway.product_id);
     expect(missing).toEqual([]);
   });
+
+  // The product tile's strikethrough MRP has to actually be a strikethrough:
+  // a tile showing "MRP ₹599, now ₹599" reads as a data bug, not a listing.
+  it("gives every colourway an mrp strictly above its price", () => {
+    const violations = catalog.parents
+      .flatMap((parent) => parent.colourways)
+      .filter((colourway) => colourway.mrp <= colourway.price)
+      .map((colourway) => colourway.product_id);
+    expect(violations).toEqual([]);
+  });
 });

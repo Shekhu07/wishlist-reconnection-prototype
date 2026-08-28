@@ -1,6 +1,5 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { formatPrice } from "@/copy/bundle";
-import { CATALOG_IMAGES } from "@/data/images";
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import type { Catalog } from "@/data/types";
 import { byPrice, type BrowseTile } from "@/search/catalogBrowse";
 import { color, space, type } from "@/design/tokens";
@@ -40,10 +39,7 @@ export function BrowseScreen({
             onPress={() => onSelectTile(tile)}
             style={styles.tile}
           >
-            <Image source={CATALOG_IMAGES[tile.colourway.product_id]} style={size} />
-            <Text style={styles.brand} numberOfLines={1}>{tile.parent.brand}</Text>
-            <Text style={styles.name} numberOfLines={1}>{tile.colourway.display_name}</Text>
-            <Text style={styles.price}>{formatPrice(tile.colourway.price)}</Text>
+            <ProductTileBody tile={tile} size={size} />
           </Pressable>
         ))}
       </View>
@@ -57,7 +53,4 @@ const styles = StyleSheet.create({
   count: { ...type.body, color: color.textSecondary, paddingHorizontal: space.md, paddingBottom: space.sm },
   grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: space.sm },
   tile: { padding: space.xs, gap: 2 },
-  brand: { ...type.brand, color: color.textPrimary },
-  name: { ...type.body, color: color.textSecondary },
-  price: { ...type.body, color: color.textPrimary, fontWeight: "700" },
 });

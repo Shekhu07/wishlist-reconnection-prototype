@@ -1,9 +1,8 @@
 import { useMemo } from "react";
-import { Image, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { MatchResponse } from "@/match/contract";
 import { WishlistModule } from "@/components/WishlistModule";
-import { formatPrice } from "@/copy/bundle";
-import { CATALOG_IMAGES } from "@/data/images";
+import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import type { Catalog } from "@/data/types";
 import { color, radius, space, type } from "@/design/tokens";
 import { buildSearchIndex, search } from "@/search/localSearch";
@@ -88,18 +87,7 @@ export function SearchResultsScreen({
       <View style={styles.grid}>
         {results.map((result) => (
           <View key={result.colourway.product_id} style={styles.gridItem}>
-            <Image
-              source={CATALOG_IMAGES[result.colourway.product_id]}
-              style={[styles.gridImage, tile]}
-              resizeMode="cover"
-            />
-            <Text style={styles.gridBrand} numberOfLines={1}>
-              {result.parent.brand.toUpperCase()}
-            </Text>
-            <Text style={styles.gridName} numberOfLines={1}>
-              {result.colourway.display_name}
-            </Text>
-            <Text style={styles.gridPrice}>{formatPrice(result.colourway.price)}</Text>
+            <ProductTileBody tile={result} size={tile} />
           </View>
         ))}
         {results.length === 0 ? (
@@ -146,12 +134,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   gridItem: { width: "50%", padding: space.xs, marginBottom: space.md },
-  gridImage: {
-    borderRadius: radius.card - 6,
-    backgroundColor: color.surfaceMuted,
-  },
-  gridBrand: { ...type.brand, color: color.textPrimary, marginTop: space.sm },
-  gridName: { ...type.body, color: color.textSecondary, marginTop: 2 },
-  gridPrice: { ...type.body, fontWeight: "700", color: color.textPrimary, marginTop: space.xs },
   empty: { ...type.body, color: color.textSecondary, padding: space.lg },
 });

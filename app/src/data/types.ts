@@ -18,6 +18,13 @@ export interface Colourway {
   season: string | null;
   usage: string | null;
   price: number;
+  /**
+   * List price before the catalog's synthesized 10-45% discount, always
+   * strictly greater than price. Display only -- ordinary catalog tiles show
+   * it struck through with a discount %; the wishlist reconnection module
+   * never does (C-1: no monetary incentive attached to a saved item).
+   */
+  mrp: number;
   seller: string;
   /**
    * Comparison axes for E6. The dataset carries none of these, so they are

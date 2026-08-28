@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { BannerCarousel } from "@/components/home/BannerCarousel";
 import { CategoryRail } from "@/components/home/CategoryRail";
 import { PartnerStrip } from "@/components/home/PartnerStrip";
-import { CATALOG_IMAGES } from "@/data/images";
+import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import type { Catalog } from "@/data/types";
 import { color, radius, space, type } from "@/design/tokens";
 import { byGender, type BrowseTile, type CategoryKey, type GenderTab } from "@/search/catalogBrowse";
 import { FRAME_MAX_WIDTH } from "@/screens/SearchResultsScreen";
-import { formatPrice } from "@/copy/bundle";
 
 const TABS: GenderTab[] = ["all", "men", "women", "kids"];
 
@@ -63,18 +62,7 @@ export function HomeScreen({ catalog, onOpenSearch, onSelectCategory, onSelectTi
             style={styles.gridItem}
             onPress={() => onSelectTile(tile)}
           >
-            <Image
-              source={CATALOG_IMAGES[tile.colourway.product_id]}
-              style={[styles.gridImage, tileSize]}
-              resizeMode="cover"
-            />
-            <Text style={styles.gridBrand} numberOfLines={1}>
-              {tile.parent.brand.toUpperCase()}
-            </Text>
-            <Text style={styles.gridName} numberOfLines={1}>
-              {tile.colourway.display_name}
-            </Text>
-            <Text style={styles.gridPrice}>{formatPrice(tile.colourway.price)}</Text>
+            <ProductTileBody tile={tile} size={tileSize} />
           </Pressable>
         ))}
       </View>
@@ -105,11 +93,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   gridItem: { width: "50%", padding: space.xs, marginBottom: space.md },
-  gridImage: {
-    borderRadius: radius.card - 6,
-    backgroundColor: color.surfaceMuted,
-  },
-  gridBrand: { ...type.brand, color: color.textPrimary, marginTop: space.sm },
-  gridName: { ...type.body, color: color.textSecondary, marginTop: 2 },
-  gridPrice: { ...type.body, fontWeight: "700", color: color.textPrimary, marginTop: space.xs },
 });

@@ -28,6 +28,7 @@ function colourway(
     season: "Summer",
     usage: "Casual",
     price: 1999,
+    mrp: 2999,
     seller: "Myntra Retail",
     rating: 4.1,
     review_count: 320,
