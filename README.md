@@ -236,6 +236,24 @@ look average **3.59 distinct categories** each, up from 2.20: 254 of them
 reach four items, 173 reach three. The other 108 seeds suggest nothing, and
 that is data rather than engine — see the caveat below.
 
+### Where the code and the design canvas disagree
+
+`Myntra MVP.dc.html` is the design spec for this app, and the code no longer
+matches it in three places. All three are deliberate, and recorded here rather
+than left to be discovered as bugs:
+
+| The canvas says | The app does | Why |
+| --- | --- | --- |
+| `wear.io` wordmark | **Myntra** | The visual system was matched to the predecessor prototype (`~/Documents/Prototype_MVP`), branding included. The *name* only: the mark beside it is drawn, per `shell/MyntraMark.tsx` — "the logo itself is not ours to reproduce". |
+| `Under ₹999` · `From 30 min` · `Luxury` | **Explore · MNow · Luxe** | Same tabs, same destinations, Myntra's own product names. |
+| `image-slot id="cat-Fashion"` | Drawn category glyphs | The slot wants category artwork; we have no illustration source, so the marks are composed from Views like the shell's other glyphs. |
+
+The palette and type scale also now follow the predecessor's
+`tailwind.config.ts` rather than the screenshot transcription the tokens file
+began as — `#141414` ink over Myntra's real `#282C3F`, half-point type sizes.
+That is a preference for the predecessor's look, not a correction, and
+`design/tokens.ts` says so.
+
 ### What the section is called, and what it says
 
 The feature is "complete the look" everywhere it is named internally —

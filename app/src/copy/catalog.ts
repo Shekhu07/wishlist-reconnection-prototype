@@ -1,3 +1,5 @@
+import { formatAmount } from "./currency";
+
 /**
  * Pricing copy for ordinary catalog browsing (home, search results, browse) --
  * distinct from @/copy/bundle, which is every string inside the wishlist
@@ -8,7 +10,7 @@
  * saved-product/compare screens -- those stay on @/copy/bundle's formatPrice.
  */
 export function formatMrp(paise: number): string {
-  return `₹${paise.toLocaleString("en-IN")}`;
+  return formatAmount(paise);
 }
 
 export function discountPercent(price: number, mrp: number): number {

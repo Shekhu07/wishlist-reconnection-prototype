@@ -1,3 +1,4 @@
+import { formatAmount } from "./currency";
 import type { CopyKey } from "@/match/contract";
 
 /**
@@ -151,7 +152,7 @@ export const BANNED_COPY_PATTERNS: RegExp[] = [
 
 /** Neutral price rendering. No strike-through, no was/now, no savings. */
 export function formatPrice(paise: number): string {
-  return `₹${paise.toLocaleString("en-IN")}`;
+  return formatAmount(paise);
 }
 
 export function formatDelivery(isoDate: string): string {

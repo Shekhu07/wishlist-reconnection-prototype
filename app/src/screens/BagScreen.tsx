@@ -2,7 +2,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import type { BagLine, CommerceState } from "@/commerce/reconcile";
 import { CATALOG_IMAGES } from "@/data/images";
 import type { Catalog } from "@/data/types";
-import { MIN_TOUCH_TARGET, color, elevation, space, type } from "@/design/tokens";
+import { MIN_TOUCH_TARGET, color, elevation, radius, space, type } from "@/design/tokens";
 import { REMOVE_LABEL, formatPrice } from "@/copy/bundle";
 import { Button } from "@/components/Button";
 
@@ -132,14 +132,25 @@ function BagRow({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.surface },
+  screen: { flex: 1, backgroundColor: color.pageGround },
   content: { padding: space.lg, gap: space.md, paddingBottom: space.xl },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: color.surface },
+  empty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.pageGround,
+  },
   emptyText: { ...type.body, color: color.textSecondary },
+  // A card, like the wishlist rows, so the two lists of saved-or-bagged
+  // things do not read as two different products.
   row: {
     flexDirection: "row",
     gap: space.md,
     marginBottom: space.md,
+    padding: space.md,
+    borderRadius: radius.card,
+    backgroundColor: color.surface,
+    ...elevation.card,
   },
   image: {
     width: 88,

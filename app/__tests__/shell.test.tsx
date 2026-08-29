@@ -12,7 +12,9 @@ describe("the app shell", () => {
         <Text>screen</Text>
       </AppShell>
     );
-    for (const label of ["Home", "Under ₹999", "From 30 min", "Luxury", "Bag"]) {
+    // Named as the predecessor prototype names them: MNow is the 30-minute
+    // tab and Luxe the luxury one, under Myntra's own product names.
+    for (const label of ["Home", "Explore", "MNow", "Luxe", "Bag"]) {
       expect(screen.getByLabelText(new RegExp(label))).toBeTruthy();
     }
     expect(screen.getByTestId("bag-badge")).toHaveTextContent("3");

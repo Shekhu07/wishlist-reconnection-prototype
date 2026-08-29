@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { FadeIn } from "@/components/FadeIn";
 import type { MatchResponse } from "@/match/contract";
 import {
   COPY,
@@ -158,7 +159,7 @@ export function WishlistModule({
   const overflow = response.capped_total - response.matches.length;
 
   return (
-    <View style={styles.container} testID="wishlist-module">
+    <FadeIn style={styles.container} testID="wishlist-module">
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.title} accessibilityRole="header">
@@ -235,7 +236,7 @@ export function WishlistModule({
         <Text style={styles.whyText}>{WHY_LINK}</Text>
       </Pressable>
 
-    </View>
+    </FadeIn>
   );
 }
 

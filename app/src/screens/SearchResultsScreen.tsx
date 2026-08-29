@@ -6,7 +6,8 @@ import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import { SaveHeart } from "@/components/catalog/SaveHeart";
 import type { BrowseTile } from "@/search/catalogBrowse";
 import type { Catalog } from "@/data/types";
-import { FRAME_MAX_WIDTH, color, radius, space, type } from "@/design/tokens";
+import { FRAME_MAX_WIDTH, color,
+  elevation, radius, space, type } from "@/design/tokens";
 import { buildSearchIndex, search } from "@/search/localSearch";
 
 /**
@@ -159,6 +160,7 @@ export function SearchResultsScreen({
               accessibilityRole="button"
               accessibilityLabel={`${result.parent.brand} ${result.colourway.display_name}, ${result.colourway.colour}`}
               onPress={() => onOpenProduct?.(result.colourway.product_id)}
+              style={styles.gridCard}
             >
               <ProductTileBody tile={result} size={tile} />
             </Pressable>
@@ -181,7 +183,7 @@ export function SearchResultsScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.surface },
+  screen: { flex: 1, backgroundColor: color.pageGround },
   content: { paddingBottom: space.xl },
   searchBar: {
     flexDirection: "row",
@@ -215,6 +217,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: space.md,
   },
+  // The cell keeps the gutter; the card inside it is what sits on the page.
   gridItem: { width: "50%", padding: space.xs, marginBottom: space.md },
+  gridCard: {
+    borderRadius: radius.card,
+    backgroundColor: color.surface,
+    padding: space.sm,
+    ...elevation.card,
+  },
   empty: { ...type.body, color: color.textSecondary, padding: space.lg },
 });

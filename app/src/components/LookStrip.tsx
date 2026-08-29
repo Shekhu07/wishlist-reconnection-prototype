@@ -1,4 +1,5 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { FadeIn } from "./FadeIn";
 import { LOOK_HEADING, LOOK_NOTE, LOOK_SIZE_GONE } from "@/copy/bundle";
 import { CATALOG_IMAGES } from "@/data/images";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
@@ -41,7 +42,7 @@ export function LookStrip({
   if (suggestions.length === 0) return null;
 
   return (
-    <View style={styles.strip} testID="look-strip">
+    <FadeIn style={styles.strip} testID="look-strip">
       <Text style={styles.heading}>{heading}</Text>
       {note ? <Text style={styles.note}>{note}</Text> : null}
       <View style={styles.row}>
@@ -80,7 +81,7 @@ export function LookStrip({
           </Pressable>
         ))}
       </View>
-    </View>
+    </FadeIn>
   );
 }
 

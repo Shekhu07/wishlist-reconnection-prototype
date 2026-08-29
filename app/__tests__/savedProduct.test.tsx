@@ -168,8 +168,8 @@ describe("saved product screen (E5)", () => {
     // Both numbers are stated so the user can see the change, but neither is
     // framed as a gain and no direction of travel is named (constraint C-1).
     fireEvent.press(screen.getByTestId("signal-why-price"));
-    expect(renderedText()).toContain("You saved it at \u20b91,499");
-    expect(renderedText()).not.toMatch(/\b(cheaper|lower|reduced|now only|save \u20b9)\b/i);
+    expect(renderedText()).toContain("You saved it at Rs. 1,499");
+    expect(renderedText()).not.toMatch(/\b(cheaper|lower|reduced|now only|save Rs\.)\b/i);
   });
 
   it("carries no banned copy anywhere on the screen, in any state", () => {

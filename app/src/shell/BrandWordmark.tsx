@@ -25,7 +25,12 @@ export function BrandWordmark() {
       <View style={styles.badge}>
         <View style={styles.drop} />
       </View>
-      <Text style={styles.wordmark}>wear.io</Text>
+      {/* The name, not the logotype. MyntraMark's docstring already settled
+          the distinction -- "a drawn mark, not the trademark… the logo itself
+          is not ours to reproduce" -- and that holds here: this is the word
+          set in our own type beside our own badge, not a facsimile of
+          Myntra's wordmark. */}
+      <Text style={styles.wordmark}>Myntra</Text>
     </View>
   );
 }

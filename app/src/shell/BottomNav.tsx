@@ -4,13 +4,18 @@ import type { Tab } from "./nav";
 import { NavIcon, type NavIconName } from "./NavIcons";
 
 // The design spec replaces the screenshot's text wordmarks ("fwd", "mnow",
-// "LUXE") with drawn icons. The captions are unchanged: they are what the
-// tabs are actually called, and they carry the accessible name.
+// "LUXE") with drawn icons; the captions carry the accessible name.
+//
+// Named as the predecessor prototype names them. Three of the four are the
+// same concept under Myntra's own product names -- MNow *is* the 30-minute
+// tab, Luxe *is* the luxury tab -- so only Explore is a loose fit, sitting
+// over our price-filtered browse. No destination changes: the routes behind
+// these are the ones they always were.
 const ITEMS: { tab: Tab; icon: NavIconName; caption: string }[] = [
   { tab: "home", icon: "home", caption: "Home" },
-  { tab: "under999", icon: "tag", caption: "Under ₹999" },
-  { tab: "search", icon: "clock", caption: "From 30 min" },
-  { tab: "luxury", icon: "crown", caption: "Luxury" },
+  { tab: "under999", icon: "tag", caption: "Explore" },
+  { tab: "search", icon: "clock", caption: "MNow" },
+  { tab: "luxury", icon: "crown", caption: "Luxe" },
   { tab: "bag", icon: "bag", caption: "Bag" },
 ];
 

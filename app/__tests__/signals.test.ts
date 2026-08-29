@@ -140,8 +140,8 @@ describe("confidence signals", () => {
     expect(price.status).toBe("attention");
     // Both numbers are present so the user can see the change themselves, and
     // no sentence connects them into a reason to buy.
-    expect(price.value).toBe("₹1,999");
-    expect(price.detail).toContain("You saved it at ₹1,499");
+    expect(price.value).toBe("Rs. 1,999");
+    expect(price.detail).toContain("You saved it at Rs. 1,499");
     // The ban is on a *direction* of travel, which is what turns a fact into an
     // incentive. "since you saved this" is the wishlist verb, not a direction.
     expect(price.detail).not.toMatch(/dropped|fallen|risen|lower|higher|cheaper|savings?\b/i);

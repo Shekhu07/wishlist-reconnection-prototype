@@ -1,18 +1,41 @@
 /**
- * Design tokens observed in the Myntra screenshots (source doc section 4.1).
+ * Design tokens, matched to the predecessor prototype's visual system.
  *
- * These are transcribed values, not invented ones. When the module needs a
- * colour that is not in this table, that is a signal to check the screenshots
- * rather than to add a shade here.
+ * These began as values transcribed from the Myntra screenshots (source doc
+ * section 4.1) and are no longer only that, so the old claim that everything
+ * here is transcribed has been removed rather than left standing over values
+ * it no longer describes.
+ *
+ * The neutrals now match `tailwind.config.ts` in ~/Documents/Prototype_MVP,
+ * whose look was preferred side by side. Worth stating plainly: this is a
+ * preference, not a correction. The `#282C3F` this replaces **is** Myntra's
+ * real text colour and their `#141414` is a simplification of it, so the app
+ * is now a shade further from the screenshots and closer to the prototype.
+ *
+ * `brandPink` needed no change -- both palettes already agreed on it.
  */
 
 export const color = {
   brandPink: "#FF3F6C",
-  textPrimary: "#282C3F",
-  textSecondary: "#7E818C",
-  borderSubtle: "#EAEAEC",
+  textPrimary: "#141414",
+  textSecondary: "#5C5C5C",
+  borderSubtle: "#E9E9E9",
   surface: "#FFFFFF",
-  surfaceMuted: "#F5F5F6",
+  surfaceMuted: "#F4F4F4",
+  /**
+   * The ground a list of cards sits on, so their elevation has something to
+   * read against. White cards on a white page are just ruled boxes.
+   */
+  pageGround: "#FAFAFA",
+  /**
+   * Their `faint`, and deliberately not used for text.
+   *
+   * At roughly 2.8:1 on white it is below the 4.5:1 that WCAG AA asks of small
+   * text, and C-7 makes contrast a launch gate rather than a preference. It is
+   * recorded because the source palette has it; anything carrying meaning uses
+   * `textSecondary` (about 7:1) instead.
+   */
+  faintDecorative: "#949494",
   /**
    * Present in the screenshots on the "Ask Maya" strip. Recorded so nobody
    * re-derives it, and deliberately NOT used by the module: tinting the module
@@ -102,9 +125,15 @@ export const space = {
 export const type = {
   sectionHeader: { fontSize: 20, fontWeight: "700" },
   moduleHeader: { fontSize: 16, fontWeight: "700" },
-  brand: { fontSize: 14, fontWeight: "700", letterSpacing: 0.4 },
-  body: { fontSize: 12, fontWeight: "400" },
-  chip: { fontSize: 11, fontWeight: "500" },
+  /**
+   * The half-point sizes come from the predecessor prototype, which sets them
+   * per-use as Tailwind arbitrary values (`text-[13.5px]`, `text-[12.5px]`,
+   * `text-[11.5px]`). Named here instead of scattered, so the scale stays one
+   * decision rather than forty.
+   */
+  brand: { fontSize: 13.5, fontWeight: "700", letterSpacing: 0.4 },
+  body: { fontSize: 12.5, fontWeight: "400" },
+  chip: { fontSize: 11.5, fontWeight: "500" },
   /**
    * The design spec's tile scale, one step down from the screenshot values
    * above: a two-column grid of 12/700 brand over 11/400 name reads denser
@@ -112,9 +141,9 @@ export const type = {
    * than editing `brand` and `body`, which the module and the compare screen
    * are built on and the spec does not change.
    */
-  tileBrand: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
-  tileName: { fontSize: 11, fontWeight: "400" },
-  tilePrice: { fontSize: 12, fontWeight: "700" },
+  tileBrand: { fontSize: 12.5, fontWeight: "700", letterSpacing: 0.3 },
+  tileName: { fontSize: 11.5, fontWeight: "400" },
+  tilePrice: { fontSize: 12.5, fontWeight: "700" },
   /** "Shop by Brand", "Trending Now". */
   railHeader: { fontSize: 15, fontWeight: "700" },
   /** The SEE ALL affordance beside a rail header. */

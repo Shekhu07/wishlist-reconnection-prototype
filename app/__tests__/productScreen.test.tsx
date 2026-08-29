@@ -49,7 +49,7 @@ describe("the product detail page", () => {
     // than on a screenshot.
     renderProduct({ pairing: <>PAIRING_MARKER</> });
     const text = orderedText();
-    const price = text.indexOf("₹");
+    const price = text.indexOf("Rs. ");
     const pairing = text.indexOf("PAIRING_MARKER");
     const description = text.indexOf("Description");
 

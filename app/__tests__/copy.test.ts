@@ -64,7 +64,7 @@ describe("copy bundle (constraint C-1)", () => {
   });
 
   it("renders price as neutral state text with no savings framing", () => {
-    expect(formatPrice(2199)).toBe("₹2,199");
+    expect(formatPrice(2199)).toBe("Rs. 2,199");
     expect(formatPrice(2199)).not.toMatch(/off|save|was|mrp/i);
   });
 

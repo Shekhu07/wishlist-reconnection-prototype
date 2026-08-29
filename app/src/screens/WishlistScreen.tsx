@@ -207,9 +207,10 @@ export function WishlistScreen({
 }
 
 const styles = StyleSheet.create({
-  // A muted ground so the rows below can be surfaces sitting on the page
-  // rather than boxes ruled onto it.
-  screen: { flex: 1, backgroundColor: color.surfaceMuted },
+  // The ground the rows sit on, so their elevation has something to read
+  // against. `pageGround` rather than `surfaceMuted`, which is a chip fill
+  // and was only ever standing in for a page colour that did not exist.
+  screen: { flex: 1, backgroundColor: color.pageGround },
   count: {
     ...type.body,
     color: color.textSecondary,
