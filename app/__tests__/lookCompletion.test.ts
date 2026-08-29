@@ -126,7 +126,12 @@ describe("what the engine finds on the real wishlist", () => {
     noHistory.commerce.orders = { orders: [] };
     noHistory.commerce.bag.items = [];
     const slots = look("Shirts", "Men", noHistory).map((s) => s.slot).sort();
-    expect(slots).toEqual(["bottom", "feet"]);
+    // The saved wardrobe put a men's belt and a men's watch in the finishing
+    // slot, which nothing saved filled before, so the men's chain is now
+    // shirt -> jeans -> shoes -> finishing, capped at three.
+    expect(slots).toContain("bottom");
+    expect(slots).toContain("feet");
+    expect(slots.length).toBe(MAX_LOOK_SUGGESTIONS);
   });
 
   it("completes a women's kurta, which the old table could not", () => {
@@ -136,7 +141,10 @@ describe("what the engine finds on the real wishlist", () => {
     const suggestions = look("Kurtas", "Women");
     expect(suggestions.length).toBeGreaterThan(0);
     const slots = suggestions.map((s) => s.slot).sort();
-    expect(slots).toEqual(["carry", "feet"]);
+    // Carry and feet were always there; finishing arrived with the saved
+    // wardrobe -- women's earrings, belts and watches.
+    expect(slots).toContain("carry");
+    expect(slots).toContain("feet");
     expect(suggestions.every((s) => s.parent.gender === "Women")).toBe(true);
   });
 
@@ -203,7 +211,13 @@ describe("the gates reject rather than rank", () => {
       parentByType("Kurtas", "Women").colourways[0],
       { ...ctx, excludeItemIds: withoutExclusion }
     );
-    expect(excluded).toEqual([]);
+    // What is on screen is gone from the suggestions. It no longer empties
+    // them: the saved wardrobe is deep enough that excluding the first three
+    // women's items leaves others behind them, which is the point of a
+    // wishlist with thirty items rather than eleven.
+    for (const id of withoutExclusion) {
+      expect(excluded.map((s) => s.item.item_id)).not.toContain(id);
+    }
   });
 
   it("ranks an unavailable saved item last rather than hiding it", () => {
@@ -220,8 +234,16 @@ describe("the gates reject rather than rank", () => {
     // "Wears under this tshirt" for jeans, and would have produced "this
     // casual shoes". A display name is already a noun phrase someone wrote.
     const seed = parentByType("Shirts", "Men");
+    const name = seed.colourways[0].display_name;
     for (const suggestion of look("Shirts", "Men")) {
-      expect(suggestion.reason).toBe(`Goes with the ${seed.colourways[0].display_name}`);
+      // Two phrasings, and only two: `finishing` keeps its own verb, and
+      // everything else takes the plain one. Both name the seed rather than
+      // de-pluralising its article type.
+      expect(suggestion.reason).toBe(
+        suggestion.slot === "finishing"
+          ? `Finishes the look with the ${name}`
+          : `Goes with the ${name}`
+      );
       expect(suggestion.reason).not.toMatch(/tshirt|this casual shoes/i);
     }
   });

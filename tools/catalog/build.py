@@ -33,6 +33,14 @@ USER_ID = "u_demo"
 PINCODE = "560034"
 # Fixed so the recency term in the match score does not drift with wall time.
 TODAY = "2026-08-26"
+# The wardrobe items are saved more recently than the oldest fixtures and
+# spread out from there, so the Wishlist reads as a list built over months
+# rather than eleven items and a block of nineteen saved the same afternoon.
+SAVED_EXTRA_FIRST_DAYS_AGO = 4
+# Eleven state fixtures plus the wardrobe. Asserted in validate() because the
+# count is a product decision, not an emergent one: a saved group that quietly
+# found fewer parents than it asked for would otherwise just shorten the list.
+WISHLIST_SIZE = 30
 
 
 def _saved_at(days_ago):
@@ -57,19 +65,28 @@ def _sku_for(parent, colourway, size):
     return colourway["skus"][0]
 
 
-def build_wishlist(chosen, roles):
-    """The demo user's saved items, one per state fixture plus a little noise.
+def build_wishlist(chosen, roles, extras=None):
+    """The demo user's saved items: one per state fixture, then the wardrobe.
 
-    Stock is overridden on exactly two SKUs, and both overrides are recorded in
-    the catalog so nobody later mistakes them for emergent behaviour.
+    Stock is overridden on exactly two SKUs among the fixtures, and both
+    overrides are recorded in the catalog so nobody later mistakes them for
+    emergent behaviour.
+
+    `extras` is curate.saved_extras() -- the earrings, black jeans, belts and
+    watches that take the list from eleven items to thirty. They carry a role
+    of their own so they are still traceable to the group that produced them,
+    but no role in `catalog.roles`, so no state fixture can ever resolve to
+    one.
     """
     items = []
     overrides = []
 
     def save(role, *, days_ago, colour_index=0, size=None,
              force_stock=None, size_out_everywhere=False,
-             size_in_stock_elsewhere=False):
-        parent = chosen[roles[role]]
+             size_in_stock_elsewhere=False, _parent=None):
+        # A fixture names its parent through `roles`; a wardrobe item has no
+        # role there by design, so it hands the parent over directly.
+        parent = _parent if _parent is not None else chosen[roles[role]]
         colourway = _colourway(parent, colour_index)
         size = size or _mid_size(parent)
         sku = _sku_for(parent, colourway, size)
@@ -148,6 +165,21 @@ def build_wishlist(chosen, roles):
             key=lambda i: parent["colourways"][i]["identity_confidence"],
         )
         save("low_identity", days_ago=22, colour_index=conflicted)
+
+    # The wardrobe. Saved in stock and in the group's colour: the eleven
+    # fixtures above already own every unavailable state there is, and a
+    # thirty-item list whose stock drifts with the seed would make those
+    # eleven harder to read rather than the demo richer.
+    for group, group_parents in (extras or {}).items():
+        slug = group.replace("'", "").replace(" ", "_")
+        for index, parent in enumerate(group_parents, start=1):
+            chosen[parent["parent_product_id"]] = parent
+            save(
+                "%s_%d" % (slug, index),
+                days_ago=SAVED_EXTRA_FIRST_DAYS_AGO + 3 * len(items),
+                force_stock=True,
+                _parent=parent,
+            )
 
     return {"user_id": USER_ID, "pincode": PINCODE, "items": items}, overrides
 
@@ -271,7 +303,13 @@ def build_scenarios(chosen, roles, wishlist):
             "id": "state_4_variant_available",
             "state": 4,
             "label": "Variant available",
-            "query": parent_of("colour_variant")["articleType"].lower(),
+            # Brand-qualified, like states 2 and 5, so the hard filters isolate
+            # this one saved item. A bare article type stopped isolating it the
+            # moment the saved wardrobe added black jeans in the same size:
+            # the fixture would have matched three items and stopped testing
+            # the state it names.
+            "query": "%s %s" % (parent_of("colour_variant")["brand"].lower(),
+                                parent_of("colour_variant")["articleType"].lower()),
             "modality": "text",
             "filters": {"size": [by_role["colour_variant"]["size"]]},
             "authenticated": True,
@@ -478,6 +516,16 @@ def run(force=False, check=False):
         chosen[parent["parent_product_id"]] = parent
     print("added %d showcase accessories" % len(accessories))
 
+    # The rest of the demo user's wardrobe -- browse-visible like the showcase,
+    # and additionally saved. Taken after the showcase so a saved earring can
+    # never shadow a parent a family or a showcase group already owns.
+    extras = curate.saved_extras(parents, set(chosen))
+    for group_parents in extras.values():
+        for parent in group_parents:
+            chosen[parent["parent_product_id"]] = parent
+    print("added %d saved wardrobe parents across %d groups"
+          % (sum(len(v) for v in extras.values()), len(extras)))
+
     # The invented home range, kept out of curate.select() so it can never be
     # picked as a state fixture. See the spec, section 3.2.
     home_parents = synthesize.build_home_parents()
@@ -487,7 +535,7 @@ def run(force=False, check=False):
         c["product_id"] for p in home_parents for c in p["colourways"]
     }
 
-    wishlist, overrides = build_wishlist(chosen, roles)
+    wishlist, overrides = build_wishlist(chosen, roles, extras)
     bag, saved_for_later, orders = build_commerce(wishlist)
     scenarios = build_scenarios(chosen, roles, wishlist)
 
@@ -497,6 +545,15 @@ def run(force=False, check=False):
         "parents": list(chosen.values()),
         "families": families,
         "roles": roles,
+        # Which parents came from where. Inferring "showcase" from articleType
+        # stopped working the moment the wardrobe added watches and belts the
+        # user has actually saved, and the browse-only invariant is worth
+        # keeping, so the split is recorded rather than guessed.
+        "showcase": sorted(accessories),
+        "saved_groups": {
+            group: [p["parent_product_id"] for p in group_parents]
+            for group, group_parents in extras.items()
+        },
         "stock_overrides": overrides,
     }
 
@@ -565,6 +622,12 @@ def validate(catalog, wishlist, scenarios, product_ids, omitted_from_images_modu
     for item in wishlist["items"]:
         if item["sku"] not in known_skus:
             problems.append("wishlist item %s points at an unknown SKU" % item["item_id"])
+
+    if len(wishlist["items"]) != WISHLIST_SIZE:
+        problems.append(
+            "wishlist holds %d items, expected %d"
+            % (len(wishlist["items"]), WISHLIST_SIZE)
+        )
 
     states = {s["state"] for s in scenarios}
     for expected in range(1, 11):

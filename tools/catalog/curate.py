@@ -63,6 +63,35 @@ SHOWCASE_GROUPS = OrderedDict(
 PARENTS_PER_SHOWCASE = 3
 COLOURS_PER_SHOWCASE_PARENT = 2
 
+# The rest of the demo user's wardrobe.
+#
+# Eleven saved items is a fixture table: one item per state in section 4.6 and
+# nothing else, which is why the Wishlist screen, the slot model and look
+# completion were all being exercised against a list shorter than a single
+# screen. These groups take it to thirty, across the categories a real shopper
+# saves from -- earrings, black jeans, belts and watches, men's and women's.
+#
+# They sit between a family and a showcase group, and the distinction is the
+# same one that keeps showcase browse-only: a saved group owns wishlist items
+# but never a role, so nothing here can become a state fixture and repoint what
+# "state 2" means. `count` is how many parents the group contributes, and each
+# contributes exactly one saved item.
+SAVED_GROUPS = OrderedDict(
+    [
+        ("earrings", {"articleTypes": ["Earrings"], "genders": ["Women"], "count": 5}),
+        # The one group that names a colour, so the saved item genuinely is a
+        # pair of black jeans rather than whatever colour sorted first.
+        ("black jeans", {"articleTypes": ["Jeans"], "genders": ["Men"],
+                         "colour": "Black", "count": 4}),
+        ("men's belt", {"articleTypes": ["Belts"], "genders": ["Men"], "count": 2}),
+        ("women's belt", {"articleTypes": ["Belts"], "genders": ["Women"], "count": 2}),
+        ("men's watch", {"articleTypes": ["Watches"], "genders": ["Men"], "count": 3}),
+        ("women's watch", {"articleTypes": ["Watches"], "genders": ["Women"], "count": 3}),
+    ]
+)
+
+COLOURS_PER_SAVED_PARENT = 2
+
 # A generic parent ("plain men's shirt") can absorb hundreds of rows. Every
 # colourway kept costs one 384x512 image on disk, so parents are trimmed to a
 # handful of distinct colours -- more than enough to exercise Tier 2, and it
@@ -71,8 +100,15 @@ COLOURS_PER_WISHLISTED_PARENT = 6
 COLOURS_PER_FILLER_PARENT = 2
 
 
-def trim_colourways(parent, limit):
-    """One colourway per distinct colour, best identity confidence wins."""
+def trim_colourways(parent, limit, prefer_colour=None):
+    """One colourway per distinct colour, best identity confidence wins.
+
+    `prefer_colour` promotes one colour to position 0 and guarantees it
+    survives the slice. The saved groups below need it: "black jeans" is a
+    colour claim, and identity confidence -- which is what everything else
+    sorts on -- knows nothing about colour, so without this the black
+    colourway is exactly as likely to be trimmed away as any other.
+    """
     by_colour = {}
     for colourway in parent["colourways"]:
         key = colourway["colour"].lower()
@@ -85,7 +121,11 @@ def trim_colourways(parent, limit):
     ordered = sorted(
         by_colour.values(),
         key=lambda c: (-c["identity_confidence"], c["product_id"]),
-    )[:limit]
+    )
+    if prefer_colour:
+        key = prefer_colour.lower()
+        ordered.sort(key=lambda c: c["colour"].lower() != key)
+    ordered = ordered[:limit]
     trimmed = dict(parent)
     trimmed["colourways"] = ordered
     return trimmed
@@ -219,6 +259,49 @@ def showcase(parents, taken):
             picked[parent["parent_product_id"]] = trim_colourways(
                 parent, COLOURS_PER_SHOWCASE_PARENT
             )
+    return picked
+
+
+def saved_extras(parents, taken):
+    """Parents the demo user has saved, beyond the eleven state fixtures.
+
+    Called from build.run() after select() and showcase(), for the same reason
+    both of those are ordered the way they are: `taken` is every parent already
+    spoken for, and nothing returned here may shadow a family parent, a
+    showcase parent or a role. A saved group is browse-visible like a showcase
+    group -- these are real dataset rows in the real catalog -- and the only
+    thing it adds is a wishlist item.
+
+    Onesize is not filtered: belts and watches have no size ladder in this
+    dataset, and these parents are never a fixture, so they have no variant
+    state to produce.
+    """
+    picked = OrderedDict()
+    for group, spec in SAVED_GROUPS.items():
+        colour = spec.get("colour")
+        candidates = [
+            parent
+            for parent in _candidates(parents, dict(spec, onesize_ok=True), 1)
+            if parent["parent_product_id"] not in taken
+            and parent["parent_product_id"] not in picked
+            # A generic parent ("plain men's watch") absorbs hundreds of rows
+            # and reads as a placeholder on a saved row.
+            and parent["specific"]
+            and (
+                colour is None
+                or any(c["colour"].lower() == colour.lower() for c in parent["colourways"])
+            )
+        ]
+        chosen = candidates[: spec["count"]]
+        if len(chosen) < spec["count"]:
+            raise RuntimeError(
+                "saved group %r wanted %d parents, found %d"
+                % (group, spec["count"], len(chosen))
+            )
+        picked[group] = [
+            trim_colourways(parent, COLOURS_PER_SAVED_PARENT, prefer_colour=colour)
+            for parent in chosen
+        ]
     return picked
 
 

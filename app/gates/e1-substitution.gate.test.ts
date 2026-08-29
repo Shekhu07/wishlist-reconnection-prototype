@@ -105,7 +105,7 @@ describe("E1 gate — silent variant substitution", () => {
       measured: `${violations.length} violations in ${RUNS.toLocaleString("en-IN")} runs (${rendered.toLocaleString("en-IN")} matches rendered, ${tierTwoOffers.toLocaleString("en-IN")} of them tier 2)`,
       pass: violations.length === 0,
       caveat:
-        "Fuzzes stock and query against the nine committed wishlist items. It does not vary the wishlist itself, so a substitution that only occurs for a saved item shape absent from this fixture would not be caught.",
+        "Fuzzes stock and query against the thirty committed wishlist items. It does not vary the wishlist itself, so a substitution that only occurs for a saved item shape absent from this fixture would not be caught.",
     });
 
     if (violations.length > 0) console.log(violations.slice(0, 5));

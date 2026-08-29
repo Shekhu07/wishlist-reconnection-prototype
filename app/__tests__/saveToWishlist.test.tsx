@@ -13,7 +13,28 @@ jest.mock("@/data/images", () => ({ CATALOG_IMAGES: new Proxy({}, { get: () => 1
 const catalog = catalogJson as unknown as Catalog;
 const wishlist = wishlistJson as unknown as Wishlist;
 
-const watch = catalog.parents.find((p) => p.articleType === "Watches")!;
+/**
+ * A watch the demo user has not saved, and whose brand nothing saved shares.
+ *
+ * `parents.find(articleType === "Watches")` was enough while the wishlist held
+ * eleven items and no accessories. It stopped being enough when the saved
+ * wardrobe added watches and belts: the first watch in the catalog shares a
+ * brand with a saved belt, so the "before" query already matched and the test
+ * failed on data rather than on behaviour. What it needs is an *unsaved*
+ * product, so that is what it asks for.
+ */
+const savedParentIds = new Set(wishlist.items.map((item) => item.parent_product_id));
+const savedBrands = new Set(
+  catalog.parents
+    .filter((p) => savedParentIds.has(p.parent_product_id))
+    .map((p) => p.brand)
+);
+const watch = catalog.parents.find(
+  (p) =>
+    p.articleType === "Watches" &&
+    !savedParentIds.has(p.parent_product_id) &&
+    !savedBrands.has(p.brand)
+)!;
 const shirt = catalog.parents.find((p) => p.articleType === "Shirts")!;
 
 describe("the runtime wishlist store", () => {

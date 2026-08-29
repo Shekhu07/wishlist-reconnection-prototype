@@ -95,7 +95,7 @@ describe("pairing gate", () => {
       measured: `${violations} violations across ${suggestions.toLocaleString("en-IN")} suggestions from ${seeds.toLocaleString("en-IN")} seed products`,
       pass: violations === 0,
       caveat:
-        "Coverage is bounded by what the shipped wishlist contains — eleven items, of which five are shirts and two are excluded by the lifecycle gate. Whole slots go untested because nothing saved fills them: no adult bottomwear for women, no kidswear at all, and nothing in the finishing slot. A pass means no wrong pairing among the pairings this data can produce, not that the engine is correct over a catalog it has never seen.",
+        "Coverage is bounded by what the shipped wishlist contains — thirty items, of which five are shirts and two are excluded by the lifecycle gate. The saved wardrobe filled the finishing slot for men and women, which nothing saved reached before; whole slots still go untested because nothing saved fills them: no adult bottomwear for women, and no kidswear at all. A pass means no wrong pairing among the pairings this data can produce, not that the engine is correct over a catalog it has never seen.",
     });
 
     // A sweep that produced no suggestions would satisfy every assertion above

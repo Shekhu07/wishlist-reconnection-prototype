@@ -20,6 +20,16 @@ const wishlist = wishlistJson as unknown as Wishlist;
  */
 
 const SHOWCASE_TYPES = ["Watches", "Belts", "Sunglasses", "Wallets"];
+/**
+ * The showcase parents themselves, as the generator recorded them.
+ *
+ * This used to be inferred from articleType, which was true right up until the
+ * saved wardrobe added watches and belts the demo user has actually saved --
+ * at which point "no showcase parent is ever a saved item" would have failed
+ * on parents that were never showcase parents at all. The invariant is about
+ * where a parent came from, so it is checked against where it came from.
+ */
+const showcaseIds = new Set(catalog.showcase);
 
 describe("the showcase accessories", () => {
   it("stocks every type it claims to", () => {
@@ -44,7 +54,7 @@ describe("the showcase accessories", () => {
     // watch would quietly become evidence in every gate that measures the
     // catalog, which is exactly what the synthetic flag exists to prevent.
     for (const parent of catalog.parents) {
-      if (!SHOWCASE_TYPES.includes(parent.articleType)) continue;
+      if (!showcaseIds.has(parent.parent_product_id)) continue;
       expect([parent.parent_product_id, parent.synthetic ?? false]).toEqual([
         parent.parent_product_id,
         false,
@@ -53,11 +63,6 @@ describe("the showcase accessories", () => {
   });
 
   it("is browse-only: never a saved item, never a state fixture", () => {
-    const showcaseIds = new Set(
-      catalog.parents
-        .filter((p) => SHOWCASE_TYPES.includes(p.articleType))
-        .map((p) => p.parent_product_id)
-    );
     expect(showcaseIds.size).toBeGreaterThan(0);
 
     for (const item of wishlist.items) {

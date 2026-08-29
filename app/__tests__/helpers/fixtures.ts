@@ -102,6 +102,8 @@ export function makeCatalog(overrides: Partial<ParentProduct> = {}): Catalog {
     parents: [parent, rival, other],
     families: {},
     roles: {},
+    showcase: [],
+    saved_groups: {},
     stock_overrides: [],
   };
 }

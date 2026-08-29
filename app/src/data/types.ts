@@ -70,6 +70,15 @@ export interface Catalog {
   parents: ParentProduct[];
   families: Record<string, { wishlisted: string[]; filler: string[] }>;
   roles: Record<string, string>;
+  /**
+   * Parents added for browsing only -- watches, belts, sunglasses, wallets.
+   * Recorded rather than inferred from articleType: the saved wardrobe below
+   * contributes watches and belts too, and only one of the two sets is
+   * allowed to be browse-only.
+   */
+  showcase: string[];
+  /** Parents behind the saved wardrobe, by the group that produced them. */
+  saved_groups: Record<string, string[]>;
   stock_overrides: { sku: string; in_stock: boolean; role: string }[];
 }
 

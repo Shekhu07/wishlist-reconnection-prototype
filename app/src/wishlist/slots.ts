@@ -64,6 +64,7 @@ const SLOT_BY_ARTICLE_TYPE: Record<string, OutfitSlot> = {
   Watches: "finishing",
   Belts: "finishing",
   Sunglasses: "finishing",
+  Earrings: "finishing",
   // Personal Care
   Lipstick: "finishing",
   "Nail Polish": "finishing",
@@ -84,6 +85,7 @@ const SLOT_BY_SUB_CATEGORY: Record<string, OutfitSlot> = {
   Watches: "finishing",
   Belts: "finishing",
   Eyewear: "finishing",
+  Jewellery: "finishing",
   Wallets: "carry",
   Lips: "finishing",
   Nails: "finishing",

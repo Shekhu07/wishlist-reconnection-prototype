@@ -56,7 +56,7 @@
     "id": "state_4_variant_available",
     "label": "Variant available",
     "modality": "text",
-    "query": "jeans",
+    "query": "locomotive jeans",
     "state": 4
   },
   {
