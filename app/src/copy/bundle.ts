@@ -265,8 +265,15 @@ export const TAGS_OPTIONAL = "Optional. Only you see this, and you can remove it
  * ------------------------------------------------------------------ */
 
 export const LOOK_HEADING = "From your Wishlist, to go with this";
-/** The same section on a product page, where "this" is the product itself. */
-export const LOOK_HEADING_PDP = "Complete the look from your Wishlist";
+/**
+ * The same section on a product page, which can afford to be warmer.
+ *
+ * Search is answering a query and has to point -- "to go with this" -- because
+ * the thing being gone with is one result among several. A product page is
+ * already showing the garment, full width, directly above. With nothing left
+ * to disambiguate, the heading can address the person instead of the item.
+ */
+export const LOOK_HEADING_PDP = "Style it with your saved items";
 
 export const SUGGESTIONS_SAVED_HEADING = "From your Wishlist";
 export const SUGGESTIONS_ORGANIC_HEADING = "Suggestions";
