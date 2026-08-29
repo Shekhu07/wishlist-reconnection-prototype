@@ -5,6 +5,7 @@ import ordersJson from "@/data/orders.json";
 import savedForLaterJson from "@/data/saved-for-later.json";
 import type { Catalog } from "@/data/types";
 import type { Bag, CommerceState, Orders, SavedForLater } from "@/commerce/reconcile";
+import { reconcile, removeFromBag } from "@/commerce/reconcile";
 import { formatPrice } from "@/copy/bundle";
 import { BagScreen, bagTotal } from "@/screens/BagScreen";
 import { CheckoutScreen } from "@/screens/CheckoutScreen";
@@ -114,5 +115,70 @@ describe("checkout", () => {
     expect(screen.getByText("Order placed")).toBeTruthy();
     fireEvent.press(screen.getByTestId("continue-shopping"));
     expect(continued).toBe(1);
+  });
+});
+
+describe("taking a line back out of the bag", () => {
+  it("removes only the line asked for, and reports that it did", () => {
+    // The bag could be filled from four places and emptied from none, so a
+    // mis-tap was unrecoverable without reloading -- and `in_bag` had no way
+    // back to `none` for anyone driving a session.
+    const commerce = commerceFixture();
+    const target = commerce.bag.items[0];
+    const others = commerce.bag.items.slice(1).map((line) => line.sku);
+
+    expect(removeFromBag(target.sku, commerce)).toBe(true);
+    expect(commerce.bag.items.map((line) => line.sku)).toEqual(others);
+
+    // A second call changes nothing and says so, so a caller never announces
+    // a removal that did not happen.
+    expect(removeFromBag(target.sku, commerce)).toBe(false);
+  });
+
+  it("frees the item to be suggested again once it leaves", () => {
+    // The property that makes this worth deriving rather than flagging: the
+    // module withholds anything in the bag, so removal has to hand it back.
+    const commerce = commerceFixture();
+    const line = commerce.bag.items[0];
+    const item = {
+      item_id: "wi_probe",
+      sku: line.sku,
+      parent_product_id: line.parent_product_id,
+      product_id: 0,
+      colour: line.colour,
+      size: line.size,
+      saved_at: "2026-08-01",
+      price_at_save: 0,
+      seller_at_save: "",
+      role: "probe",
+    };
+    expect(reconcile(item, commerce).state).toBe("in_bag");
+    removeFromBag(line.sku, commerce);
+    expect(reconcile(item, commerce).state).toBe("none");
+  });
+
+  it("offers Remove on every bag row, and none without a handler", () => {
+    const commerce = commerceFixture();
+    const { unmount } = render(
+      <BagScreen catalog={catalog} commerce={commerce} onRemove={() => {}} />
+    );
+    for (const line of commerce.bag.items) {
+      expect(screen.getByTestId(`bag-remove-${line.sku}`)).toBeTruthy();
+    }
+    unmount();
+
+    render(<BagScreen catalog={catalog} commerce={commerce} />);
+    expect(screen.queryAllByTestId(/^bag-remove-/)).toHaveLength(0);
+  });
+
+  it("hands the row's sku to the handler", () => {
+    const commerce = commerceFixture();
+    const removed: string[] = [];
+    render(
+      <BagScreen catalog={catalog} commerce={commerce} onRemove={(sku) => removed.push(sku)} />
+    );
+    const target = commerce.bag.items[0];
+    fireEvent.press(screen.getByTestId(`bag-remove-${target.sku}`));
+    expect(removed).toEqual([target.sku]);
   });
 });

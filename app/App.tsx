@@ -25,6 +25,7 @@ import {
   type CommerceState,
   type Orders,
   type SavedForLater,
+  removeFromBag,
 } from "@/commerce/reconcile";
 import { destinationFor, type Match } from "@/match/contract";
 import { RAMP_STEPS } from "@/experiment/assignment";
@@ -975,6 +976,13 @@ export default function App() {
             catalog={catalog}
             commerce={commerce}
             onCheckout={() => setNav((prev) => push(prev, { name: "checkout" }))}
+            onRemove={(sku) => {
+              // Mutates commerce in place like every other bag write here, so
+              // the version bump is what tells React -- and what lets the
+              // module's `in_bag` state fall back to `none` on the next
+              // reconcile rather than sticking for the session.
+              if (removeFromBag(sku, commerce)) setBagVersion((version) => version + 1);
+            }}
           />
         ) : screen.name === "checkout" ? (
           <CheckoutScreen
@@ -1076,7 +1084,18 @@ export default function App() {
                 }
                 selectedSize={altSize ?? sizes[0] ?? null}
                 onChooseSize={setAltSize}
-                onBack={goBack}
+                onSelectColourway={(productId) => {
+                  // Each colourway is its own product_id, so switching colour
+                  // is a navigation. Replace rather than push: five taps
+                  // through a colour ladder should not be five entries in the
+                  // back stack the user has to unwind.
+                  setAltSize(null);
+                  setAltAdded(false);
+                  setNav((prev) => ({
+                    tab: prev.tab,
+                    stack: [...prev.stack.slice(0, -1), { name: "product", productId }],
+                  }));
+                }}
                 added={altAdded}
                 pairing={
                   // The whole point of the feature, and it renders nothing when
@@ -1453,6 +1472,12 @@ export default function App() {
             results={wishlistResults}
             pincode={pincode}
             commerce={commerce}
+            onRemoveItem={(productId) => {
+              // The same store call the heart on a grid tile makes, so a row
+              // unsaved here and a tile unsaved there cannot disagree.
+              wishlistStore.remove(productId);
+              setWishlistVersion((version) => version + 1);
+            }}
             onSelectItem={(itemId) => {
               // Reset the variant selection the way every other route into the
               // saved screen does; carrying the last item's size across would

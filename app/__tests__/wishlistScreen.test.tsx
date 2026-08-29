@@ -301,3 +301,89 @@ describe("the order the wishlist lists in", () => {
     expect(new Set(openingTypes).size).toBeGreaterThan(1);
   });
 });
+
+describe("unsaving from the list", () => {
+  it("offers a heart on every row and names what it removes", () => {
+    const results = resultsFor();
+    render(
+      <WishlistScreen
+        results={results}
+        pincode={PINCODE}
+        commerce={commerceState()}
+        onRemoveItem={() => {}}
+        onSelectItem={() => {}}
+      />
+    );
+    for (const result of results) {
+      const heart = screen.getByTestId(`wishlist-remove-${result.item.item_id}`);
+      expect(heart.props.accessibilityLabel).toContain(result.parent.brand);
+      expect(heart.props.accessibilityLabel).toContain("Remove");
+    }
+  });
+
+  it("reports the product id the store removes by, not the item id", () => {
+    // WishlistStore.remove takes a product_id, and so does the heart on every
+    // grid tile. Passing anything else here would make unsaving from this
+    // list and unsaving from a tile two operations that can disagree.
+    const results = resultsFor();
+    const removed: number[] = [];
+    render(
+      <WishlistScreen
+        results={results}
+        pincode={PINCODE}
+        commerce={commerceState()}
+        onRemoveItem={(productId) => removed.push(productId)}
+        onSelectItem={() => {}}
+      />
+    );
+    fireEvent.press(screen.getByTestId(`wishlist-remove-${results[0].item.item_id}`));
+    // results[0] is whatever sorts first by recency, so read the id off the
+    // row rather than assuming the fixture order.
+    const first = [...results].sort((a, b) =>
+      b.item.saved_at.localeCompare(a.item.saved_at)
+    )[0];
+    expect(removed).toEqual([results[0].item.product_id]);
+    expect(typeof first.item.product_id).toBe("number");
+  });
+
+  it("leaves rows read-only when no handler is given", () => {
+    const results = resultsFor();
+    render(
+      <WishlistScreen
+        results={results}
+        pincode={PINCODE}
+        commerce={commerceState()}
+        onSelectItem={() => {}}
+      />
+    );
+    expect(screen.queryAllByTestId(/^wishlist-remove-/)).toHaveLength(0);
+  });
+
+  it("does not nest the heart inside the row's own button", () => {
+    // A button inside a button is invalid and gives a keyboard user two
+    // targets they cannot separate -- the defect the search suggestion row
+    // already hit once. The heart is a sibling of the row Pressable.
+    const results = resultsFor();
+    render(
+      <WishlistScreen
+        results={results}
+        pincode={PINCODE}
+        commerce={commerceState()}
+        onRemoveItem={() => {}}
+        onSelectItem={() => {}}
+      />
+    );
+    const row = screen.getByTestId(`wishlist-row-${results[0].item.item_id}`);
+    const nested = (node: { children?: unknown[] }): boolean =>
+      (node.children ?? []).some(
+        (child) =>
+          typeof child === "object" &&
+          child !== null &&
+          ((child as { props?: { testID?: string } }).props?.testID?.startsWith(
+            "wishlist-remove-"
+          ) ||
+            nested(child as { children?: unknown[] }))
+      );
+    expect(nested(row)).toBe(false);
+  });
+});

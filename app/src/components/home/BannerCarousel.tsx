@@ -7,8 +7,17 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
-import { MIN_TOUCH_TARGET, color, radius, space, spec, type } from "@/design/tokens";
+import {
+  FRAME_MAX_WIDTH,
+  MIN_TOUCH_TARGET,
+  color,
+  radius,
+  space,
+  spec,
+  type,
+} from "@/design/tokens";
 
 /**
  * Three paged banners with a dot row, per the design spec.
@@ -48,8 +57,19 @@ const BANNERS = [
   },
 ] as const;
 
-const CARD_WIDTH = 340;
 const GAP = 10;
+
+/**
+ * How much of the next banner shows past the edge of this one.
+ *
+ * The card was a fixed 340px, which on a 390px frame left ~34px of the next
+ * one visible -- and since a banner pads its text by 16px, that sliver was
+ * wide enough to show the *start of its headline*, cut through the middle of
+ * a letter. A peek narrower than that padding can only ever show the card's
+ * background colour, which is what a peek is for: proving there is another
+ * card without previewing a word of it.
+ */
+const PEEK = 12;
 
 export interface BannerCarouselProps {
   /** Only the lead banner offers an action, and only if the caller wires one. */
@@ -58,13 +78,17 @@ export interface BannerCarouselProps {
 
 export function BannerCarousel({ onAction }: BannerCarouselProps = {}) {
   const [page, setPage] = useState(0);
+  // Sized off the frame rather than fixed, for the same reason the grid tiles
+  // are: a hard-coded width is only correct at one viewport.
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min(width, FRAME_MAX_WIDTH) - space.lg * 2 - PEEK;
 
   // The dot row has to follow the scroll or it is decoration claiming to be
   // state. Paging on the card pitch rather than the viewport width, because
   // the cards are narrower than the frame and peek by design.
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = event.nativeEvent.contentOffset.x;
-    const next = Math.round(x / (CARD_WIDTH + GAP));
+    const next = Math.round(x / (cardWidth + GAP));
     if (next !== page && next >= 0 && next < BANNERS.length) setPage(next);
   };
 
@@ -75,13 +99,17 @@ export function BannerCarousel({ onAction }: BannerCarouselProps = {}) {
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        // Land on a card, never between two. Without this a flick could rest
+        // with two half-banners on screen and the dots claiming one.
+        snapToInterval={cardWidth + GAP}
+        decelerationRate="fast"
         contentContainerStyle={styles.row}
       >
         {BANNERS.map((banner) => (
           <View
             key={banner.key}
             testID={`banner-${banner.key}`}
-            style={[styles.banner, { backgroundColor: banner.background }]}
+            style={[styles.banner, { width: cardWidth, backgroundColor: banner.background }]}
           >
             <Text style={styles.eyebrow}>{banner.tag}</Text>
             <Text style={styles.headline}>{banner.headline}</Text>
@@ -115,7 +143,6 @@ export function BannerCarousel({ onAction }: BannerCarouselProps = {}) {
 const styles = StyleSheet.create({
   row: { gap: GAP, paddingHorizontal: space.lg, paddingVertical: space.md },
   banner: {
-    width: CARD_WIDTH,
     height: 150,
     borderRadius: radius.banner,
     padding: space.lg,

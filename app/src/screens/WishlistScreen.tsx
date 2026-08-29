@@ -46,6 +46,14 @@ import {
  */
 
 export interface WishlistScreenProps {
+  /**
+   * Unsave. Absent leaves rows read-only, which is what they were before.
+   *
+   * Keyed on product_id because that is what `WishlistStore.remove` takes and
+   * what the heart on every grid tile already toggles -- so unsaving here and
+   * unsaving from a tile are the same operation, not two that can disagree.
+   */
+  onRemoveItem?: (productId: number) => void;
   results: RevalidationResult[];
   pincode: string;
   /**
@@ -95,6 +103,7 @@ export function WishlistScreen({
   results,
   pincode,
   commerce,
+  onRemoveItem,
   onSelectItem,
 }: WishlistScreenProps) {
   return (
@@ -119,8 +128,12 @@ export function WishlistScreen({
         const status = statusFor(result, pincode);
         const lifecycle = LIFECYCLE_PILL[reconcile(item, commerce).state] ?? null;
         return (
+          // The heart is a sibling of the row's Pressable, never a child of
+          // it: a button nested inside a button is invalid, and gives a
+          // keyboard user two targets they cannot separate. This codebase has
+          // already found that defect once, in the search suggestion row.
+          <View key={item.item_id} style={styles.rowWrap}>
           <Pressable
-            key={item.item_id}
             testID={`wishlist-row-${item.item_id}`}
             accessibilityRole="button"
             accessibilityLabel={[
@@ -174,6 +187,19 @@ export function WishlistScreen({
               ) : null}
             </View>
           </Pressable>
+          {onRemoveItem ? (
+            <Pressable
+              testID={`wishlist-remove-${item.item_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${parent.brand} ${colourway.display_name} from Wishlist`}
+              accessibilityState={{ selected: true }}
+              onPress={() => onRemoveItem(item.product_id)}
+              style={styles.heart}
+            >
+              <Text style={styles.heartGlyph}>♥</Text>
+            </Pressable>
+          ) : null}
+          </View>
         );
       })}
     </ScrollView>
@@ -196,6 +222,17 @@ const styles = StyleSheet.create({
     color: color.textSecondary,
     padding: space.lg,
   },
+  rowWrap: { position: "relative" },
+  heart: {
+    position: "absolute",
+    top: space.md,
+    right: space.md,
+    width: MIN_TOUCH_TARGET,
+    height: MIN_TOUCH_TARGET,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heartGlyph: { fontSize: 18, color: color.brandPink },
   row: {
     flexDirection: "row",
     gap: space.md,
@@ -213,7 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card - 6,
     backgroundColor: color.surfaceMuted,
   },
-  details: { flex: 1 },
+  details: { flex: 1, paddingRight: space.xl },
   brand: { ...type.brand, color: color.textPrimary },
   name: { ...type.body, color: color.textSecondary, marginTop: 2 },
   chipRow: {

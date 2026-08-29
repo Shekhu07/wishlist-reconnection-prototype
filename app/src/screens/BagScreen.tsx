@@ -1,9 +1,9 @@
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { BagLine, CommerceState } from "@/commerce/reconcile";
 import { CATALOG_IMAGES } from "@/data/images";
 import type { Catalog } from "@/data/types";
-import { color, elevation, space, type } from "@/design/tokens";
-import { formatPrice } from "@/copy/bundle";
+import { MIN_TOUCH_TARGET, color, elevation, space, type } from "@/design/tokens";
+import { REMOVE_LABEL, formatPrice } from "@/copy/bundle";
 import { Button } from "@/components/Button";
 
 export interface BagScreenProps {
@@ -11,6 +11,8 @@ export interface BagScreenProps {
   commerce: CommerceState;
   /** Absent leaves the bag read-only, which is what it was before checkout. */
   onCheckout?: () => void;
+  /** Absent leaves lines unremovable, which is what they were before this. */
+  onRemove?: (sku: string) => void;
 }
 
 /** Line prices summed from the catalog, never from a stored total. */
@@ -37,7 +39,7 @@ export function bagTotal(catalog: Catalog, commerce: CommerceState): number {
  * matching the sku inside the parent's colourways, the same shape of lookup
  * revalidate.ts uses to resolve a wishlist item's colourway.
  */
-export function BagScreen({ catalog, commerce, onCheckout }: BagScreenProps) {
+export function BagScreen({ catalog, commerce, onCheckout, onRemove }: BagScreenProps) {
   const { items } = commerce.bag;
 
   if (items.length === 0) {
@@ -54,7 +56,7 @@ export function BagScreen({ catalog, commerce, onCheckout }: BagScreenProps) {
     <View style={styles.screen} testID="bag-screen">
       <ScrollView contentContainerStyle={styles.content}>
         {items.map((line) => (
-          <BagRow key={line.sku} line={line} catalog={catalog} />
+          <BagRow key={line.sku} line={line} catalog={catalog} onRemove={onRemove} />
         ))}
       </ScrollView>
 
@@ -77,7 +79,15 @@ export function BagScreen({ catalog, commerce, onCheckout }: BagScreenProps) {
   );
 }
 
-function BagRow({ line, catalog }: { line: BagLine; catalog: Catalog }) {
+function BagRow({
+  line,
+  catalog,
+  onRemove,
+}: {
+  line: BagLine;
+  catalog: Catalog;
+  onRemove?: (sku: string) => void;
+}) {
   const parent = catalog.parents.find((p) => p.parent_product_id === line.parent_product_id);
   const colourway = parent?.colourways.find((c) => c.skus.some((s) => s.sku === line.sku));
 
@@ -104,6 +114,19 @@ function BagRow({ line, catalog }: { line: BagLine; catalog: Catalog }) {
         </Text>
         {colourway ? <Text style={styles.price}>{formatPrice(colourway.price)}</Text> : null}
       </View>
+      {onRemove ? (
+        <Pressable
+          testID={`bag-remove-${line.sku}`}
+          accessibilityRole="button"
+          accessibilityLabel={`${REMOVE_LABEL} ${parent?.brand ?? ""} ${
+            colourway?.display_name ?? line.colour
+          }`.trim()}
+          onPress={() => onRemove(line.sku)}
+          style={styles.remove}
+        >
+          <Text style={styles.removeText}>{REMOVE_LABEL}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -125,6 +148,15 @@ const styles = StyleSheet.create({
     backgroundColor: color.surfaceMuted,
   },
   details: { flex: 1, justifyContent: "center", gap: 2 },
+  // Top-aligned and quiet: removing is a correction, not the thing the screen
+  // is for, and a second pink control here would compete with Checkout.
+  remove: {
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
+  },
+  removeText: { ...type.chip, fontWeight: "700", color: color.textSecondary },
   brand: { ...type.brand, color: color.textPrimary },
   name: { ...type.body, color: color.textSecondary },
   meta: { ...type.chip, color: color.textSecondary },

@@ -37,7 +37,6 @@ export interface ProductScreenProps {
   deliveryBy: string | null;
   selectedSize: string | null;
   onChooseSize: (size: string) => void;
-  onBack: () => void;
   onMoveToBag: (size: string) => void;
   /**
    * Saving from here records the size and colour the user actually chose,
@@ -49,6 +48,8 @@ export interface ProductScreenProps {
   added: boolean;
   /** "Complete the look" — sits between the price and the description. */
   pairing?: ReactNode;
+  /** Absent hides the colour ladder: a pill that cannot navigate is a lie. */
+  onSelectColourway?: (productId: number) => void;
 }
 
 export function ProductScreen({
@@ -58,28 +59,19 @@ export function ProductScreen({
   deliveryBy,
   selectedSize,
   onChooseSize,
-  onBack,
   onMoveToBag,
   saved = false,
   onToggleSave,
   added,
   pairing,
+  onSelectColourway,
 }: ProductScreenProps) {
   const purchasable = selectedSize !== null && sizesInStock.includes(selectedSize);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="product-screen">
-      <Pressable
-        testID="product-back"
-        accessibilityRole="button"
-        accessibilityLabel="Back to results"
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        onPress={onBack}
-        style={styles.back}
-      >
-        <Text style={styles.backText}>← Back to results</Text>
-      </Pressable>
-
+      {/* No back control here: the shell's header bar carries one for every
+          pushed route. This screen used to draw a second, directly under it. */}
       <Image
         source={CATALOG_IMAGES[colourway.product_id]}
         style={styles.hero}
@@ -97,6 +89,47 @@ export function ProductScreen({
         <Text style={styles.price} testID="product-price">
           {formatPrice(colourway.price)}
         </Text>
+
+        {/* Rating and review count, the two axes the compare table already
+            shows and this screen did not -- so a product opened directly had
+            less to judge it by than the same product seen side by side.
+            Synthesised like the rest of the comparison data, and labelled as
+            such in the description note below. */}
+        <View style={styles.rating} testID="product-rating">
+          <Text style={styles.ratingText}>★ {colourway.rating.toFixed(1)}</Text>
+          <Text style={styles.reviews}>
+            ({colourway.review_count.toLocaleString("en-IN")})
+          </Text>
+        </View>
+
+        {/* The colour ladder, mirroring the saved screen's DC-06 pills rather
+            than inventing a second colour control. Each colourway is its own
+            product_id, so choosing one is a navigation, not a local state
+            change -- which is why this takes a product id and not a name. */}
+        {parent.colourways.length > 1 && onSelectColourway ? (
+          <>
+            <Text style={styles.colourHeading}>Colour</Text>
+            <View style={styles.colours}>
+              {parent.colourways.map((cw) => {
+                const selected = cw.product_id === colourway.product_id;
+                return (
+                  <Pressable
+                    key={cw.product_id}
+                    testID={`product-colour-${cw.product_id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={cw.colour}
+                    accessibilityState={{ selected }}
+                    disabled={selected}
+                    onPress={() => onSelectColourway(cw.product_id)}
+                    style={[styles.colourPill, selected && styles.colourPillSelected]}
+                  >
+                    <Text style={styles.colourPillText}>{cw.colour}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
 
         {/* The pairing sits here, between the price and the description,
             exactly where the spec places it. It renders nothing when no saved
@@ -231,13 +264,33 @@ function Fact({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.surface },
   content: { paddingBottom: space.xl },
-  back: { padding: space.lg, minHeight: MIN_TOUCH_TARGET, justifyContent: "center" },
-  backText: { ...type.body, fontWeight: "700", color: color.textPrimary },
   hero: { width: "100%", height: 420, backgroundColor: color.surfaceMuted },
   body: { padding: space.lg },
   brand: { ...type.brand, fontSize: 16, color: color.textPrimary },
   name: { ...type.body, fontSize: 14, color: color.textSecondary, marginTop: 2 },
   colour: { ...type.chip, color: color.textSecondary, marginTop: 2 },
+  rating: { flexDirection: "row", alignItems: "center", gap: space.xs, marginTop: space.xs },
+  ratingText: { ...type.chip, fontWeight: "700", color: color.textPrimary },
+  reviews: { ...type.chip, color: color.textSecondary },
+  colourHeading: {
+    ...type.body,
+    fontWeight: "700",
+    color: color.textPrimary,
+    marginTop: space.lg,
+  },
+  colours: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.sm },
+  colourPill: {
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    paddingHorizontal: space.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+  },
+  colourPillSelected: { borderColor: color.brandPink, borderWidth: 2 },
+  colourPillText: { ...type.chip, color: color.textPrimary },
   price: {
     ...type.body,
     fontSize: 18,

@@ -58,6 +58,9 @@ export function BrandStrip({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      // Rest on a card edge rather than through the middle of a brand name.
+      snapToInterval={104 + space.md}
+      decelerationRate="fast"
       contentContainerStyle={styles.row}
       testID="brand-strip"
     >

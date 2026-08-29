@@ -101,6 +101,9 @@ export const COPY: Record<CopyKey, ModuleCopy> = {
  * is what keeps them inside C-1. `none` renders no pill at all rather than a
  * reassuring one; the absence is the information.
  */
+/** Taking a line back out of the bag. A correction, not an action. */
+export const REMOVE_LABEL = "Remove";
+
 export const LIFECYCLE_PILL: Record<string, string | null> = {
   none: null,
   in_bag: "In Bag",

@@ -162,6 +162,25 @@ export function wouldDuplicate(item: WishlistItem, commerce: CommerceState): boo
 
 /** Mutating helpers, kept together so the invariants are visible in one place. */
 /**
+ * Take a line back out of the bag.
+ *
+ * The bag could be filled from four places and emptied from none, so a
+ * mis-tap was unrecoverable without reloading the prototype -- and the
+ * duplicate states the whole feature is built on (`in_bag` and the module's
+ * "Already in Bag") had no way back to `none` for a researcher driving a
+ * session.
+ *
+ * Mutates in place like `addToBag`, so callers bump the same bagVersion.
+ * Returns whether anything was actually removed, so a caller can avoid
+ * announcing a change that did not happen.
+ */
+export function removeFromBag(sku: string, commerce: CommerceState): boolean {
+  const before = commerce.bag.items.length;
+  commerce.bag.items = commerce.bag.items.filter((line) => line.sku !== sku);
+  return commerce.bag.items.length !== before;
+}
+
+/**
  * Adds something the user never saved -- an alternative chosen from the
  * comparison.
  *

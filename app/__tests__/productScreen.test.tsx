@@ -27,7 +27,6 @@ function renderProduct(props: Partial<Parameters<typeof ProductScreen>[0]> = {})
       deliveryBy="2026-08-29"
       selectedSize={parent.sizes[0]}
       onChooseSize={noop}
-      onBack={noop}
       onMoveToBag={noop}
       added={false}
       {...props}
