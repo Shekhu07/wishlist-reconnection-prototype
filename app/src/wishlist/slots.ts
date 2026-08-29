@@ -28,10 +28,73 @@ export type OutfitSlot =
   | "full_body"
   | "feet"
   | "carry"
-  /** Fragrance and cosmetics -- completes a look without occupying the body. */
-  | "finishing"
+  /* ---- The finishing slots ---------------------------------------- *
+   * One `finishing` slot used to hold every accessory, which made the
+   * accessory the density bottleneck: a belt and a watch were "two finishing
+   * touches, not a look", so a men's shirt could never reach both, and a
+   * kurta could show earrings or a watch but never the pair. An outfit does
+   * not work that way -- these things are worn at once, on different parts
+   * of the body -- so each gets the slot it actually occupies. The rule that
+   * mattered survives intact, one slot deep: still no two belts, still no
+   * lipstick with a nail polish.
+   * ------------------------------------------------------------------ */
+  /** Belts. */
+  | "waist"
+  /** Watches. */
+  | "wrist"
+  /** Sunglasses. */
+  | "eyes"
+  /** Earrings and the rest of the jewellery box. */
+  | "jewellery"
+  /**
+   * Cosmetics and fragrance, deliberately kept as one slot: lipstick, nail
+   * polish and perfume finish a look together, but showing two of them in a
+   * four-item strip crowds out the garment the user was actually shopping.
+   */
+  | "beauty"
   /** Not part of any outfit. Home furnishing is a different universe. */
   | "none";
+
+/**
+ * The finishing slots, as one set.
+ *
+ * Copy and ranking both need "is this an accessory?" and neither should have
+ * to keep its own list in step with the union above.
+ */
+const FINISHING_SLOTS = new Set<OutfitSlot>(["waist", "wrist", "eyes", "jewellery", "beauty"]);
+
+export function isFinishingSlot(slot: OutfitSlot): boolean {
+  return FINISHING_SLOTS.has(slot);
+}
+
+/**
+ * Which slot to fill first when the cap cannot hold them all.
+ *
+ * Ranking by recency alone was fine while three suggestions covered nearly
+ * every slot a seed could reach. Now that the accessories have split five
+ * ways, a seed can have seven eligible slots and room for four, and the
+ * ordering decides whether "complete the look" means an outfit or a jewellery
+ * box. The garment that finishes the body goes first, then shoes, then the
+ * bag, then the accessories, with beauty last -- it completes a look without
+ * being part of one.
+ */
+const SLOT_RANK: Record<OutfitSlot, number> = {
+  top: 0,
+  bottom: 0,
+  full_body: 0,
+  feet: 1,
+  carry: 2,
+  waist: 3,
+  wrist: 4,
+  jewellery: 4,
+  eyes: 5,
+  beauty: 6,
+  none: 9,
+};
+
+export function slotRank(slot: OutfitSlot): number {
+  return SLOT_RANK[slot];
+}
 
 /**
  * Keyed on articleType rather than subCategory, deliberately.
@@ -57,18 +120,17 @@ const SLOT_BY_ARTICLE_TYPE: Record<string, OutfitSlot> = {
   // Accessories
   Handbags: "carry",
   Wallets: "carry",
-  // Worn with an outfit without occupying a garment slot -- the same reason
-  // fragrance and cosmetics sit here. Note this means a watch does not pair
-  // with a belt: two finishing items are two finishing touches, not a look,
-  // which is the same rule that stops lipstick pairing with perfume.
-  Watches: "finishing",
-  Belts: "finishing",
-  Sunglasses: "finishing",
-  Earrings: "finishing",
-  // Personal Care
-  Lipstick: "finishing",
-  "Nail Polish": "finishing",
-  "Perfume and Body Mist": "finishing",
+  // Worn with an outfit without occupying a garment slot, each on its own
+  // part of the body -- so a belt and a watch now pair, and a belt and a
+  // second belt still do not.
+  Watches: "wrist",
+  Belts: "waist",
+  Sunglasses: "eyes",
+  Earrings: "jewellery",
+  // Personal Care. One slot between them, on purpose: see `beauty`.
+  Lipstick: "beauty",
+  "Nail Polish": "beauty",
+  "Perfume and Body Mist": "beauty",
 };
 
 /**
@@ -82,15 +144,15 @@ const SLOT_BY_SUB_CATEGORY: Record<string, OutfitSlot> = {
   Dress: "full_body",
   Shoes: "feet",
   Bags: "carry",
-  Watches: "finishing",
-  Belts: "finishing",
-  Eyewear: "finishing",
-  Jewellery: "finishing",
+  Watches: "wrist",
+  Belts: "waist",
+  Eyewear: "eyes",
+  Jewellery: "jewellery",
   Wallets: "carry",
-  Lips: "finishing",
-  Nails: "finishing",
-  Fragrance: "finishing",
-  Perfumes: "finishing",
+  Lips: "beauty",
+  Nails: "beauty",
+  Fragrance: "beauty",
+  Perfumes: "beauty",
   "Home Furnishing": "none",
 };
 

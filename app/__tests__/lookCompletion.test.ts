@@ -3,7 +3,13 @@ import {
   completeTheLook,
   type LookContext,
 } from "@/wishlist/lookCompletion";
-import { slotFor, slotsComplement, genderCoherent, usageCoherent } from "@/wishlist/slots";
+import {
+  genderCoherent,
+  isFinishingSlot,
+  slotFor,
+  slotsComplement,
+  usageCoherent,
+} from "@/wishlist/slots";
 import { InventorySimulator } from "@/revalidation/inventory";
 import catalogJson from "@/data/catalog.json";
 import wishlistJson from "@/data/wishlist.json";
@@ -126,9 +132,9 @@ describe("what the engine finds on the real wishlist", () => {
     noHistory.commerce.orders = { orders: [] };
     noHistory.commerce.bag.items = [];
     const slots = look("Shirts", "Men", noHistory).map((s) => s.slot).sort();
-    // The saved wardrobe put a men's belt and a men's watch in the finishing
-    // slot, which nothing saved filled before, so the men's chain is now
-    // shirt -> jeans -> shoes -> finishing, capped at three.
+    // The saved wardrobe put a men's belt and a men's watch in the accessory
+    // slots, and those are now two slots rather than one, so the men's chain
+    // is shirt -> jeans -> shoes -> belt -> watch, capped at four.
     expect(slots).toContain("bottom");
     expect(slots).toContain("feet");
     expect(slots.length).toBe(MAX_LOOK_SUGGESTIONS);
@@ -141,15 +147,70 @@ describe("what the engine finds on the real wishlist", () => {
     const suggestions = look("Kurtas", "Women");
     expect(suggestions.length).toBeGreaterThan(0);
     const slots = suggestions.map((s) => s.slot).sort();
-    // Carry and feet were always there; finishing arrived with the saved
-    // wardrobe -- women's earrings, belts and watches.
+    // The whole ensemble, not one companion: the saved handbag, the saved
+    // Flats and the saved jewellery, which is the case the improvement was
+    // asked for. Feet is the one that had to be fought for -- the saved Flats
+    // are out of stock in the saved size, so a strictly buyable-first seating
+    // dropped the only women's footwear in the wishlist behind four buyable
+    // accessories and left the outfit barefoot.
     expect(slots).toContain("carry");
     expect(slots).toContain("feet");
+    expect(slots).toContain("jewellery");
     expect(suggestions.every((s) => s.parent.gender === "Women")).toBe(true);
   });
 
   it("suggests nothing at all for a home product", () => {
     expect(look("Bedsheet")).toEqual([]);
+  });
+
+  it("dresses a men's shirt in more than one other category", () => {
+    // The ask, in the terms it was asked in: a shirt should reach jeans, a
+    // belt and footwear rather than one complementary item. Footwear is
+    // absent here for a reason the test above pins -- the only men's shoes
+    // saved were bought -- so what is checked is the categories the data can
+    // actually reach, plus the count.
+    const suggestions = look("Shirts", "Men");
+    const slots = suggestions.map((s) => s.slot);
+    expect(slots).toContain("bottom");
+    expect(slots).toContain("waist");
+    expect(new Set(slots).size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("pairs a belt with a watch, which one finishing slot forbade", () => {
+    // The density bottleneck the split removed. Under a single `finishing`
+    // slot these were "two finishing touches, not a look" and only one could
+    // ever appear; they are worn on different parts of the body and an outfit
+    // has room for both.
+    expect(slotsComplement("waist", "wrist")).toBe(true);
+    const slots = look("Shirts", "Men").map((s) => s.slot);
+    expect(slots).toContain("waist");
+    expect(slots).toContain("wrist");
+  });
+
+  it("still shows only one beauty item, however many are saved", () => {
+    // The half of the old rule worth keeping. A lipstick and a nail polish
+    // are one finishing touch twice over, and in a strip of four they would
+    // take the seats the garment needed.
+    for (const type of ["Kurtas", "Handbags", "Heels"]) {
+      const beauty = look(type, "Women").filter((s) => s.slot === "beauty");
+      expect(beauty.length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("seats the outfit before the accessories when the cap binds", () => {
+    // Seven eligible slots, four seats. Whatever drops has to be the
+    // decoration, never the garment -- ordering by save date alone filled the
+    // strip with a perfume, a nail polish and a pair of sunglasses.
+    const ctx = context();
+    ctx.commerce.bag.items = [];
+    for (const type of ["Kurtas", "Handbags", "Heels", "Earrings"]) {
+      const slots = new Set(look(type, "Women", ctx).map((s) => s.slot));
+      if (slots.has("beauty")) {
+        // Beauty is last in line, so its presence means nothing an outfit
+        // needs was left waiting behind it.
+        expect(slots.has("carry") || slots.has("feet")).toBe(true);
+      }
+    }
   });
 
   it("stays sparse", () => {
@@ -236,11 +297,11 @@ describe("the gates reject rather than rank", () => {
     const seed = parentByType("Shirts", "Men");
     const name = seed.colourways[0].display_name;
     for (const suggestion of look("Shirts", "Men")) {
-      // Two phrasings, and only two: `finishing` keeps its own verb, and
-      // everything else takes the plain one. Both name the seed rather than
+      // Two phrasings, and only two: the finishing slots keep their own verb
+      // between them, and everything else takes the plain one. Both name the seed rather than
       // de-pluralising its article type.
       expect(suggestion.reason).toBe(
-        suggestion.slot === "finishing"
+        isFinishingSlot(suggestion.slot)
           ? `Finishes the look with the ${name}`
           : `Goes with the ${name}`
       );

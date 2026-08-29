@@ -47,6 +47,12 @@ describe("pairing gate", () => {
 
     let seeds = 0;
     let suggestions = 0;
+    // Density, recorded rather than asserted: the point of the change was to
+    // move seeds from one companion to a whole ensemble, and a coherence gate
+    // that only counts violations would report that as unchanged.
+    let seedsWithAny = 0;
+    let categorySum = 0;
+    const ensembleSizes = new Map<number, number>();
 
     for (const parent of realParents(catalog)) {
       for (const colourway of parent.colourways) {
@@ -59,6 +65,9 @@ describe("pairing gate", () => {
         });
 
         const seenSlots = new Set<string>();
+        if (picked.length > 0) seedsWithAny += 1;
+        ensembleSizes.set(picked.length, (ensembleSizes.get(picked.length) ?? 0) + 1);
+        categorySum += new Set(picked.map((s) => s.parent.articleType)).size;
         for (const suggestion of picked) {
           suggestions += 1;
           const label = `${parent.articleType}/${parent.gender} -> ${suggestion.parent.articleType}/${suggestion.parent.gender}`;
@@ -92,10 +101,13 @@ describe("pairing gate", () => {
       epic: "Pairing — cross-category coherence",
       requirement:
         "no suggestion crosses gender, repeats or clashes a slot, resurfaces a bought or bagged item, or comes from outside the wishlist",
-      measured: `${violations} violations across ${suggestions.toLocaleString("en-IN")} suggestions from ${seeds.toLocaleString("en-IN")} seed products`,
+      measured: `${violations} violations across ${suggestions.toLocaleString("en-IN")} suggestions from ${seeds.toLocaleString("en-IN")} seed products; ${seedsWithAny.toLocaleString("en-IN")} of them produce a look, averaging ${(categorySum / seedsWithAny).toFixed(2)} distinct categories each (${[...ensembleSizes.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([size, count]) => `${count.toLocaleString("en-IN")} at ${size}`)
+        .join(", ")})`,
       pass: violations === 0,
       caveat:
-        "Coverage is bounded by what the shipped wishlist contains — thirty items, of which five are shirts and two are excluded by the lifecycle gate. The saved wardrobe filled the finishing slot for men and women, which nothing saved reached before; whole slots still go untested because nothing saved fills them: no adult bottomwear for women, and no kidswear at all. A pass means no wrong pairing among the pairings this data can produce, not that the engine is correct over a catalog it has never seen.",
+        "Coverage is bounded by what the shipped wishlist contains — thirty items, of which five are shirts and two are excluded by the lifecycle gate. The saved wardrobe filled the accessory slots for men and women, which nothing saved reached before; whole slots still go untested because nothing saved fills them: no adult bottomwear for women, and no kidswear at all — which is also why 108 of the seeds here are dressed in nothing, and why the density figure is over the seeds that produce a look rather than over all of them. A pass means no wrong pairing among the pairings this data can produce, not that the engine is correct over a catalog it has never seen.",
     });
 
     // A sweep that produced no suggestions would satisfy every assertion above

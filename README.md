@@ -63,7 +63,7 @@ native build always has it: there is no URL there to carry a flag.
 | ![Added from Wishlist](docs/added-confirmation.png) | ![Stale comparison](docs/cr05-stale-comparison.png) |
 | **Improvement 3** — the add is a decision point with three real next moves, not a toast that vanishes in 2.6 seconds. | **CR-02/05** — the quiet resume bar, and the sheet naming what changed before the user commits to going back. |
 | ![Typeahead](docs/typeahead-saved-first.png) | ![Complete the look](docs/pdp-complete-the-look.png) |
-| **Typeahead** — saved matches above organic suggestions, composed as layout rather than as ranking so FR-2 stays structural. The saved group is fail-open and simply absent if matching misses. | **Complete the look** — price, then the pairing, then the description. A women's Kurta pairs with the saved Handbag and Heels: an outfit the old pairwise table could never find. |
+| **Typeahead** — saved matches above organic suggestions, composed as layout rather than as ranking so FR-2 stays structural. The saved group is fail-open and simply absent if matching misses. | **Complete the look** — price, then the pairing, then the description. A women's Kurta pairs with the saved Handbag, Flats, Earrings and Belt: an ensemble the old pairwise table could never find. |
 
 ## The Decision Confidence Layer
 
@@ -189,9 +189,10 @@ not contain, so `Kurtas` mapped only to `Leggings` and could never fire, and
 **thirteen of twenty-one types returned nothing at all**.
 
 An outfit is modelled as slots instead — `top`, `bottom`, `full_body`, `feet`,
-`carry`, `finishing` — and two items complement each other when their slots
-differ. A new article type joins by being assigned one slot. That is the whole
-cost of extending it.
+`carry`, and the five finishing slots `waist`, `wrist`, `eyes`, `jewellery`
+and `beauty` — and two items complement each other when their slots differ. A
+new article type joins by being assigned one slot. That is the whole cost of
+extending it.
 
 One exception is why the model earns its keep: **`full_body` conflicts with
 both `top` and `bottom`**, because a dress already occupies the torso and the
@@ -200,6 +201,40 @@ legs. A pairwise table gets that wrong unless somebody remembers to think of it.
 It fixed the demo as well as the maintenance. A saved Kurta paired with nothing
 before; under slots it pairs with the saved Handbag and Heels — a women's
 outfit the wishlist has contained all along and the shipped code could not find.
+
+### An ensemble, not a companion
+
+One `finishing` slot once held every accessory, on the rule that "two
+finishing touches are not a look". That rule was the density bottleneck: a
+belt and a watch are worn at once, on different parts of the body, and a
+single slot meant a men's shirt could reach one of them and a kurta could show
+earrings or a watch but never both. The accessories now hold the slot they
+actually occupy — `waist`, `wrist`, `eyes`, `jewellery` — while the half of
+the rule worth keeping survives one slot deep: still no two belts, and
+cosmetics and fragrance stay together in `beauty` so a lipstick and a nail
+polish cannot take the seats the garment needed.
+
+The cap moved with it, from three suggestions to **four** — the smallest that
+holds a dressed look: the other garment, footwear, and something carried or
+worn with it. Four is still a capped strip of saved items rather than a
+carousel; it wraps into two columns rather than squeezing a fourth card into a
+row built for two.
+
+Seating and display are now two different orders, because they answer two
+different questions. **Seating** asks which slots are worth one of the four
+places, and the answer is the outfit's — garment, then footwear, then the bag,
+then the accessories, with beauty last. Ordering seats by save date filled the
+strip with whatever was saved most recently; ordering them by buyability
+dropped the saved Flats, the only women's footwear in the wishlist, behind
+four buyable accessories and left the outfit barefoot. **Display** asks what
+leads, and there the old rule holds: an item the user can no longer buy is
+still worth showing, but never first — and it now says `No longer in your
+size` on the card rather than letting the user find out at the size selector.
+
+Measured over every catalog product as a seed, the 427 seeds that produce a
+look average **3.59 distinct categories** each, up from 2.20: 254 of them
+reach four items, 173 reach three. The other 108 seeds suggest nothing, and
+that is data rather than engine — see the caveat below.
 
 ### Three gates that reject rather than score
 
@@ -257,11 +292,14 @@ The request that prompted this named *trousers* and *watches*: bottomwear here
 is Jeans and Track Pants. Watches now exist — along with belts, sunglasses and
 wallets — but as **browse-only** stock, so the caveat moves rather than
 disappearing. Nothing in that range is saved, and pairing draws only from
-saved items, so a watch can be found, opened and paired *from*, never
-suggested. The shipped wishlist still demonstrates two chains — men's shirt →
-jeans, and women's kurta → handbag → heels. Girls' items have nothing saved to
-pair with, Boys have T-shirts only, the `finishing` slot is still empty in the
-wishlist, and Home is excluded by design.
+saved items, so a browse-only watch can be found, opened and paired *from*,
+never suggested. The saved wardrobe since filled the accessory slots, so the
+shipped wishlist demonstrates two full ensembles — men's shirt → jeans → belt
+→ watch, and women's kurta → handbag → flats → earrings → belt. Footwear is
+missing from the men's chain for a reason worth knowing: the only men's shoes
+saved were already bought, and the lifecycle gate is doing its job. Girls'
+items have nothing saved to pair with, Boys have T-shirts only, no adult
+bottomwear is saved for women, and Home is excluded by design.
 
 There are no earphones, and there cannot be: the source dataset is fashion
 only — Apparel, Accessories, Footwear, Personal Care — with no audio or

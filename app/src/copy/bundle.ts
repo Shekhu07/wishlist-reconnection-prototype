@@ -280,6 +280,15 @@ export const PRODUCT_DESCRIPTION_HEADING = "Description";
 export const PRODUCT_DESCRIPTION_NOTE =
   "Prototype data: material, fit and returns are generated, not real.";
 export const LOOK_NOTE = "Later-phase prototype. Drawn only from items you already saved.";
+/**
+ * Shown against a suggestion whose saved size has gone.
+ *
+ * The strip earns its seat for the outfit's slot rather than for what happens
+ * to be in stock, so the only footwear a user saved can hold the footwear seat
+ * while being unbuyable. Without this line the card reads as an ordinary
+ * suggestion and the user finds out at the size selector.
+ */
+export const LOOK_SIZE_GONE = "No longer in your size";
 
 /* ------------------------------------------------------------------ *
  * Improvement 10 -- later-phase input modes

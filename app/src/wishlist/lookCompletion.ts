@@ -3,7 +3,9 @@ import { reconcile, type CommerceState } from "@/commerce/reconcile";
 import type { InventorySimulator } from "@/revalidation/inventory";
 import {
   genderCoherent,
+  isFinishingSlot,
   slotFor,
+  slotRank,
   slotsComplement,
   usageCoherent,
   type OutfitSlot,
@@ -39,13 +41,22 @@ export interface LookSuggestion {
 }
 
 /**
- * Three, up from the old two.
+ * Four, up from three, up from the old two.
  *
- * A full look is a top, a bottom and shoes -- capping at two could never show
- * one. Three is still nowhere near a carousel, and the section renders nothing
- * at all rather than padding itself out to reach the cap.
+ * Three could show a top, a bottom and shoes -- an outfit, but an undressed
+ * one, and it forced the choice between the shoes and the belt. Four is the
+ * smallest cap that holds a dressed look: the other garment, footwear, and
+ * one thing carried or worn with it. It is still a strip of four saved items
+ * rather than a carousel, it is still capped rather than paged, and the
+ * section renders nothing at all rather than padding itself out to reach the
+ * cap.
+ *
+ * Above four the prompt's bound starts to bite -- "keep this experience
+ * sparse... do not add complementary products solely to increase basket size"
+ * -- and what a fifth slot adds is a second accessory, which is decoration
+ * rather than an outfit.
  */
-export const MAX_LOOK_SUGGESTIONS = 3;
+export const MAX_LOOK_SUGGESTIONS = 4;
 
 export interface LookContext {
   catalog: Catalog;
@@ -114,29 +125,49 @@ export function completeTheLook(
 }
 
 /**
- * One item per slot, buyable first, most recently saved as the tie-break.
+ * One item per slot; the slots an outfit needs most take the four seats;
+ * within a seat, buyable and recently saved wins.
  *
- * The slot cap is the important half: two saved shirts against one pair of
- * jeans is the same suggestion twice, and it crowds out the shoes that would
- * have finished the outfit.
+ * Selection and display order are deliberately two different things here,
+ * because they answer two different questions and an earlier version that
+ * used one sort for both got the interesting case wrong.
+ *
+ * *Selection* asks which slots are worth a seat, and the answer has to be the
+ * outfit's, not the save log's. A women's kurta can reach seven slots with
+ * room for four; ordering seats by save date alone fills the strip with
+ * whatever was saved last -- a perfume, a nail polish, a pair of sunglasses
+ * -- and ordering them by buyability alone drops the saved Flats, the only
+ * women's footwear in the wishlist, behind four buyable accessories. Either
+ * way the shoes fall out of the look, which is precisely the suggestion the
+ * user came for.
+ *
+ * *Display* asks what leads, and there the old rule still holds: an item the
+ * user can no longer buy is worth showing -- learning a saved item is gone
+ * beats silence -- but it never goes first.
  */
 function rank(candidates: LookSuggestion[]): LookSuggestion[] {
-  const ordered = [...candidates].sort((a, b) => {
-    // Unavailable still appears -- learning a saved item is gone beats silence
-    // -- but never ahead of something the user can actually wear.
-    if (a.buyable !== b.buyable) return a.buyable ? -1 : 1;
-    return b.item.saved_at.localeCompare(a.item.saved_at);
-  });
-
-  const seenSlots = new Set<OutfitSlot>();
-  const picked: LookSuggestion[] = [];
-  for (const candidate of ordered) {
-    if (seenSlots.has(candidate.slot)) continue;
-    seenSlots.add(candidate.slot);
-    picked.push(candidate);
-    if (picked.length === MAX_LOOK_SUGGESTIONS) break;
+  // Best item per slot. Two saved shirts are the same idea twice, and the
+  // second one crowds out the shoes that would have finished the outfit.
+  const bySlot = new Map<OutfitSlot, LookSuggestion>();
+  for (const candidate of candidates) {
+    const held = bySlot.get(candidate.slot);
+    if (!held || preferred(candidate, held) < 0) bySlot.set(candidate.slot, candidate);
   }
-  return picked;
+
+  const seated = [...bySlot.values()]
+    .sort((a, b) => slotRank(a.slot) - slotRank(b.slot) || preferred(a, b))
+    .slice(0, MAX_LOOK_SUGGESTIONS);
+
+  return seated.sort((a, b) => {
+    if (a.buyable !== b.buyable) return a.buyable ? -1 : 1;
+    return slotRank(a.slot) - slotRank(b.slot) || preferred(a, b);
+  });
+}
+
+/** Which of two saved items speaks better for its slot: buyable, then recent. */
+function preferred(a: LookSuggestion, b: LookSuggestion): number {
+  if (a.buyable !== b.buyable) return a.buyable ? -1 : 1;
+  return b.item.saved_at.localeCompare(a.item.saved_at);
 }
 
 /**
@@ -154,5 +185,5 @@ function rank(candidates: LookSuggestion[]): LookSuggestion[] {
  */
 function reasonFor(slot: OutfitSlot, seedColourway: Colourway): string {
   const name = seedColourway.display_name;
-  return slot === "finishing" ? `Finishes the look with the ${name}` : `Goes with the ${name}`;
+  return isFinishingSlot(slot) ? `Finishes the look with the ${name}` : `Goes with the ${name}`;
 }
