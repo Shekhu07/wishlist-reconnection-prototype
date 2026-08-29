@@ -53,7 +53,10 @@ describe("navigation between search, saved product and compare", () => {
     fireEvent.press(screen.getByTestId("wishlist-action-secondary"));
     expect(screen.getByTestId("compare-screen")).toBeTruthy();
 
-    fireEvent.press(screen.getByTestId("compare-back"));
+    // The shell's header bar owns back for this route now: the screen used to
+    // carry its own "← Back to results" under a chevron that already went
+    // back, which is two controls for one destination.
+    fireEvent.press(screen.getByLabelText("Go back"));
     expect(screen.getByTestId("search-results")).toBeTruthy();
     await waitForModule();
   });

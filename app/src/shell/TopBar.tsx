@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { COMPARE_TITLE } from "@/copy/bundle";
 import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 import { BrandWordmark } from "./BrandWordmark";
 import { MyntraMark } from "./MyntraMark";
@@ -38,7 +39,46 @@ export function TopBar({
       />
     );
   }
-  return <BackHeader onBack={onBack} />;
+  return <BackHeader onBack={onBack} title={titleFor(screen)} />;
+}
+
+/**
+ * What the bar above a pushed screen calls it.
+ *
+ * A bare chevron on an otherwise empty bar leaves every pushed screen
+ * anonymous -- the Bag had no title anywhere on it, and Compare grew a second
+ * "Back to results" link inside its body because the header was not doing the
+ * job a header does. Titling here rather than in each screen keeps one bar,
+ * one back control, and one place that decides what a route is called.
+ *
+ * `null` means the screen titles itself: a product page leads with the brand,
+ * and repeating it in the bar would say the same word twice.
+ */
+export function titleFor(screen: Screen): string | null {
+  switch (screen.name) {
+    case "wishlist":
+      return "Wishlist";
+    case "bag":
+      return "Bag";
+    case "checkout":
+      return "Checkout";
+    case "compare":
+      // From the bundle, so the header and the screen cannot drift apart and
+      // so copy.test.ts still sweeps it.
+      return COMPARE_TITLE;
+    case "profile":
+      return "Account";
+    case "results":
+    case "saved":
+    case "product":
+    case "alternative":
+    case "browse":
+    case "category":
+    case "stub":
+    case "home":
+    case "searchEntry":
+      return null;
+  }
 }
 
 function HomeHeader({
@@ -123,7 +163,7 @@ function HomeHeader({
   );
 }
 
-function BackHeader({ onBack }: { onBack: () => void }) {
+function BackHeader({ onBack, title }: { onBack: () => void; title: string | null }) {
   return (
     <View style={styles.backHeader} testID="back-header">
       <Pressable
@@ -134,6 +174,11 @@ function BackHeader({ onBack }: { onBack: () => void }) {
       >
         <BackArrowGlyph />
       </Pressable>
+      {title ? (
+        <Text style={styles.backTitle} numberOfLines={1} testID="back-header-title">
+          {title}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -277,10 +322,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   backHeader: {
+    // A row, which it always should have been: without it the 44px back
+    // button stretched the full width and parked the chevron in the middle of
+    // the screen, reading as decoration rather than as a control.
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: color.surface,
     paddingHorizontal: space.sm,
     paddingVertical: space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: color.borderSubtle,
   },
+  backTitle: { ...type.moduleHeader, color: color.textPrimary, flex: 1 },
   backButton: {
     minWidth: MIN_TOUCH_TARGET,
     minHeight: MIN_TOUCH_TARGET,

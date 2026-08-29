@@ -2,12 +2,13 @@ import { useState } from "react";
 import {
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { color, radius, space, spec, type } from "@/design/tokens";
+import { MIN_TOUCH_TARGET, color, radius, space, spec, type } from "@/design/tokens";
 
 /**
  * Three paged banners with a dot row, per the design spec.
@@ -23,27 +24,39 @@ const BANNERS = [
   {
     key: "sale",
     background: spec.bannerPink,
-    tag: "LIMITED TIME",
-    headline: "End of Season Sale · Up to 70% Off",
+    tag: "FRESH DROPS",
+    // Deliberately not a second sale headline. `SaleStrip` sits two blocks
+    // below this carousel and already advertises the season sale -- with a
+    // different number, "40-70%" against the "Up to 70%" this used to claim.
+    // Two cards saying the same thing badly is worse than one saying it once.
+    headline: "New arrivals from your favourite brands",
+    action: "Start searching",
   },
   {
     key: "new",
     background: spec.bannerViolet,
     tag: "JUST IN",
-    headline: "New Arrivals, freshly stocked",
+    headline: "The season's newest labels",
+    action: null,
   },
   {
     key: "luxe",
     background: spec.bannerNeutral,
     tag: "CURATED",
     headline: "The Luxury Edit",
+    action: null,
   },
 ] as const;
 
 const CARD_WIDTH = 340;
 const GAP = 10;
 
-export function BannerCarousel() {
+export interface BannerCarouselProps {
+  /** Only the lead banner offers an action, and only if the caller wires one. */
+  onAction?: () => void;
+}
+
+export function BannerCarousel({ onAction }: BannerCarouselProps = {}) {
   const [page, setPage] = useState(0);
 
   // The dot row has to follow the scroll or it is decoration claiming to be
@@ -72,6 +85,17 @@ export function BannerCarousel() {
           >
             <Text style={styles.eyebrow}>{banner.tag}</Text>
             <Text style={styles.headline}>{banner.headline}</Text>
+            {banner.action && onAction ? (
+              <Pressable
+                testID={`banner-action-${banner.key}`}
+                accessibilityRole="button"
+                accessibilityLabel={banner.action}
+                onPress={onAction}
+                style={styles.action}
+              >
+                <Text style={styles.actionText}>{banner.action}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ))}
       </ScrollView>
@@ -95,7 +119,12 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: radius.banner,
     padding: space.lg,
-    justifyContent: "flex-start",
+    // The spec draws these over an `image-slot shape="rect"` we do not fill,
+    // so the card is flat colour. Top-aligning the text on top of that left
+    // the bottom two-thirds visibly empty; spreading it uses the height the
+    // spec allotted instead of pretending the artwork is there.
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   eyebrow: {
     ...type.railAction,
@@ -110,6 +139,14 @@ const styles = StyleSheet.create({
     maxWidth: 220,
     lineHeight: 23,
   },
+  action: {
+    minHeight: MIN_TOUCH_TARGET,
+    justifyContent: "center",
+    paddingHorizontal: space.lg,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
+  },
+  actionText: { ...type.body, fontWeight: "700", color: color.textPrimary },
   dots: {
     flexDirection: "row",
     justifyContent: "center",

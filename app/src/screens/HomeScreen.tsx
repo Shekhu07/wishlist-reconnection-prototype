@@ -76,9 +76,9 @@ export function HomeScreen({
         ))}
       </ScrollView>
 
-      <CategoryRail catalog={catalog} onSelectCategory={onSelectCategory} />
+      <CategoryRail onSelectCategory={onSelectCategory} />
 
-      <BannerCarousel />
+      <BannerCarousel onAction={onOpenSearch} />
 
       <SectionHeader title="Shop by Brand" />
       <BrandStrip catalog={catalog} onSelectBrand={onSelectBrand} />

@@ -1,8 +1,17 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { AskMayaStrip } from "@/components/home/AskMayaStrip";
 import { BrandCarousel } from "@/components/home/BrandCarousel";
 import { RecentSearches } from "@/components/home/RecentSearches";
+import { TrySearching } from "@/components/home/TrySearching";
 import type { Catalog } from "@/data/types";
 import type { Match } from "@/match/contract";
 import { buildSearchIndex, search } from "@/search/localSearch";
@@ -131,6 +140,11 @@ export function SearchEntryScreen({
 
       <RecentSearches recents={recents} onSubmit={onSubmit} onClearRecents={onClearRecents} />
 
+      {/* Only before the user has history of their own: their own recents are
+          better than our suggestions, and stacking both is two chip rows
+          saying nearly the same thing. */}
+      <TrySearching catalog={catalog} onSubmit={onSubmit} hidden={recents.length > 0} />
+
       <AskMayaStrip />
 
       <BrandCarousel catalog={catalog} onSubmit={onSubmit} />
@@ -189,7 +203,18 @@ const styles = StyleSheet.create({
     borderColor: color.brandPink,
     backgroundColor: color.surface,
   },
-  input: { flex: 1, fontSize: 13, color: color.textPrimary, padding: 0 },
+  input: {
+    flex: 1,
+    fontSize: 13,
+    color: color.textPrimary,
+    padding: 0,
+    // The wrapper already draws a pink focus border around this field. On web
+    // the browser drew its own blue ring *inside* that, which is the one piece
+    // of unstyled chrome visible in the whole app -- and it is the search
+    // field, which is the first thing anyone taps. Removing it is only safe
+    // because the wrapper's border is the visible focus affordance.
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as unknown as object) : null),
+  },
   goButton: {
     minHeight: MIN_TOUCH_TARGET,
     justifyContent: "center",

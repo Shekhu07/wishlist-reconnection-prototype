@@ -2,7 +2,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { BagLine, CommerceState } from "@/commerce/reconcile";
 import { CATALOG_IMAGES } from "@/data/images";
 import type { Catalog } from "@/data/types";
-import { color, space, type } from "@/design/tokens";
+import { color, elevation, space, type } from "@/design/tokens";
 import { formatPrice } from "@/copy/bundle";
 import { Button } from "@/components/Button";
 
@@ -51,22 +51,29 @@ export function BagScreen({ catalog, commerce, onCheckout }: BagScreenProps) {
   const total = bagTotal(catalog, commerce);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} testID="bag-screen">
-      {items.map((line) => (
-        <BagRow key={line.sku} line={line} catalog={catalog} />
-      ))}
+    <View style={styles.screen} testID="bag-screen">
+      <ScrollView contentContainerStyle={styles.content}>
+        {items.map((line) => (
+          <BagRow key={line.sku} line={line} catalog={catalog} />
+        ))}
+      </ScrollView>
 
-      <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalValue} testID="bag-total">
-          {formatPrice(total)}
-        </Text>
+      {/* Pinned, not scrolled past. The total and the way out of this screen
+          are what the user came for; floating them after the last line left
+          the CTA stranded mid-page with the rest of the screen empty below
+          it, and pushed them off-screen entirely once the bag got long. */}
+      <View style={styles.actionBar}>
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalValue} testID="bag-total">
+            {formatPrice(total)}
+          </Text>
+        </View>
+        {onCheckout ? (
+          <Button label="Proceed to Checkout" filled onPress={onCheckout} testID="go-checkout" />
+        ) : null}
       </View>
-
-      {onCheckout ? (
-        <Button label="Proceed to Checkout" filled onPress={onCheckout} testID="go-checkout" />
-      ) : null}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -103,7 +110,7 @@ function BagRow({ line, catalog }: { line: BagLine; catalog: Catalog }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.surface },
-  content: { padding: space.lg, gap: space.md },
+  content: { padding: space.lg, gap: space.md, paddingBottom: space.xl },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: color.surface },
   emptyText: { ...type.body, color: color.textSecondary },
   row: {
@@ -122,12 +129,17 @@ const styles = StyleSheet.create({
   name: { ...type.body, color: color.textSecondary },
   meta: { ...type.chip, color: color.textSecondary },
   price: { ...type.body, fontWeight: "700", color: color.textPrimary, marginTop: space.xs },
+  actionBar: {
+    padding: space.lg,
+    gap: space.md,
+    backgroundColor: color.surface,
+    borderTopWidth: 1,
+    borderTopColor: color.borderSubtle,
+    ...elevation.float,
+  },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: color.borderSubtle,
-    paddingTop: 14,
   },
   totalLabel: { fontSize: 13, color: color.textSecondary },
   totalValue: { ...type.railHeader, color: color.textPrimary },

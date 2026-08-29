@@ -91,6 +91,24 @@ export const COPY: Record<CopyKey, ModuleCopy> = {
   },
 };
 
+/**
+ * The lifecycle a saved row is in, as a pill.
+ *
+ * The Wishlist list already knew all of this -- `reconcile()` derives it from
+ * the bag and the order history -- and showed none of it, so a row the user
+ * had already bought looked exactly like one they had not. These are state
+ * words, not promotion: no urgency, no incentive, nothing about price, which
+ * is what keeps them inside C-1. `none` renders no pill at all rather than a
+ * reassuring one; the absence is the information.
+ */
+export const LIFECYCLE_PILL: Record<string, string | null> = {
+  none: null,
+  in_bag: "In Bag",
+  saved_for_later: "In Save for Later",
+  purchased: "Purchased before",
+  purchased_other_variant: "Purchased before",
+};
+
 export const DISMISS_LABEL = "Hide items from your Wishlist for this search";
 export const DISMISSED_COPY = "Hidden for now";
 export const UNDO_LABEL = "Undo";

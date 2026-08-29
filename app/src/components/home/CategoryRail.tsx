@@ -1,29 +1,15 @@
-import { useMemo } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import type { Catalog } from "@/data/types";
-import { CATALOG_IMAGES } from "@/data/images";
-import { CATEGORIES, categoryCover, type CategoryKey } from "@/search/catalogBrowse";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CATEGORIES, type CategoryKey } from "@/search/catalogBrowse";
 import { MIN_TOUCH_TARGET, color, space, type } from "@/design/tokens";
+import { CategoryGlyph } from "./CategoryGlyph";
 
 const CIRCLE = 56;
 
 export function CategoryRail({
-  catalog,
   onSelectCategory,
 }: {
-  catalog: Catalog;
   onSelectCategory: (key: CategoryKey) => void;
 }) {
-  const covers = useMemo(
-    () =>
-      CATEGORIES.map(({ key, label }) => ({
-        key,
-        label,
-        cover: categoryCover(catalog, key),
-      })),
-    [catalog]
-  );
-
   return (
     <ScrollView
       horizontal
@@ -31,7 +17,7 @@ export function CategoryRail({
       contentContainerStyle={styles.row}
       testID="category-rail"
     >
-      {covers.map(({ key, label, cover }) => (
+      {CATEGORIES.map(({ key, label }) => (
         <Pressable
           key={key}
           accessibilityRole="button"
@@ -39,19 +25,15 @@ export function CategoryRail({
           onPress={() => onSelectCategory(key)}
           style={styles.item}
         >
-          <View style={styles.circle}>
-            {cover === null ? null : (
-              <Image
-                testID={`category-cover-${key}`}
-                source={CATALOG_IMAGES[cover]}
-                style={styles.cover}
-                resizeMode="cover"
-                // The label below the circle already says where this goes; an
-                // image alt here would make every circle announce twice.
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              />
-            )}
+          <View
+            style={styles.circle}
+            testID={`category-cover-${key}`}
+            // The label below the circle already says where this goes; the
+            // mark inside it would make a screen reader announce twice.
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <CategoryGlyph category={key} />
           </View>
           <Text style={styles.label} numberOfLines={1}>
             {label}
@@ -85,10 +67,9 @@ const styles = StyleSheet.create({
     backgroundColor: color.surfaceMuted,
     borderWidth: 1,
     borderColor: color.borderSubtle,
-    // Squares clipped to a circle: without this the 3:4 photo renders as a
-    // rectangle sitting on top of the rail.
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "hidden",
   },
-  cover: { width: "100%", height: "100%" },
   label: { ...type.chip, fontWeight: "600", color: color.textPrimary },
 });

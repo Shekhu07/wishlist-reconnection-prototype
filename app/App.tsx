@@ -1452,6 +1452,7 @@ export default function App() {
           <WishlistScreen
             results={wishlistResults}
             pincode={pincode}
+            commerce={commerce}
             onSelectItem={(itemId) => {
               // Reset the variant selection the way every other route into the
               // saved screen does; carrying the last item's size across would

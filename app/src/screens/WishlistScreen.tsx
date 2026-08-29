@@ -1,14 +1,24 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   ADVISORY_COPY,
+  LIFECYCLE_PILL,
   NOT_DELIVERABLE,
   RECOVERY_COPY,
   formatDelivery,
   formatPrice,
 } from "@/copy/bundle";
+import { reconcile, type CommerceState } from "@/commerce/reconcile";
 import { CATALOG_IMAGES } from "@/data/images";
 import type { RevalidationResult } from "@/revalidation/revalidate";
-import { CARD_IMAGE, MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
+import {
+  CARD_IMAGE,
+  MIN_TOUCH_TARGET,
+  color,
+  elevation,
+  radius,
+  space,
+  type,
+} from "@/design/tokens";
 
 /**
  * The Wishlist itself, reached from the heart on the home header.
@@ -38,6 +48,13 @@ import { CARD_IMAGE, MIN_TOUCH_TARGET, color, radius, space, type } from "@/desi
 export interface WishlistScreenProps {
   results: RevalidationResult[];
   pincode: string;
+  /**
+   * Read for the lifecycle pill only. Derived here through `reconcile()`
+   * rather than stored on the row, for the reason E14 settled: an item
+   * asserting its own state cannot go stale correctly, so leaving the bag has
+   * to remove the pill without anything else being told.
+   */
+  commerce: CommerceState;
   onSelectItem: (itemId: string) => void;
 }
 
@@ -56,10 +73,36 @@ function statusFor(result: RevalidationResult, pincode: string): string {
   return `${formatPrice(current.price)} · ${delivery}`;
 }
 
-export function WishlistScreen({ results, pincode, onSelectItem }: WishlistScreenProps) {
+/**
+ * Most recently saved first.
+ *
+ * The list used to render in the order the fixture file happens to hold, which
+ * put the five state-fixture shirts at the top -- so the first screen of a
+ * thirty-item wardrobe was five near-identical photographs of the same model,
+ * and looked like a rendering bug rather than a wishlist. Recency is what a
+ * saved list is conventionally ordered by, and it interleaves the categories
+ * as a side effect rather than as the reason.
+ *
+ * Sorted here rather than upstream because it is a property of this page. The
+ * module ranks its own matches (`match/ranking.ts`) on entirely different
+ * terms, and must keep doing so.
+ */
+function ordered(results: RevalidationResult[]): RevalidationResult[] {
+  return [...results].sort((a, b) => b.item.saved_at.localeCompare(a.item.saved_at));
+}
+
+export function WishlistScreen({
+  results,
+  pincode,
+  commerce,
+  onSelectItem,
+}: WishlistScreenProps) {
   return (
     <ScrollView style={styles.screen} testID="wishlist-screen">
-      <Text style={styles.heading}>Wishlist</Text>
+      {/* No "Wishlist" heading here: the shell's header bar titles this route
+          (`titleFor` in shell/TopBar), and printing it again immediately
+          below said the same word twice on the same screen. The count is the
+          part the bar does not carry. */}
       <Text style={styles.count}>
         {results.length === 1 ? "1 item saved" : `${results.length} items saved`}
       </Text>
@@ -70,10 +113,11 @@ export function WishlistScreen({ results, pincode, onSelectItem }: WishlistScree
         </Text>
       ) : null}
 
-      {results.map((result) => {
+      {ordered(results).map((result) => {
         const { item, parent, colourway, advisories } = result;
         const savedVariant = `${item.colour} · ${item.size}`;
         const status = statusFor(result, pincode);
+        const lifecycle = LIFECYCLE_PILL[reconcile(item, commerce).state] ?? null;
         return (
           <Pressable
             key={item.item_id}
@@ -84,6 +128,7 @@ export function WishlistScreen({ results, pincode, onSelectItem }: WishlistScree
               colourway.display_name,
               `saved ${savedVariant}`,
               status,
+              ...(lifecycle ? [lifecycle] : []),
             ].join(", ")}
             onPress={() => onSelectItem(item.item_id)}
             style={styles.row}
@@ -104,8 +149,18 @@ export function WishlistScreen({ results, pincode, onSelectItem }: WishlistScree
               <Text style={styles.name} numberOfLines={2}>
                 {colourway.display_name}
               </Text>
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>Saved: {savedVariant}</Text>
+              <View style={styles.chipRow}>
+                <View style={styles.chip}>
+                  <Text style={styles.chipText}>Saved: {savedVariant}</Text>
+                </View>
+                {lifecycle ? (
+                  <View
+                    style={styles.lifecycle}
+                    testID={`wishlist-lifecycle-${item.item_id}`}
+                  >
+                    <Text style={styles.lifecycleText}>{lifecycle}</Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={styles.status} numberOfLines={2} testID={`wishlist-status-${item.item_id}`}>
                 {status}
@@ -126,18 +181,15 @@ export function WishlistScreen({ results, pincode, onSelectItem }: WishlistScree
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.surface },
-  heading: {
-    ...type.sectionHeader,
-    color: color.textPrimary,
-    paddingHorizontal: space.lg,
-    paddingTop: space.md,
-  },
+  // A muted ground so the rows below can be surfaces sitting on the page
+  // rather than boxes ruled onto it.
+  screen: { flex: 1, backgroundColor: color.surfaceMuted },
   count: {
     ...type.body,
     color: color.textSecondary,
     paddingHorizontal: space.lg,
-    paddingBottom: space.sm,
+    paddingTop: space.md,
+    paddingBottom: space.md,
   },
   empty: {
     ...type.body,
@@ -148,10 +200,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: space.md,
     minHeight: MIN_TOUCH_TARGET,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: color.borderSubtle,
+    marginHorizontal: space.md,
+    marginBottom: space.md,
+    padding: space.md,
+    borderRadius: radius.card,
+    backgroundColor: color.surface,
+    ...elevation.card,
   },
   image: {
     width: CARD_IMAGE.width,
@@ -162,15 +216,32 @@ const styles = StyleSheet.create({
   details: { flex: 1 },
   brand: { ...type.brand, color: color.textPrimary },
   name: { ...type.body, color: color.textSecondary, marginTop: 2 },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space.xs,
+    marginTop: space.sm,
+  },
   chip: {
     alignSelf: "flex-start",
     backgroundColor: color.surfaceMuted,
     borderRadius: 4,
     paddingHorizontal: space.sm,
     paddingVertical: 3,
-    marginTop: space.sm,
   },
   chipText: { ...type.chip, color: color.textPrimary },
+  // Bordered rather than filled: the lifecycle is a fact about the row, and a
+  // second solid chip beside "Saved:" would compete with it for the same
+  // glance.
+  lifecycle: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+    borderRadius: 4,
+    paddingHorizontal: space.sm,
+    paddingVertical: 3,
+  },
+  lifecycleText: { ...type.chip, fontWeight: "700", color: color.textPrimary },
   // Neutral state text. C-1 is enforced here as much as in the copy bundle.
   status: { ...type.body, color: color.textSecondary, marginTop: space.sm },
   advisory: { ...type.chip, color: color.textSecondary, marginTop: 2 },

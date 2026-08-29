@@ -145,35 +145,6 @@ export function byCategory(catalog: Catalog, key: CategoryKey): BrowseTile[] {
 }
 
 /**
- * The product whose photo fronts a category circle on the home rail.
- *
- * Drawn from the catalog rather than shipped as six separate art assets, so
- * a cover can never advertise a category the circle does not open onto.
- * Highest review count wins: catalog-derived and stable (no randomness, so
- * the rail does not reshuffle between renders), and it lands on a mainstream
- * product instead of whichever row happened to be first in the file.
- */
-export function categoryCover(catalog: Catalog, key: CategoryKey): number | null {
-  let best: BrowseTile | null = null;
-  for (const tile of byCategory(catalog, key)) {
-    if (!best || tile.colourway.review_count > best.colourway.review_count) {
-      best = tile;
-    }
-  }
-  return best ? best.colourway.product_id : null;
-}
-
-/** Every product already fronting a circle, so nothing else reuses one. */
-export function categoryCoverIds(catalog: Catalog): Set<number> {
-  const ids = new Set<number>();
-  for (const { key } of CATEGORIES) {
-    const id = categoryCover(catalog, key);
-    if (id !== null) ids.add(id);
-  }
-  return ids;
-}
-
-/**
  * Luxury is the top price decile of the catalog rather than a fixed number,
  * so it stays meaningful if the catalog is rebuilt with different rows.
  */

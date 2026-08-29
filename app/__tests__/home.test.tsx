@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import catalogJson from "@/data/catalog.json";
 import type { Catalog } from "@/data/types";
 import { HomeScreen, type HomeScreenProps } from "@/screens/HomeScreen";
-import { CATEGORIES, categoryCover } from "@/search/catalogBrowse";
+import { CATEGORIES } from "@/search/catalogBrowse";
 
 jest.mock("@/data/images", () => ({ CATALOG_IMAGES: new Proxy({}, { get: () => 1 }) }));
 
@@ -50,23 +50,37 @@ describe("the home screen", () => {
     }
   });
 
-  it("puts a photo in every category circle", () => {
+  it("puts a mark in every category circle", () => {
+    // These held a catalog photograph cropped to fill, which on a 56px disc
+    // showed a headless torso -- and, because the cover was picked by review
+    // count, showed the same model in more than one circle. They carry drawn
+    // marks now, one per category.
     renderHome();
     for (const key of ["fashion", "beauty", "kids", "footwear", "accessories", "home"]) {
       expect(screen.getByTestId(`category-cover-${key}`, hidden)).toBeTruthy();
     }
   });
 
-  it("keeps the cover photos out of the screen reader's way", () => {
+  it("keeps the marks out of the screen reader's way", () => {
     renderHome();
     // One announcement per circle, from the Pressable's own label.
     expect(screen.queryByTestId("category-cover-fashion")).toBeNull();
   });
 
-  it("never shows the same photo twice above the fold", () => {
+  it("gives every category its own mark rather than repeating one", () => {
+    // The invariant the old photo test was really protecting. It now checks
+    // what renders instead of what a helper returns -- the previous version
+    // called `categoryCover` directly, so once the circles stopped using
+    // photos it would have gone on passing while testing nothing on screen.
     renderHome();
-    const covers = CATEGORIES.map(({ key }) => categoryCover(catalog, key));
-    expect(new Set(covers).size).toBe(covers.length);
+    const marks = CATEGORIES.map(
+      ({ key }) => screen.getByTestId(`category-cover-${key}`, hidden).props.children
+    );
+    expect(marks.every((mark) => mark !== undefined && mark !== null)).toBe(true);
+    const kinds = new Set(
+      marks.map((mark) => JSON.stringify((mark as { props?: unknown })?.props ?? null))
+    );
+    expect(kinds.size).toBe(CATEGORIES.length);
   });
 
   it("opens the grid on men, women and kids, not on one shelf", () => {

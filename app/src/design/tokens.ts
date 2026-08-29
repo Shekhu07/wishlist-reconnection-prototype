@@ -57,6 +57,39 @@ export const spec = {
   signalBlocked: "#B3261E",
 } as const;
 
+/**
+ * Elevation.
+ *
+ * The design spec draws cards as surfaces that sit *on* a page rather than
+ * boxes ruled onto it, and until now this file had no way to say that: every
+ * surface in the app was a 1px hairline on white, which is why the chrome read
+ * as a wireframe next to the same screens in the predecessor prototype.
+ *
+ * Two levels and no more. `card` is the resting state of anything in a list;
+ * `float` is for something that has left the page -- a sheet, a drawer, the
+ * harness pill. A third level invites a hierarchy nobody can perceive.
+ *
+ * Spelled with the React Native shadow props rather than a web `boxShadow`
+ * string: react-native-web compiles these to `box-shadow`, and native keeps
+ * working. `elevation` is Android's separate channel for the same thing.
+ */
+export const elevation = {
+  card: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  float: {
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+} as const;
+
 export const space = {
   xs: 4,
   sm: 8,

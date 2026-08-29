@@ -6,7 +6,6 @@ import {
   byCategory,
   byGender,
   byPrice,
-  categoryCover,
   categoryLabel,
   overview,
 } from "@/search/catalogBrowse";
@@ -123,20 +122,12 @@ describe("browsing the catalog", () => {
     }
   });
 
-  it("gives every category circle a cover photo", () => {
+  it("puts something in every category a circle offers", () => {
+    // What `categoryCover` used to guard, minus the photograph: the circles
+    // now carry drawn marks, but a circle that opens an empty grid is still a
+    // dead end.
     for (const { key } of CATEGORIES) {
-      expect(categoryCover(catalog, key)).not.toBeNull();
-    }
-  });
-
-  it("takes each cover from the category it fronts", () => {
-    // A cover is only honest if it comes from that category: a lipstick on
-    // the Footwear circle would still be "a photo".
-    for (const { key } of CATEGORIES) {
-      const ids = new Set(
-        byCategory(catalog, key).map((tile) => tile.colourway.product_id)
-      );
-      expect([key, ids.has(categoryCover(catalog, key)!)]).toEqual([key, true]);
+      expect([key, byCategory(catalog, key).length > 0]).toEqual([key, true]);
     }
   });
 

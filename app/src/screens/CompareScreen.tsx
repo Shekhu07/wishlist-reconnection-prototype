@@ -14,7 +14,6 @@ import {
   KEEP_COMPARISON,
   COMPARE_SAVED_LABEL,
   COMPARE_SYNTHETIC_NOTE,
-  COMPARE_TITLE,
   formatDelivery,
   formatPrice,
   formatReturns,
@@ -216,20 +215,11 @@ export function CompareScreen({
 
   return (
     <View style={styles.screen} testID="compare-screen">
-      <Pressable
-        testID="compare-back"
-        accessibilityRole="button"
-        accessibilityLabel="Back to search results"
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        onPress={onBack}
-        style={styles.back}
-      >
-        <Text style={styles.backText}>← Back to results</Text>
-      </Pressable>
-
-      <Text style={styles.title} accessibilityRole="header">
-        {COMPARE_TITLE}
-      </Text>
+      {/* The shell's header bar carries the title and the back control for
+          this route (`titleFor` in shell/TopBar). A second "← Back to
+          results" here, under a chevron that already goes back, was two
+          controls for one destination -- and the reason this screen used to
+          show two back affordances stacked. */}
       <Text style={styles.note}>{COMPARE_SYNTHETIC_NOTE}</Text>
 
       <Text style={styles.priorityHeading}>What matters most for this purchase?</Text>
@@ -452,14 +442,11 @@ const HEADER_HEIGHT = 240;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.surface },
-  back: { padding: space.lg, minHeight: MIN_TOUCH_TARGET, justifyContent: "center" },
-  backText: { ...type.body, fontWeight: "700", color: color.textPrimary },
-  title: { ...type.sectionHeader, color: color.textPrimary, paddingHorizontal: space.lg },
   note: {
     ...type.chip,
     color: color.textSecondary,
     paddingHorizontal: space.lg,
-    paddingTop: space.xs,
+    paddingTop: space.md,
     paddingBottom: space.md,
   },
   table: { paddingHorizontal: space.lg, paddingBottom: space.xl },
