@@ -63,7 +63,7 @@ native build always has it: there is no URL there to carry a flag.
 | ![Added from Wishlist](docs/added-confirmation.png) | ![Stale comparison](docs/cr05-stale-comparison.png) |
 | **Improvement 3** — the add is a decision point with three real next moves, not a toast that vanishes in 2.6 seconds. | **CR-02/05** — the quiet resume bar, and the sheet naming what changed before the user commits to going back. |
 | ![Typeahead](docs/typeahead-saved-first.png) | ![Complete the look](docs/pdp-complete-the-look.png) |
-| **Typeahead** — saved matches above organic suggestions, composed as layout rather than as ranking so FR-2 stays structural. The saved group is fail-open and simply absent if matching misses. | **Complete the look** — price, then the pairing, then the description. A women's Kurta pairs with the saved Handbag, Flats, Earrings and Belt: an ensemble the old pairwise table could never find. |
+| **Typeahead** — saved matches above organic suggestions, composed as layout rather than as ranking so FR-2 stays structural. The saved group is fail-open and simply absent if matching misses. | **Complete the look**, headed *Style it with your saved items* — price, then the pairing, then the description. A women's Kurta pairs with the saved Handbag, Flats, Earrings and Belt: an ensemble the old pairwise table could never find. |
 
 ## The Decision Confidence Layer
 
@@ -235,6 +235,22 @@ Measured over every catalog product as a seed, the 427 seeds that produce a
 look average **3.59 distinct categories** each, up from 2.20: 254 of them
 reach four items, 173 reach three. The other 108 seeds suggest nothing, and
 that is data rather than engine — see the caveat below.
+
+### What the section is called, and what it says
+
+The feature is "complete the look" everywhere it is named internally —
+`wishlist/lookCompletion.ts`, the harness toggle, this section. The heading a
+shopper reads is not, and the two surfaces do not share one:
+
+| Surface | Heading | Why |
+| --- | --- | --- |
+| Product page | **Style it with your saved items** | `LOOK_HEADING_PDP`. The garment is already on screen, full width, directly above. With nothing left to disambiguate, the heading can address the person rather than point at the item. |
+| Search | **From your Wishlist, to go with this** | `LOOK_HEADING`. Here "this" is one result among several, so the heading has to point before it can say anything else. |
+
+Neither can get warmer than that by much. C-1 bans the register that usually
+passes for catchy — `BANNED_COPY_PATTERNS` rejects urgency and deal language —
+and `__tests__/copy.test.ts` sweeps every exported string in the bundle to
+enforce it, including strings added long after that test was written.
 
 ### Three gates that reject rather than score
 
