@@ -236,9 +236,9 @@ export const NOT_DELIVERABLE = "Not deliverable to this address";
  */
 export const FIT_PROMPT = "Check size guide";
 
-export const CONFIDENCE_TITLE = "Decision confidence";
-export const CONFIDENCE_EXPAND = "Check decision confidence";
-export const CONFIDENCE_COLLAPSE = "Hide decision confidence";
+export const CONFIDENCE_TITLE = "SmartBuy Checklist";
+export const CONFIDENCE_EXPAND = "Check SmartBuy checklist";
+export const CONFIDENCE_COLLAPSE = "Hide SmartBuy checklist";
 
 export const SIGNAL_LABEL: Record<string, string> = {
   saved_variant: "Saved variant",
