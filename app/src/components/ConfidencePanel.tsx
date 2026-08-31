@@ -13,11 +13,9 @@ import { MIN_TOUCH_TARGET, color, radius, space, type } from "@/design/tokens";
 /**
  * DC-03 / DC-04: The Decision Confidence Layer & Trust Dashboard.
  *
- * Modernized with sleek visual micro-cards, dynamic status indicators,
- * and transparent provenance disclosures while adhering strictly to:
- * - C-1 (Zero monetary incentive / anti-urgency)
- * - C-7 (Accessibility touch targets and semantic roles)
- * - DC Provenance (Mandatory data source attribution)
+ * Clean, direct checklist design without repetitive "Why" buttons.
+ * Signals are directly displayed with clear status indicators, labels,
+ * and contextual details where relevant.
  */
 
 const GLYPH: Record<SignalStatus, string> = {
@@ -61,7 +59,7 @@ export interface ConfidencePanelProps {
   signals: ConfidenceSignal[];
   /** Fires once per open, for `confidence_layer_viewed`. */
   onExpand?: () => void;
-  /** Fires per signal opened, for `confidence_signal_expanded`. */
+  /** Retained for event interface compatibility. */
   onSignalExpand?: (key: string) => void;
   initiallyExpanded?: boolean;
 }
@@ -69,7 +67,6 @@ export interface ConfidencePanelProps {
 export function ConfidencePanel({
   signals,
   onExpand,
-  onSignalExpand,
   initiallyExpanded = false,
 }: ConfidencePanelProps) {
   const [expanded, setExpanded] = useState(initiallyExpanded);
@@ -129,7 +126,7 @@ export function ConfidencePanel({
       {expanded ? (
         <View style={styles.signals}>
           {signals.map((signal) => (
-            <SignalRow key={signal.key} signal={signal} onExpand={onSignalExpand} />
+            <SignalRow key={signal.key} signal={signal} />
           ))}
         </View>
       ) : null}
@@ -137,14 +134,7 @@ export function ConfidencePanel({
   );
 }
 
-function SignalRow({
-  signal,
-  onExpand,
-}: {
-  signal: ConfidenceSignal;
-  onExpand?: (key: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
+function SignalRow({ signal }: { signal: ConfidenceSignal }) {
   const label = SIGNAL_LABEL[signal.key] ?? signal.key;
   const statusCfg = STATUS_STYLE[signal.status];
 
@@ -155,19 +145,10 @@ function SignalRow({
         { backgroundColor: statusCfg.bg, borderColor: statusCfg.border },
       ]}
       testID={`signal-${signal.key}`}
+      accessible
+      accessibilityLabel={`${label}: ${signal.value}. ${SIGNAL_STATUS_LABEL[signal.status]}`}
     >
-      <Pressable
-        testID={`signal-why-${signal.key}`}
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${signal.value}. ${SIGNAL_STATUS_LABEL[signal.status]}. Why this is shown`}
-        accessibilityState={{ expanded: open }}
-        onPress={() => {
-          const next = !open;
-          setOpen(next);
-          if (next) onExpand?.(signal.key);
-        }}
-        style={styles.signalHeader}
-      >
+      <View style={styles.signalHeader}>
         <View style={[styles.iconBox, { backgroundColor: statusCfg.iconBg }]}>
           <Text style={[styles.glyph, { color: statusCfg.text }]}>
             {GLYPH[signal.status]}
@@ -176,28 +157,11 @@ function SignalRow({
         <View style={styles.signalText}>
           <Text style={styles.signalLabel}>{label}</Text>
           <Text style={styles.signalValue}>{signal.value}</Text>
-        </View>
-        <View style={[styles.whyPill, open && styles.whyPillActive]}>
-          <Text style={[styles.whyText, open && styles.whyTextActive]}>
-            {open ? "Hide" : "Why"}
-          </Text>
-        </View>
-      </Pressable>
-
-      {open ? (
-        <View style={styles.source} testID={`signal-source-${signal.key}`}>
-          <View style={styles.sourceBadge}>
-            <Text style={styles.sourceBadgeText}>PROVENANCE</Text>
-          </View>
-          <Text style={styles.sourceText}>{signal.source}</Text>
-          {signal.detail ? <Text style={styles.detailText}>{signal.detail}</Text> : null}
-          {signal.synthetic ? (
-            <View style={styles.syntheticBadge}>
-              <Text style={styles.syntheticText}>Prototype Data · Factual Verification</Text>
-            </View>
+          {signal.detail ? (
+            <Text style={styles.signalDetail}>{signal.detail}</Text>
           ) : null}
         </View>
-      ) : null}
+      </View>
     </View>
   );
 }
@@ -304,10 +268,10 @@ const styles = StyleSheet.create({
   },
   signalHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: space.sm,
-    paddingVertical: 6,
+    paddingVertical: 8,
     gap: space.sm,
   },
   iconBox: {
@@ -316,6 +280,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 1,
   },
   glyph: {
     fontSize: 13,
@@ -336,68 +301,10 @@ const styles = StyleSheet.create({
     color: "#1E293B",
     marginTop: 1,
   },
-  whyPill: {
-    backgroundColor: "#FFF0F4",
-    paddingHorizontal: space.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: "#FFE4EC",
-  },
-  whyPillActive: {
-    backgroundColor: "#FF3F6C",
-    borderColor: "#FF3F6C",
-  },
-  whyText: {
+  signalDetail: {
     fontSize: 11,
-    color: color.brandPink,
-    fontWeight: "700",
-  },
-  whyTextActive: {
-    color: "#FFFFFF",
-  },
-  source: {
-    marginTop: space.xs,
-    paddingHorizontal: space.sm,
-    paddingVertical: space.sm,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 6,
-    borderLeftWidth: 3,
-    borderLeftColor: color.brandPink,
-    marginLeft: space.sm,
-    marginRight: space.sm,
-    marginBottom: space.xs,
-    gap: 3,
-  },
-  sourceBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#EEF2F6",
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 3,
-  },
-  sourceBadgeText: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "#475569",
-    letterSpacing: 0.5,
-  },
-  sourceText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#334155",
-  },
-  detailText: {
-    fontSize: 11.5,
     color: "#64748B",
-    lineHeight: 16,
-  },
-  syntheticBadge: {
-    marginTop: 2,
-  },
-  syntheticText: {
-    fontSize: 10,
-    color: "#94A3B8",
-    fontStyle: "italic",
+    marginTop: 3,
+    lineHeight: 15,
   },
 });

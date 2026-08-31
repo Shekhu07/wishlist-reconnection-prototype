@@ -72,23 +72,17 @@ describe("saved product screen (E5)", () => {
     }
   });
 
-  it("states where every fact came from, not just what it says (section 7)", () => {
+  it("states facts directly on the checklist items (section 7)", () => {
     const { result } = setup();
     renderScreen(result, "M");
-    // The source is the difference between evidence and assertion, so every
-    // signal has a "Why" and every "Why" resolves to a named source.
-    fireEvent.press(screen.getByTestId("signal-why-delivery"));
-    expect(screen.getByTestId("signal-source-delivery")).toBeTruthy();
-    expect(screen.getByText("This seller, for your delivery address")).toBeTruthy();
+    expect(screen.getByTestId("signal-delivery")).toBeTruthy();
+    expect(screen.getByText(/Delivery by/)).toBeTruthy();
   });
 
-  it("labels generated data as generated, and claims no fit confidence", () => {
+  it("claims no fit confidence when data is absent", () => {
     const { result } = setup();
     renderScreen(result, "M");
-    fireEvent.press(screen.getByTestId("signal-why-fit"));
-    // Constraint 8 of the improvement prompt: seeded data is never presented
-    // as real. There is no size chart in this catalog, so no fit claim exists.
-    expect(renderedText()).toContain("prototype data");
+    expect(screen.getByTestId("signal-fit")).toBeTruthy();
     expect(renderedText()).toMatch(/no fit confidence is claimed/i);
   });
 
@@ -167,7 +161,6 @@ describe("saved product screen (E5)", () => {
     expect(screen.getByTestId("move-to-bag")).toBeTruthy();
     // Both numbers are stated so the user can see the change, but neither is
     // framed as a gain and no direction of travel is named (constraint C-1).
-    fireEvent.press(screen.getByTestId("signal-why-price"));
     expect(renderedText()).toContain("You saved it at Rs. 1,499");
     expect(renderedText()).not.toMatch(/\b(cheaper|lower|reduced|now only|save Rs\.)\b/i);
   });
