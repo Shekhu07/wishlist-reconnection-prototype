@@ -42,6 +42,7 @@ export interface SearchResultsScreenProps {
   intentFor?: (sku: string) => string | null;
   /** Opens an ordinary catalog product. Tiles did not respond to taps at all. */
   onOpenProduct?: (productId: number) => void;
+  onOpenSearch?: () => void;
   /** Improvement 9: later-phase, off by default, rendered below the module. */
   lookCompletion?: ReactNode;
   /**
@@ -78,6 +79,7 @@ export function SearchResultsScreen({
   externalDismiss,
   intentFor,
   onOpenProduct,
+  onOpenSearch,
   resumeBar,
   lookCompletion,
   onAction,
@@ -116,12 +118,18 @@ export function SearchResultsScreen({
       onScroll={(event) => onScrollOffset?.(event.nativeEvent.contentOffset.y)}
       scrollEventThrottle={16}
     >
-      <View style={styles.searchBar}>
+      <Pressable
+        testID="results-search-bar"
+        accessibilityRole="button"
+        accessibilityLabel={`Search query: ${query}. Tap to edit search.`}
+        onPress={onOpenSearch}
+        style={styles.searchBar}
+      >
         <Text style={styles.searchGlyph}>⌕</Text>
         <Text style={styles.searchText} numberOfLines={1}>
           {query}
         </Text>
-      </View>
+      </Pressable>
 
       <View style={styles.filterRow}>
         <Text style={styles.filterLabel}>FILTER</Text>
@@ -175,7 +183,12 @@ export function SearchResultsScreen({
           </View>
         ))}
         {results.length === 0 ? (
-          <Text style={styles.empty}>No results for “{query}”.</Text>
+          <View style={styles.emptyWrap} testID="search-empty">
+            <Text style={styles.emptyTitle}>No results for “{query}”</Text>
+            <Text style={styles.emptySub}>
+              We couldn't find any exact products. Try checking for typos or searching by category.
+            </Text>
+          </View>
         ) : null}
       </View>
     </ScrollView>
@@ -224,6 +237,20 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     padding: space.sm,
     ...elevation.card,
+  },
+  emptyWrap: {
+    width: "100%",
+    padding: space.xl,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.xs,
+  },
+  emptyTitle: { ...type.moduleHeader, color: color.textPrimary, textAlign: "center" },
+  emptySub: {
+    ...type.body,
+    color: color.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
   },
   empty: { ...type.body, color: color.textSecondary, padding: space.lg },
 });

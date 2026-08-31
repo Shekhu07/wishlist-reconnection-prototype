@@ -185,7 +185,16 @@ const styles = StyleSheet.create({
   signalText: { flex: 1 },
   signalLabel: { ...type.chip, color: color.textSecondary },
   signalValue: { ...type.body, color: color.textPrimary },
-  why: { ...type.chip, color: color.brandPink, fontWeight: "700" },
+  why: {
+    ...type.chip,
+    fontSize: 11,
+    color: color.brandPink,
+    fontWeight: "700",
+    backgroundColor: "#FFF0F4",
+    paddingHorizontal: space.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
   source: {
     paddingHorizontal: space.md,
     paddingBottom: space.sm,

@@ -108,6 +108,17 @@ export function SearchEntryScreen({
             placeholderTextColor={color.textSecondary}
             style={styles.input}
           />
+          {value.length > 0 ? (
+            <Pressable
+              testID="search-clear"
+              accessibilityRole="button"
+              accessibilityLabel="Clear search input"
+              onPress={() => change("")}
+              style={styles.clearButton}
+            >
+              <Text style={styles.clearGlyph}>✕</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             testID="search-go"
             accessibilityRole="button"
@@ -215,6 +226,13 @@ const styles = StyleSheet.create({
     // because the wrapper's border is the visible focus affordance.
     ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as unknown as object) : null),
   },
+  clearButton: {
+    minHeight: MIN_TOUCH_TARGET,
+    width: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearGlyph: { fontSize: 13, color: color.textSecondary, fontWeight: "700" },
   goButton: {
     minHeight: MIN_TOUCH_TARGET,
     justifyContent: "center",

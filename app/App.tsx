@@ -1520,6 +1520,7 @@ export default function App() {
             onScrollOffset={(offset) => {
               resultsOffset.current = offset;
             }}
+            onOpenSearch={() => setNav((prev) => push(prev, { name: "searchEntry" }))}
             onOpenProduct={(productId) => {
               setAltSize(null);
               setAltAdded(false);

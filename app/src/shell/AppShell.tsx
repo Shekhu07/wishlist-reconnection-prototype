@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Platform, SafeAreaView, StyleSheet, View } from "react-native";
+import { Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { FRAME_MAX_WIDTH, color } from "@/design/tokens";
 import { BottomNav } from "./BottomNav";
 import { TopBar } from "./TopBar";
@@ -46,6 +46,7 @@ export function AppShell({
   return (
     <SafeAreaView style={styles.root} testID="app-shell">
       <View style={styles.phoneFrame}>
+        <MobileStatusBar />
         <TopBar
           screen={top(nav)}
           onBack={onBack}
@@ -58,8 +59,42 @@ export function AppShell({
         {harness}
         {sheet}
         <BottomNav tab={nav.tab} bagCount={bagCount} onTab={onTab} />
+        <HomeIndicator />
       </View>
     </SafeAreaView>
+  );
+}
+
+function MobileStatusBar() {
+  if (Platform.OS !== "web") return null;
+  return (
+    <View style={statusStyles.bar} accessibilityRole="none" testID="mobile-status-bar">
+      <Text style={statusStyles.time}>9:41</Text>
+      <View style={statusStyles.notch} />
+      <View style={statusStyles.icons}>
+        <View style={statusStyles.cellular}>
+          <View style={[statusStyles.cellBar, { height: 4 }]} />
+          <View style={[statusStyles.cellBar, { height: 6 }]} />
+          <View style={[statusStyles.cellBar, { height: 8 }]} />
+          <View style={[statusStyles.cellBar, { height: 10 }]} />
+        </View>
+        <View style={statusStyles.battery}>
+          <View style={statusStyles.batteryBody}>
+            <View style={statusStyles.batteryLevel} />
+          </View>
+          <View style={statusStyles.batteryCap} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function HomeIndicator() {
+  if (Platform.OS !== "web") return null;
+  return (
+    <View style={indicatorStyles.wrap} pointerEvents="none" testID="home-indicator">
+      <View style={indicatorStyles.bar} />
+    </View>
   );
 }
 
@@ -89,3 +124,89 @@ const styles = StyleSheet.create({
   },
   body: { flex: 1 },
 });
+
+const statusStyles = StyleSheet.create({
+  bar: {
+    height: 28,
+    backgroundColor: color.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(0,0,0,0.04)",
+  },
+  time: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: color.textPrimary,
+  },
+  notch: {
+    width: 80,
+    height: 16,
+    backgroundColor: "#141414",
+    borderRadius: 8,
+    position: "absolute",
+    left: "50%",
+    marginLeft: -40,
+    top: 6,
+  },
+  icons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  cellular: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 1.5,
+    height: 10,
+  },
+  cellBar: {
+    width: 2.5,
+    backgroundColor: color.textPrimary,
+    borderRadius: 0.5,
+  },
+  battery: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  batteryBody: {
+    width: 18,
+    height: 9,
+    borderRadius: 2.5,
+    borderWidth: 1,
+    borderColor: color.textPrimary,
+    padding: 1,
+  },
+  batteryLevel: {
+    width: "75%",
+    height: "100%",
+    backgroundColor: color.textPrimary,
+    borderRadius: 1,
+  },
+  batteryCap: {
+    width: 1.5,
+    height: 4,
+    backgroundColor: color.textPrimary,
+    borderTopRightRadius: 1,
+    borderBottomRightRadius: 1,
+  },
+});
+
+const indicatorStyles = StyleSheet.create({
+  wrap: {
+    height: 14,
+    backgroundColor: color.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 2,
+  },
+  bar: {
+    width: 120,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
+  },
+});
+
