@@ -112,11 +112,7 @@ export function ConfidencePanel({
                     .map((s) => s.value)
                     .join(" · ")}
             </Text>
-          ) : (
-            <Text style={styles.subtitle}>
-              Factual signals backed by verifiable marketplace data
-            </Text>
-          )}
+          ) : null}
         </View>
         <View style={styles.chevronWrap}>
           <Text style={styles.chevron}>{expanded ? "▲" : "▼"}</Text>
