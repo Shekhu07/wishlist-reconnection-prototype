@@ -87,9 +87,12 @@ export function SavedItemCard({
           </Text>
         ) : null}
         {!unavailable ? (
-          <Text style={styles.summary} numberOfLines={1} testID="confidence-summary">
-            {`Size ${match.saved.size} available · ${FIT_PROMPT}`}
-          </Text>
+          <View style={styles.confidencePill}>
+            <View style={styles.confidenceDot} />
+            <Text style={styles.summary} numberOfLines={1} testID="confidence-summary">
+              {`Size ${match.saved.size} available · ${FIT_PROMPT}`}
+            </Text>
+          </View>
         ) : null}
       </View>
     </View>
@@ -131,6 +134,25 @@ const styles = StyleSheet.create({
   // Price is neutral state text: no strike-through, no was/now, no savings
   // line. Constraint C-1 is enforced here as much as in the copy bundle.
   meta: { ...type.body, color: color.textSecondary, marginTop: space.sm },
-  summary: { ...type.chip, color: color.textSecondary, marginTop: 2 },
+  confidencePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    marginTop: 4,
+    gap: 5,
+  },
+  confidenceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#059669",
+  },
+  summary: { fontSize: 11, color: "#047857", fontWeight: "600" },
   intent: { ...type.chip, color: color.brandPink, marginTop: space.xs, fontWeight: "500" },
 });
