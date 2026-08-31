@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { SafeAreaView, StyleSheet, View } from "react-native";
-import { color } from "@/design/tokens";
+import { Platform, SafeAreaView, StyleSheet, View } from "react-native";
+import { FRAME_MAX_WIDTH, color } from "@/design/tokens";
 import { BottomNav } from "./BottomNav";
 import { TopBar } from "./TopBar";
 import { top, type Nav, type Tab } from "./nav";
@@ -45,23 +45,47 @@ export function AppShell({
 }: AppShellProps) {
   return (
     <SafeAreaView style={styles.root} testID="app-shell">
-      <TopBar
-        screen={top(nav)}
-        onBack={onBack}
-        onOpenSearch={onOpenSearch}
-        onOpenWishlist={onOpenWishlist}
-        onOpenProfile={onOpenProfile}
-        wishlistCount={wishlistCount}
-      />
-      <View style={styles.body}>{children}</View>
-      {harness}
-      {sheet}
-      <BottomNav tab={nav.tab} bagCount={bagCount} onTab={onTab} />
+      <View style={styles.phoneFrame}>
+        <TopBar
+          screen={top(nav)}
+          onBack={onBack}
+          onOpenSearch={onOpenSearch}
+          onOpenWishlist={onOpenWishlist}
+          onOpenProfile={onOpenProfile}
+          wishlistCount={wishlistCount}
+        />
+        <View style={styles.body}>{children}</View>
+        {harness}
+        {sheet}
+        <BottomNav tab={nav.tab} bagCount={bagCount} onTab={onTab} />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.surface },
+  root: {
+    flex: 1,
+    backgroundColor: Platform.OS === "web" ? "#ECECED" : color.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  phoneFrame: {
+    flex: 1,
+    width: "100%",
+    maxWidth: FRAME_MAX_WIDTH,
+    backgroundColor: color.surface,
+    position: "relative",
+    overflow: "hidden",
+    ...(Platform.OS === "web"
+      ? {
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.12,
+          shadowRadius: 28,
+          elevation: 10,
+        }
+      : {}),
+  },
   body: { flex: 1 },
 });

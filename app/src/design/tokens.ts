@@ -159,9 +159,5 @@ export const CARD_IMAGE = { width: 96, height: 128 } as const;
 /** Carousel card width, reused from the "Continue browsing these brands" row. */
 export const CAROUSEL_CARD_WIDTH = 156;
 
-/**
- * The phone frame the prototype renders inside on a desktop browser. Anything
- * that spans the window rather than the frame reads as belonging to the
- * browser instead of to the app.
- */
-export const FRAME_MAX_WIDTH = 480;
+export const FRAME_MAX_WIDTH = 420;
+

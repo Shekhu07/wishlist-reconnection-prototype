@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
 import bagJson from "@/data/bag.json";
 import catalogJson from "@/data/catalog.json";
 import ordersJson from "@/data/orders.json";
@@ -1705,11 +1705,8 @@ const SUPPRESSION_COPY: Record<NonNullable<SuppressionReason>, string> = {
 };
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.surface },
-  // The target is a phone. On a laptop the web build would otherwise stretch
-  // the two-column grid to full width and render each product card enormous,
-  // which tells a researcher nothing about the real layout.
-  frame: { flex: 1, width: "100%", maxWidth: FRAME_MAX_WIDTH, alignSelf: "center" },
+  root: { flex: 1, backgroundColor: Platform.OS === "web" ? "#ECECED" : color.surface },
+  frame: { flex: 1, width: "100%" },
   // CR-04: a compact context bar that must not obscure the product's own CTA,
   // so it sits at the top of the screen rather than floating over the button.
   contextBar: {
