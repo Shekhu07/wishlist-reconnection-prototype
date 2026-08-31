@@ -5,9 +5,9 @@ built against three specs that are really one plan at three altitudes:
 
 | Spec | What it is |
 |---|---|
-| [`Wishlist_Reconnection_MVP_Prototype_Plan.md`](./Wishlist_Reconnection_MVP_Prototype_Plan.md) | The engineering plan. Every epic is built except E15, which constraint C-5 forbids in v1. |
-| [`Implementation Prompt_ Improve Myntra Wishlist Reconnection Prototype.md`](./Implementation%20Prompt_%20Improve%20Myntra%20Wishlist%20Reconnection%20Prototype.md) | Ten improvements on the deployed prototype, plus harness, analytics and validation requirements. |
-| [`Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md`](./Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md) | The UX blueprint for improvements 1 and 8 — eleven wireframes, interaction rules, an edge-case matrix and measurement hooks. |
+| [`Wishlist_Reconnection_MVP_Prototype_Plan.md`](docs/specs/Wishlist_Reconnection_MVP_Prototype_Plan.md) | The engineering plan. Every epic is built except E15, which constraint C-5 forbids in v1. |
+| [`Implementation Prompt_ Improve Myntra Wishlist Reconnection Prototype.md`](docs/specs/Implementation%20Prompt_%20Improve%20Myntra%20Wishlist%20Reconnection%20Prototype.md) | Ten improvements on the deployed prototype, plus harness, analytics and validation requirements. |
+| [`Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md`](docs/specs/Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md) | The UX blueprint for improvements 1 and 8 — eleven wireframes, interaction rules, an edge-case matrix and measurement hooks. |
 
 All ten improvements are built, plus a later feature spec on top. The
 reconnection module answers *"did I save this?"*; the Decision Confidence Layer
@@ -52,17 +52,17 @@ native build always has it: there is no URL there to carry a flag.
 
 | | |
 |---|---|
-| ![One exact match](docs/dc01-module-summary.png) | ![Why this appeared](docs/dc02-why-appeared.png) |
+| ![One exact match](docs/images/dc01-module-summary.png) | ![Why this appeared](docs/images/dc02-why-appeared.png) |
 | **DC-01** — the module with its compact confidence summary. Saved variant, availability, delivery, and the one fit statement this catalog can support. | **DC-02** — the explanation, and both controls. Hiding for this search is a relevance signal; hiding always is the durable setting. Neither mentions why the item was saved. |
-| ![Confidence panel](docs/dc03-confidence-panel.png) | ![Colour selector](docs/dc06-colour-selector.png) |
+| ![Confidence panel](docs/images/dc03-confidence-panel.png) | ![Colour selector](docs/images/dc06-colour-selector.png) |
 | **DC-03/04** — ten signals, each with a "Why" that names its source. `?` means no verdict is claimed, not that data is missing. | **DC-06** — switch colour and the saved variant stays visible as a reference. The signals re-read from the colour on screen, never from the saved one. |
-| ![Variant unavailable](docs/state5-variant-unavailable.png) | ![Recovery](docs/e5-recovery-sold-out.png) |
+| ![Variant unavailable](docs/images/state5-variant-unavailable.png) | ![Recovery](docs/images/e5-recovery-sold-out.png) |
 | **State 5** — saved size gone. The primary action becomes "See available sizes": no dead-end Buy, no silent substitution. | **E5 recovery** — stock moved between the module render and the tap. Named state, saved variant untouched. |
-| ![Compare with priority](docs/compare-priority.png) | ![Help me decide](docs/help-me-decide.png) |
+| ![Compare with priority](docs/images/compare-priority.png) | ![Help me decide](docs/images/help-me-decide.png) |
 | **Compare** — a priority reorders the rows and hides none, with a derived reason line per alternative and the saved variant as the anchor. | **Help me decide** — restates the evidence on the chosen axes, marks any axis that separates nothing, and names no winner. |
-| ![Added from Wishlist](docs/added-confirmation.png) | ![Stale comparison](docs/cr05-stale-comparison.png) |
+| ![Added from Wishlist](docs/images/added-confirmation.png) | ![Stale comparison](docs/images/cr05-stale-comparison.png) |
 | **Improvement 3** — the add is a decision point with three real next moves, not a toast that vanishes in 2.6 seconds. | **CR-02/05** — the quiet resume bar, and the sheet naming what changed before the user commits to going back. |
-| ![Typeahead](docs/typeahead-saved-first.png) | ![Complete the look](docs/pdp-complete-the-look.png) |
+| ![Typeahead](docs/images/typeahead-saved-first.png) | ![Complete the look](docs/images/pdp-complete-the-look.png) |
 | **Typeahead** — saved matches above organic suggestions, composed as layout rather than as ranking so FR-2 stays structural. The saved group is fail-open and simply absent if matching misses. | **Complete the look**, headed *Style it with your saved items* — price, then the pairing, then the description. A women's Kurta pairs with the saved Handbag, Flats, Earrings and Belt: an ensemble the old pairwise table could never find. |
 
 ## The Decision Confidence Layer
