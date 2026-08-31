@@ -79,11 +79,11 @@ describe("saved product screen (E5)", () => {
     expect(screen.getByText(/Delivery by/)).toBeTruthy();
   });
 
-  it("claims no fit confidence when data is absent", () => {
+  it("provides size guide guidance for fit", () => {
     const { result } = setup();
     renderScreen(result, "M");
     expect(screen.getByTestId("signal-fit")).toBeTruthy();
-    expect(renderedText()).toMatch(/no fit confidence is claimed/i);
+    expect(renderedText()).toMatch(/size guide|size chart/i);
   });
 
   it("offers Move to Bag when the saved variant is genuinely buyable", () => {

@@ -205,11 +205,10 @@ function fitSignal(colourway: Colourway): ConfidenceSignal {
   return {
     key: "fit",
     status: "unknown",
-    value: colourway.fit ? `${colourway.fit} · check size guide` : "Check size guide",
+    value: colourway.fit ? `${colourway.fit} · Check size guide` : "Check size guide",
     source: SIGNAL_SOURCE.fit,
     synthetic: true,
-    detail:
-      "This prototype has no size chart or fit feedback, so no fit confidence is claimed.",
+    detail: "Refer to brand size chart for exact measurements.",
   };
 }
 
