@@ -1,9 +1,9 @@
 import type { Catalog, Colourway, ParentProduct, Wishlist, WishlistItem } from "@/data/types";
 import { reconcile, type CommerceState } from "@/commerce/reconcile";
 import type { InventorySimulator } from "@/revalidation/inventory";
+import { computeLookAffinity } from "./affinity";
 import {
   genderCoherent,
-  isFinishingSlot,
   slotFor,
   slotRank,
   slotsComplement,
@@ -23,10 +23,10 @@ import {
  * what keeps this a memory feature rather than a recommender: everything it can
  * show, the user chose.
  *
- * The matching itself is the slot model in `./slots.ts`. What this file adds is
- * the three gates and the ranking -- and each gate *rejects* rather than
- * scores, because a wrong suggestion costs more than a missing one. A user who
- * is shown a men's shoe against a girls' dress learns the feature is guessing.
+ * The matching itself is the slot model in `./slots.ts` paired with the
+ * dynamic affinity scoring in `./affinity.ts`. Each gate *rejects* rather than
+ * scores, and candidates within each slot are ranked by seed-aware compatibility
+ * (color harmony, occasion alignment, and styling synergy).
  */
 
 export interface LookSuggestion {
@@ -40,22 +40,6 @@ export interface LookSuggestion {
   buyable: boolean;
 }
 
-/**
- * Four, up from three, up from the old two.
- *
- * Three could show a top, a bottom and shoes -- an outfit, but an undressed
- * one, and it forced the choice between the shoes and the belt. Four is the
- * smallest cap that holds a dressed look: the other garment, footwear, and
- * one thing carried or worn with it. It is still a strip of four saved items
- * rather than a carousel, it is still capped rather than paged, and the
- * section renders nothing at all rather than padding itself out to reach the
- * cap.
- *
- * Above four the prompt's bound starts to bite -- "keep this experience
- * sparse... do not add complementary products solely to increase basket size"
- * -- and what a fifth slot adds is a second accessory, which is decoration
- * rather than an outfit.
- */
 export const MAX_LOOK_SUGGESTIONS = 4;
 
 export interface LookContext {
@@ -83,7 +67,7 @@ export function completeTheLook(
   const seedSlot = slotFor(seedParent);
   if (seedSlot === "none") return [];
 
-  const candidates: LookSuggestion[] = [];
+  const candidates: Array<LookSuggestion & { score: number }> = [];
 
   for (const item of wishlist.items) {
     if (excludeItemIds.includes(item.item_id)) continue;
@@ -105,19 +89,24 @@ export function completeTheLook(
     if (!usageCoherent(seedColourway.usage, colourway.usage)) continue;
 
     // Lifecycle. An item already in the bag or already bought is not a
-    // suggestion, it is a reminder the user does not need. Derived through
-    // reconcile rather than read off a flag, for the reason E14 established:
-    // an item asserting its own state cannot go stale correctly.
+    // suggestion, it is a reminder the user does not need.
     const duplicate = reconcile(item, commerce).state;
     if (duplicate === "in_bag" || duplicate === "purchased") continue;
+
+    const buyable = inventory.isInStock(item.sku);
+    const affinity = computeLookAffinity(
+      { parent: seedParent, colourway: seedColourway },
+      { item, parent, colourway, slot, buyable }
+    );
 
     candidates.push({
       item,
       parent,
       colourway,
       slot,
-      reason: reasonFor(slot, seedColourway),
-      buyable: inventory.isInStock(item.sku),
+      reason: affinity.reason,
+      buyable,
+      score: affinity.score,
     });
   }
 
@@ -125,65 +114,27 @@ export function completeTheLook(
 }
 
 /**
- * One item per slot; the slots an outfit needs most take the four seats;
- * within a seat, buyable and recently saved wins.
- *
- * Selection and display order are deliberately two different things here,
- * because they answer two different questions and an earlier version that
- * used one sort for both got the interesting case wrong.
- *
- * *Selection* asks which slots are worth a seat, and the answer has to be the
- * outfit's, not the save log's. A women's kurta can reach seven slots with
- * room for four; ordering seats by save date alone fills the strip with
- * whatever was saved last -- a perfume, a nail polish, a pair of sunglasses
- * -- and ordering them by buyability alone drops the saved Flats, the only
- * women's footwear in the wishlist, behind four buyable accessories. Either
- * way the shoes fall out of the look, which is precisely the suggestion the
- * user came for.
- *
- * *Display* asks what leads, and there the old rule still holds: an item the
- * user can no longer buy is worth showing -- learning a saved item is gone
- * beats silence -- but it never goes first.
+ * One item per slot; the slots an outfit needs most take the seats;
+ * within a seat, seed-aware affinity score decides the winner.
  */
-function rank(candidates: LookSuggestion[]): LookSuggestion[] {
-  // Best item per slot. Two saved shirts are the same idea twice, and the
-  // second one crowds out the shoes that would have finished the outfit.
-  const bySlot = new Map<OutfitSlot, LookSuggestion>();
+function rank(candidates: Array<LookSuggestion & { score: number }>): LookSuggestion[] {
+  // Best item per slot based on affinity score
+  const bySlot = new Map<OutfitSlot, LookSuggestion & { score: number }>();
   for (const candidate of candidates) {
     const held = bySlot.get(candidate.slot);
-    if (!held || preferred(candidate, held) < 0) bySlot.set(candidate.slot, candidate);
+    if (!held || candidate.score > held.score) {
+      bySlot.set(candidate.slot, candidate);
+    }
   }
 
   const seated = [...bySlot.values()]
-    .sort((a, b) => slotRank(a.slot) - slotRank(b.slot) || preferred(a, b))
+    .sort((a, b) => slotRank(a.slot) - slotRank(b.slot) || b.score - a.score)
     .slice(0, MAX_LOOK_SUGGESTIONS);
 
-  return seated.sort((a, b) => {
-    if (a.buyable !== b.buyable) return a.buyable ? -1 : 1;
-    return slotRank(a.slot) - slotRank(b.slot) || preferred(a, b);
-  });
-}
-
-/** Which of two saved items speaks better for its slot: buyable, then recent. */
-function preferred(a: LookSuggestion, b: LookSuggestion): number {
-  if (a.buyable !== b.buyable) return a.buyable ? -1 : 1;
-  return b.item.saved_at.localeCompare(a.item.saved_at);
-}
-
-/**
- * What the pairing claims, in the user's terms.
- *
- * Built from the seed's display name rather than its article type, because
- * de-pluralising a type is a trap: "Tshirts" becomes "tshirt" and "Casual
- * Shoes" becomes "this casual shoes". A display name is already a noun phrase
- * someone wrote, so it is always grammatical and always specific.
- *
- * Per-slot verbs were the first attempt and produced "Wears under this
- * tshirt" for a pair of jeans -- true of trousers under a shirt, wrong here.
- * A claim that is only sometimes right is worse than a plainer one that is
- * always right, so only `finishing` keeps its own phrasing.
- */
-function reasonFor(slot: OutfitSlot, seedColourway: Colourway): string {
-  const name = seedColourway.display_name;
-  return isFinishingSlot(slot) ? `Finishes the look with the ${name}` : `Goes with the ${name}`;
+  return seated
+    .sort((a, b) => {
+      if (a.buyable !== b.buyable) return a.buyable ? -1 : 1;
+      return slotRank(a.slot) - slotRank(b.slot) || b.score - a.score;
+    })
+    .map(({ score: _, ...suggestion }) => suggestion);
 }

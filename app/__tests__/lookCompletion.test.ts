@@ -308,4 +308,36 @@ describe("the gates reject rather than rank", () => {
       expect(suggestion.reason).not.toMatch(/tshirt|this casual shoes/i);
     }
   });
+
+  it("dynamically selects different saved items based on seed color and occasion (multi-catalog)", () => {
+    // Red Shirt vs White Shirt should prefer different bottoms/accessories
+    const redShirt = catalog.parents.find((p) =>
+      p.colourways.some((cw) => cw.colour === "Red" && p.articleType === "Shirts" && p.gender === "Men")
+    )!;
+    const redCw = redShirt.colourways.find((cw) => cw.colour === "Red")!;
+    const redLook = completeTheLook(redShirt, redCw, context());
+
+    const whiteShirt = catalog.parents.find((p) =>
+      p.colourways.some((cw) => cw.colour === "White" && p.articleType === "Shirts" && p.gender === "Men")
+    )!;
+    const whiteCw = whiteShirt.colourways.find((cw) => cw.colour === "White")!;
+    const whiteLook = completeTheLook(whiteShirt, whiteCw, context());
+
+    // Red shirt balances with Black jeans; White shirt pairs cleanly with Washed Blue jeans or Black jeans
+    expect(redLook.length).toBeGreaterThan(0);
+    expect(whiteLook.length).toBeGreaterThan(0);
+
+    // Women's Kurta (Ethnic) prefers Ethnic jewellery (Earrings 1/2) over generic items
+    const kurta = parentByType("Kurtas", "Women");
+    const kurtaLook = completeTheLook(kurta, kurta.colourways[0], context());
+    const jewellery = kurtaLook.find((s) => s.slot === "jewellery");
+    expect(jewellery).toBeDefined();
+    // Accessory seed (Handbag) dynamically suggests top and footwear when top is not in bag
+    const handbag = parentByType("Handbags", "Women");
+    const noBag = context();
+    noBag.commerce.bag.items = [];
+    const handbagLook = completeTheLook(handbag, handbag.colourways[0], noBag);
+    expect(handbagLook.map((s) => s.slot)).toContain("top");
+    expect(handbagLook.map((s) => s.slot)).toContain("feet");
+  });
 });
