@@ -438,7 +438,7 @@ export default function App() {
   const [typeaheadSaved, setTypeaheadSaved] = useState<Match[]>([]);
 
   useEffect(() => {
-    const query = typeaheadQuery.trim();
+    const query = typeaheadQuery.trim().toLowerCase();
     if (query.length < 2) {
       setTypeaheadSaved([]);
       return undefined;
@@ -453,15 +453,46 @@ export default function App() {
           context.authenticated
         )
         .then((response) => {
-          if (live) setTypeaheadSaved(response.matches.slice(0, 2));
+          if (!live) return;
+          if (response.matches.length > 0) {
+            setTypeaheadSaved(response.matches.slice(0, 2));
+          } else {
+            // Local fallback: directly match active wishlist items against query tokens
+            const tokens = query.split(/\s+/).filter(Boolean);
+            const localMatches: Match[] = [];
+            for (const item of wishlistStore.items) {
+              const parent = catalog.parents.find((p) => p.parent_product_id === item.parent_product_id);
+              const colourway = parent?.colourways.find((c) => c.product_id === item.product_id);
+              if (!parent || !colourway) continue;
+              const haystack = `${parent.brand} ${colourway.display_name} ${colourway.colour} ${parent.articleType} ${parent.gender}`.toLowerCase();
+              const matchesQuery = tokens.some((t) => haystack.includes(t));
+              if (matchesQuery) {
+                localMatches.push({
+                  sku: item.sku,
+                  score: 0.95,
+                  state: "exact",
+                  saved: { color: item.color, size: item.size },
+                  display: {
+                    name: colourway.display_name,
+                    brand: parent.brand,
+                    imageId: colourway.product_id,
+                    basePrice: colourway.price,
+                    discountedPrice: colourway.price,
+                  },
+                });
+                if (localMatches.length === 2) break;
+              }
+            }
+            setTypeaheadSaved(localMatches);
+          }
         });
-    }, 180);
+    }, 120);
     return () => {
       live = false;
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeaheadQuery, pincode]);
+  }, [typeaheadQuery, pincode, wishlistStore.items]);
 
   /**
    * The product the look-completion strip pairs against on Search: whatever the

@@ -90,7 +90,20 @@ export function SearchResultsScreen({
   onToggleSave,
 }: SearchResultsScreenProps) {
   const index = useMemo(() => buildSearchIndex(catalog), [catalog]);
-  const results = useMemo(() => search(query, index), [query, index]);
+  const results = useMemo(() => {
+    const raw = search(query, index);
+    if (!savedProductIds || savedProductIds.size === 0) return raw;
+    const savedItems: typeof raw = [];
+    const otherItems: typeof raw = [];
+    for (const r of raw) {
+      if (savedProductIds.has(r.colourway.product_id)) {
+        savedItems.push(r);
+      } else {
+        otherItems.push(r);
+      }
+    }
+    return [...savedItems, ...otherItems];
+  }, [query, index, savedProductIds]);
 
   // The grid tile is sized explicitly rather than with aspectRatio: on web,
   // react-native-web lets the image's intrinsic 384x512 win, which rendered
