@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Analytics } from "@vercel/analytics/react";
 import bagJson from "@/data/bag.json";
 import catalogJson from "@/data/catalog.json";
 import ordersJson from "@/data/orders.json";
@@ -716,6 +717,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="dark-content" />
+      {Platform.OS === "web" ? <Analytics /> : null}
       <AppShell
         nav={nav}
         bagCount={bagCount}
