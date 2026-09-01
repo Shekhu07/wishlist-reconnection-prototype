@@ -57,31 +57,59 @@ export function normalise(text: string): string {
     .trim();
 }
 
+function singularize(word: string): string {
+  if (word.endsWith("ies")) return word.slice(0, -3) + "y";
+  if (
+    word.endsWith("ches") ||
+    word.endsWith("shes") ||
+    word.endsWith("sses") ||
+    word.endsWith("xes") ||
+    word.endsWith("zes")
+  ) {
+    return word.slice(0, -2);
+  }
+  if (word.endsWith("es") && !word.endsWith("shoes") && !word.endsWith("eyes")) {
+    return word.slice(0, -2);
+  }
+  if (word.endsWith("s") && !word.endsWith("ss")) {
+    return word.slice(0, -1);
+  }
+  return word;
+}
+
 /**
  * "T-shirt", "tshirts" and "t shirt" must all reach the same articleType.
  *
- * Multi-word types need their head noun too. claimSpan reads spans of at most
- * three tokens, and "Perfume and Body Mist" is four -- without this, the one
- * word a person actually types claims nothing. The head is the first token,
- * because these read head-first ("Perfume and Body Mist", "Lip Gloss",
- * "Kajal and Eyeliner"), and a head is only registered if no other article
- * type has claimed it, so a shorter exact type always wins.
+ * Multi-word types need their head/trailing nouns too (e.g. "casual shoes" -> "shoes", "shoe").
+ * claimSpan reads spans of at most three tokens.
  */
 function articleVariants(articleType: string): string[] {
   const base = normalise(articleType);
   const collapsed = base.replace(/\s+/g, "");
-  const singular = base.endsWith("s") ? base.slice(0, -1) : base;
-  const singularCollapsed = collapsed.endsWith("s")
-    ? collapsed.slice(0, -1)
-    : collapsed;
+  const singular = singularize(base);
+  const singularCollapsed = singularize(collapsed);
   const variants = [base, collapsed, singular, singularCollapsed];
+
   const words = base.split(" ");
-  if (words.length > 3) variants.push(words[0]);
-  return Array.from(new Set(variants));
+  if (words.length > 1) {
+    const lastWord = words[words.length - 1];
+    const lastSingular = singularize(lastWord);
+    variants.push(lastWord, lastSingular);
+    const firstWord = words[0];
+    const firstSingular = singularize(firstWord);
+    variants.push(firstWord, firstSingular);
+  }
+  return Array.from(new Set(variants.filter((v) => v.length > 1)));
 }
 
 export function buildGazetteers(
-  parents: { brand: string; articleType: string; colourways: { colour: string }[] }[]
+  parents: {
+    brand: string;
+    articleType: string;
+    colourways: { colour: string }[];
+    subCategory?: string;
+    masterCategory?: string;
+  }[]
 ): Gazetteers {
   const brands = new Map<string, string>();
   const articleTypes = new Map<string, string>();
@@ -95,14 +123,25 @@ export function buildGazetteers(
   for (const parent of parents) {
     brands.set(normalise(parent.brand).replace(/\s+/g, ""), parent.brand);
     const base = normalise(parent.articleType);
+    const words = base.split(" ");
     for (const variant of articleVariants(parent.articleType)) {
-      // A head noun is a fallback, applied only after every exact variant is
-      // in. "Gloss" must not shadow "Lip Gloss".
-      if (base.split(" ").length > 3 && variant === base.split(" ")[0]) {
+      // Sub-terms (head or trailing words) are fallbacks, applied only after
+      // every exact variant is in. "Gloss" must not shadow "Lip Gloss".
+      if (words.length > 1 && (variant === words[0] || variant === words[words.length - 1] || variant === singularize(words[0]) || variant === singularize(words[words.length - 1]))) {
         headTerms.push([variant, parent.articleType]);
         continue;
       }
       articleTypes.set(variant, parent.articleType);
+    }
+    if (parent.subCategory) {
+      for (const variant of articleVariants(parent.subCategory)) {
+        headTerms.push([variant, parent.articleType]);
+      }
+    }
+    if (parent.masterCategory) {
+      for (const variant of articleVariants(parent.masterCategory)) {
+        headTerms.push([variant, parent.articleType]);
+      }
     }
     for (const colourway of parent.colourways) {
       colours.set(normalise(colourway.colour), colourway.colour);

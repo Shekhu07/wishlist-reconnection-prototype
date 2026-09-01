@@ -86,7 +86,12 @@ function passesHardFilters(parent: ParentProduct, filters: SearchFilters): boole
   }
   if (
     filters.articleType?.length &&
-    !filters.articleType.some((a) => normalise(a) === normalise(parent.articleType))
+    !filters.articleType.some(
+      (a) =>
+        normalise(a) === normalise(parent.articleType) ||
+        (parent.subCategory && normalise(a) === normalise(parent.subCategory)) ||
+        (parent.masterCategory && normalise(a) === normalise(parent.masterCategory))
+    )
   ) {
     return false;
   }
@@ -190,7 +195,9 @@ export function evidenceFor(
 ): number {
   if (
     intent.articleType &&
-    normalise(intent.articleType.value) === normalise(parent.articleType)
+    (normalise(intent.articleType.value) === normalise(parent.articleType) ||
+      (parent.subCategory && normalise(intent.articleType.value) === normalise(parent.subCategory)) ||
+      (parent.masterCategory && normalise(intent.articleType.value) === normalise(parent.masterCategory)))
   ) {
     return 1;
   }
@@ -221,7 +228,9 @@ export function score(candidate: Omit<Candidate, "score">, index: MatchIndex, in
   // under tau, which is why none ever rendered.
   const identity = tier === 1 ? 1 : 0.92;
   const categoryAlign = intent.articleType
-    ? normalise(intent.articleType.value) === normalise(parent.articleType)
+    ? (normalise(intent.articleType.value) === normalise(parent.articleType) ||
+        (parent.subCategory && normalise(intent.articleType.value) === normalise(parent.subCategory)) ||
+        (parent.masterCategory && normalise(intent.articleType.value) === normalise(parent.masterCategory)))
       ? intent.articleType.confidence
       : 0
     : 0.5;
