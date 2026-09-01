@@ -49,6 +49,30 @@ const GENDER_TERMS: Record<string, string> = {
   kids: "Boys",
 };
 
+const FASHION_SYNONYMS: Record<string, string> = {
+  denim: "Jeans",
+  denims: "Jeans",
+  tee: "Tshirts",
+  tees: "Tshirts",
+  jewelry: "Earrings",
+  jewellery: "Earrings",
+  flats: "Heels",
+  flat: "Heels",
+  sandals: "Heels",
+  sandal: "Heels",
+  wedges: "Heels",
+  wedge: "Heels",
+  sneakers: "Casual Shoes",
+  sneaker: "Casual Shoes",
+  boots: "Casual Shoes",
+  boot: "Casual Shoes",
+  loafers: "Casual Shoes",
+  loafer: "Casual Shoes",
+  purse: "Handbags",
+  purses: "Handbags",
+  shades: "Sunglasses",
+};
+
 export function normalise(text: string): string {
   return text
     .toLowerCase()
@@ -149,6 +173,9 @@ export function buildGazetteers(
   }
   for (const [term, canonical] of headTerms) {
     if (!articleTypes.has(term)) articleTypes.set(term, canonical);
+  }
+  for (const [synonym, canonical] of Object.entries(FASHION_SYNONYMS)) {
+    if (!articleTypes.has(synonym)) articleTypes.set(synonym, canonical);
   }
   return { brands, articleTypes, colours, genders };
 }
