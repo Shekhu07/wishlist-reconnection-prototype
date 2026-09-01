@@ -153,7 +153,7 @@ export const DEFAULT_CONFIG: MatchConfig = {
   breakerTimeoutRate: 0.05,
   breakerWindow: 20,
   breakerCooldownMs: 30_000,
-  perItemDailyCap: 2,
+  perItemDailyCap: 10,
 };
 
 /**

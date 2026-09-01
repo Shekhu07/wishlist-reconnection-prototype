@@ -1702,7 +1702,7 @@ const SUPPRESSION_COPY: Record<NonNullable<SuppressionReason>, string> = {
   user_scrolled:
     "Match resolved after the user had already scrolled. Suppressed rather than moving content.",
   frequency_cap:
-    "The item already had its two allowed impressions today. The match ran and found it -- this is the per-item daily cap doing its job, not a broken build.",
+    "The item already had its 10 allowed impressions today. The match ran and found it -- this is the per-item daily cap doing its job, not a broken build.",
 };
 
 const styles = StyleSheet.create({
