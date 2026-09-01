@@ -77,12 +77,14 @@ export function WishlistModule({
   const [dismissed, setDismissed] = useState(false);
   const [undoVisible, setUndoVisible] = useState(false);
   const [hiddenForever, setHiddenForever] = useState(false);
+  const [selectedSku, setSelectedSku] = useState(response.matches[0]?.sku ?? "");
 
   useEffect(() => {
     // A new result set is a new question; the old dismissal does not carry.
     setDismissed(false);
     setUndoVisible(false);
     setHiddenForever(false);
+    setSelectedSku(response.matches[0]?.sku ?? "");
   }, [response]);
 
   useEffect(() => {
@@ -146,12 +148,13 @@ export function WishlistModule({
     );
   }
 
-  const copy = COPY[primary.copy_key];
+  const currentMatch = response.matches.find((m) => m.sku === selectedSku) ?? primary;
+  const copy = COPY[currentMatch.copy_key];
   const multi = response.matches.length > 1;
   const context = {
     count: response.capped_total,
-    savedSize: primary.saved.size,
-    savedColour: primary.saved.color,
+    savedSize: currentMatch.saved.size,
+    savedColour: currentMatch.saved.color,
   };
   // A dead-end Buy button is worse than no button: when the saved variant
   // cannot be bought, the primary action changes rather than disappearing
@@ -194,12 +197,25 @@ export function WishlistModule({
         >
           {response.matches.map((match) => (
             <View key={match.sku} style={styles.carouselCard}>
-              <SavedItemCard match={match} compact intent={intentFor?.(match.sku)} />
+              <SavedItemCard
+                match={match}
+                compact
+                selected={match.sku === selectedSku}
+                intent={intentFor?.(match.sku)}
+                onPress={() => {
+                  setSelectedSku(match.sku);
+                  onPrimary(match.sku);
+                }}
+              />
             </View>
           ))}
         </ScrollView>
       ) : (
-        <SavedItemCard match={primary} intent={intentFor?.(primary.sku)} />
+        <SavedItemCard
+          match={primary}
+          intent={intentFor?.(primary.sku)}
+          onPress={() => onPrimary(primary.sku)}
+        />
       )}
 
       {overflow > 0 ? (
@@ -207,7 +223,7 @@ export function WishlistModule({
           accessibilityRole="button"
           accessibilityLabel={VIEW_ALL}
           hitSlop={hitSlopFor(24)}
-          onPress={() => onSecondary(primary.sku)}
+          onPress={() => onSecondary(currentMatch.sku)}
         >
           <Text style={styles.viewAll}>{VIEW_ALL}</Text>
         </Pressable>
@@ -216,8 +232,8 @@ export function WishlistModule({
       <ActionRow
         primaryLabel={copy.primaryAction}
         secondaryLabel={copy.secondaryAction}
-        onPrimary={() => onPrimary(primary.sku)}
-        onSecondary={() => onSecondary(primary.sku)}
+        onPrimary={() => onPrimary(currentMatch.sku)}
+        onSecondary={() => onSecondary(currentMatch.sku)}
         swapFills={swapFills}
       />
 
