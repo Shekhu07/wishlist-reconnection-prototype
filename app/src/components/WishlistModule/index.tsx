@@ -149,7 +149,7 @@ export function WishlistModule({
   }
 
   const currentMatch = response.matches.find((m) => m.sku === selectedSku) ?? primary;
-  const copy = COPY[currentMatch.copy_key];
+  const copy = COPY[currentMatch.copy_key] ?? COPY.exact_variant_available;
   const multi = response.matches.length > 1;
   const context = {
     count: response.capped_total,
