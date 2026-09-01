@@ -22,7 +22,7 @@ Matching ran 1,296 times across three modalities and rendered nothing.
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.05 ms** per query.
+Search alone: **0.06 ms** per query.
 Search with matching in the same tick: **0.06 ms**.
 Delta: **+0.01 ms** per query, against a 120 ms budget.
 
