@@ -67,7 +67,7 @@ import { resolveHarnessEnabled } from "@/harness/enabled";
 import { wishlistSurfaceVisible } from "@/experiment/surfaces";
 import { AppShell } from "@/shell/AppShell";
 import { HarnessPill } from "@/shell/HarnessPill";
-import { pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
+import { navFromPath, pop, push, rootFor, switchTab, top, type Nav } from "@/shell/nav";
 import { useSyncedHistory } from "@/shell/useSyncedHistory";
 import { color, radius, space, type } from "@/design/tokens";
 import { useWishlistMatch, type SuppressionReason } from "@/state/useWishlistMatch";
@@ -76,6 +76,7 @@ import {
   contextFromScenario,
   newSessionId,
   requestFrom,
+  startSession,
   type SearchContext,
 } from "@/state/searchContext";
 
@@ -138,6 +139,16 @@ export default function App() {
   // next search", and it would throw away a resumable comparison at exactly
   // the moment CR-02 needs one.
   const sessionId = useRef(newSessionId()).current;
+  // A reload, a shared link, or a bookmark arrives with a real URL and no
+  // in-app tap behind it -- useSyncedHistory only ever wrote the URL, so
+  // without this every one of those silently dropped to Home. Read once,
+  // synchronously, so nav and context start in agreement instead of nav
+  // racing an effect that restores it a render later.
+  const restored = useRef(
+    Platform.OS === "web" && typeof window !== "undefined"
+      ? navFromPath(window.location.pathname, window.location.search)
+      : null
+  ).current;
   // Session-scoped, like suppression: in memory, Redis-shaped key, cleared
   // with the session rather than persisted (wireframes section 11).
   const comparisons = useRef(new ComparisonStore()).current;
@@ -153,7 +164,9 @@ export default function App() {
   const wishlistStore = useRef(new WishlistStore(wishlist)).current;
   const [wishlistVersion, setWishlistVersion] = useState(0);
   const [context, setContext] = useState<SearchContext>(() =>
-    contextFromScenario(scenarios[1] ?? scenarios[0], 1, sessionId)
+    restored && restored.query
+      ? contextFromQuery(restored.query, startSession(sessionId), 1)
+      : contextFromScenario(scenarios[1] ?? scenarios[0], 1, sessionId)
   );
   const [latencyMs, setLatencyMs] = useState(60);
   const [swapFills, setSwapFills] = useState(false);
@@ -164,7 +177,9 @@ export default function App() {
   const [hiddenCount, setHiddenCount] = useState(0);
   const [eventCount, setEventCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
-  const [nav, setNav] = useState<Nav>({ tab: "home", stack: [rootFor("home")] });
+  const [nav, setNav] = useState<Nav>(
+    () => restored?.nav ?? { tab: "home", stack: [rootFor("home")] }
+  );
   const [harnessOpen, setHarnessOpen] = useState(false);
   // Resolved once per mount, not per render: the answer depends on the URL the
   // researcher arrived on, and the app rewrites that URL as it navigates.

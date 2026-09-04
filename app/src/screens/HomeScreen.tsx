@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { BannerCarousel } from "@/components/home/BannerCarousel";
 import { BrandStrip } from "@/components/home/BrandStrip";
@@ -8,12 +8,22 @@ import { SectionHeader } from "@/components/home/SectionHeader";
 import { WishlistTeaser } from "@/components/home/WishlistTeaser";
 import { ProductTileBody } from "@/components/catalog/ProductTileBody";
 import { SaveHeart } from "@/components/catalog/SaveHeart";
+import { Button } from "@/components/Button";
 import type { Catalog } from "@/data/types";
 import { color, radius, space, type } from "@/design/tokens";
 import { overview, type BrowseTile, type CategoryKey, type GenderTab } from "@/search/catalogBrowse";
 import { FRAME_MAX_WIDTH } from "@/screens/SearchResultsScreen";
 
 const TABS: GenderTab[] = ["all", "men", "women", "kids"];
+
+/**
+ * "Trending Now" used to map every tile the tab matched straight into the
+ * grid -- for the "all" tab, the whole catalog. On the shipped catalog that
+ * is thousands of DOM nodes and full-resolution images fetched before a
+ * visitor scrolls once. The order stays overview()'s; this only windows how
+ * much of it renders at a time.
+ */
+const HOME_GRID_PAGE_SIZE = 40;
 
 export interface HomeScreenProps {
   catalog: Catalog;
@@ -45,6 +55,13 @@ export function HomeScreen({
   // overview, not byGender: same products, ordered so the top of the grid is
   // a cross-section of the shop instead of the first shelf in the file.
   const tiles = useMemo(() => overview(catalog, tab), [catalog, tab]);
+
+  const [visibleCount, setVisibleCount] = useState(HOME_GRID_PAGE_SIZE);
+  // A new tab is a new list -- carrying yesterday's scroll depth into it would
+  // either strand a short list mid-page-size or dump an oversized one at once.
+  useEffect(() => setVisibleCount(HOME_GRID_PAGE_SIZE), [tab]);
+  const visibleTiles = tiles.slice(0, visibleCount);
+  const hasMore = visibleCount < tiles.length;
 
   // Tile sizing is explicit rather than aspectRatio: on web, react-native-web
   // lets an Image's intrinsic 384x512 size win over aspectRatio, blowing out
@@ -96,7 +113,7 @@ export function HomeScreen({
       <SectionHeader title="Trending Now" />
 
       <View style={styles.grid}>
-        {tiles.map((tile) => (
+        {visibleTiles.map((tile) => (
           <View key={tile.colourway.product_id} style={styles.gridItem}>
             <Pressable
               testID={`home-tile-${tile.parent.parent_product_id}`}
@@ -117,6 +134,18 @@ export function HomeScreen({
           </View>
         ))}
       </View>
+
+      {hasMore ? (
+        <View style={styles.showMore}>
+          <Button
+            label="Show more"
+            filled={false}
+            grow={false}
+            testID="home-show-more"
+            onPress={() => setVisibleCount((count) => count + HOME_GRID_PAGE_SIZE)}
+          />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -147,4 +176,5 @@ const styles = StyleSheet.create({
     paddingTop: space.xs,
   },
   gridItem: { width: "50%", padding: space.xs, marginBottom: space.md },
+  showMore: { alignItems: "center", paddingBottom: space.lg },
 });
