@@ -1,24 +1,16 @@
 # Wishlist Search-Reconnection — prototype
 
-A buildable prototype of the "From your Wishlist" search-reconnection module,
-built against three specs that are really one plan at three altitudes:
+A Myntra-style shopping prototype that reconnects search with what a shopper
+has already saved. When a search matches a wishlist item, the module surfaces
+it in place — with a confidence layer explaining *why* it's still a fit,
+a comparison view that survives leaving the screen, and outfit suggestions
+built only from items the user already saved.
 
-| Spec | What it is |
-|---|---|
-| [`Wishlist_Reconnection_MVP_Prototype_Plan.md`](docs/specs/Wishlist_Reconnection_MVP_Prototype_Plan.md) | The engineering plan. Every epic is built except E15, which constraint C-5 forbids in v1. |
-| [`Implementation Prompt_ Improve Myntra Wishlist Reconnection Prototype.md`](docs/specs/Implementation%20Prompt_%20Improve%20Myntra%20Wishlist%20Reconnection%20Prototype.md) | Ten improvements on the deployed prototype, plus harness, analytics and validation requirements. |
-| [`Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md`](docs/specs/Myntra_Decision_Confidence_and_Comparison_Reentry_Wireframes.md) | The UX blueprint for improvements 1 and 8 — eleven wireframes, interaction rules, an edge-case matrix and measurement hooks. |
-
-All ten improvements are built, plus a later feature spec on top. The
-reconnection module answers *"did I save this?"*; the Decision Confidence Layer
-answers *"is it still right for me?"*; comparison re-entry means the answer
-survives leaving the screen; and cross-category pairing answers the third
-question a shopper actually has — *"what do I already own that goes with
-this?"*
+Built against three specs — the engineering plan, ten improvements on the
+original prototype, and a UX wireframe spec — all listed in
+[`docs/specs/`](docs/specs/).
 
 **Live:** https://wishlist-reconnection-prototype.vercel.app
-
-546 tests, ten measured acceptance gates, four generated reports.
 
 ## Running it
 
