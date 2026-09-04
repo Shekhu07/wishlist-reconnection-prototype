@@ -22,27 +22,25 @@ import type { MatchResponse, Match } from "@/match/contract";
 
 describe("Comprehensive Stress Testing: Multi-Item Wishlist Module", () => {
   const makeMockMatch = (id: number, size: string, color: string, sku: string): Match => ({
+    parent_product_id: `pp_${id}`,
     sku,
-    score: 0.96,
-    state: "exact",
-    saved: { color, size },
+    tier: 1,
+    confidence: 0.96,
+    identity_confidence: 1.0,
+    saved: { color, size, saved_at: "2026-08-20T10:00:00Z", price_at_save: 1999 },
     display: {
       name: `Product ${id}`,
       brand: "Brand X",
       imageId: 1001,
-      basePrice: 1999,
-      discountedPrice: 1999,
     },
     current: {
-      state: "exact",
+      available: true,
       price: 1999,
-      mrp: 2999,
-      size_in_stock: true,
-      colour_in_stock: true,
+      seller: "RetailNet",
       delivery_by: "2026-08-29",
-      pincode: "560034",
+      state: "purchasable",
     },
-    copy_key: "exact",
+    copy_key: "exact_variant_available",
   });
 
   it("renders a 4-item carousel and allows clicking any card independently", () => {
@@ -54,12 +52,9 @@ describe("Comprehensive Stress Testing: Multi-Item Wishlist Module", () => {
     ];
 
     const response: MatchResponse = {
-      query: "shirt",
       matches,
-      total_matches: 4,
       capped_total: 4,
       suppressed: false,
-      match_latency_ms: 12,
     };
 
     const onPrimary = jest.fn();
@@ -129,14 +124,15 @@ describe("Comprehensive Stress Testing: Look Completion Engine", () => {
         makeWishlist().items[0],
         {
           item_id: "item_jeans",
+          role: "primary",
           parent_product_id: "pp_jeans",
           product_id: 2001,
           sku: "sku_2001_32",
           saved_at: "2026-08-20T10:00:00Z",
           size: "32",
-          color: "Blue",
+          colour: "Blue",
           price_at_save: 1999,
-          client_mutation_id: "m_jeans",
+          seller_at_save: "RetailNet",
         },
       ],
     };

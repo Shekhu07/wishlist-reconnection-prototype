@@ -22,9 +22,9 @@ Matching ran 1,296 times across three modalities and rendered nothing.
 
 ### Search latency delta — the S8 gate
 
-Search alone: **0.05 ms** per query.
-Search with matching in the same tick: **0.06 ms**.
-Delta: **+0.01 ms** per query, against a 120 ms budget.
+Search alone: **0.14 ms** per query.
+Search with matching in the same tick: **0.17 ms**.
+Delta: **+0.03 ms** per query, against a 120 ms budget.
 
 At this magnitude the delta is indistinguishable from measurement
 noise -- in-process JavaScript timing at the sub-millisecond scale is
@@ -49,12 +49,12 @@ S9 tuning deliverable.
 
 | τ | Opportunity | Precision | Mean confidence |
 |---|---|---|---|
-| 0.60 | 69.4% | 100.0% | 0.758 |
-| 0.65 | 69.4% | 100.0% | 0.758 |
-| 0.70 | 69.4% | 100.0% | 0.758 |
-| 0.72 | 69.4% | 100.0% | 0.758 |
-| 0.75 | 37.0% | 100.0% | 0.778 |
-| 0.80 | 5.3% | 100.0% | 0.820 |
+| 0.60 | 69.4% | 100.0% | 0.768 |
+| 0.65 | 69.4% | 100.0% | 0.768 |
+| 0.70 | 69.4% | 100.0% | 0.768 |
+| 0.72 | 69.4% | 100.0% | 0.768 |
+| 0.75 | 45.4% | 100.0% | 0.782 |
+| 0.80 | 7.9% | 100.0% | 0.821 |
 | 0.85 | 0.5% | 100.0% | 0.860 |
 
 One table, not three: a candidate's confidence does not depend on the

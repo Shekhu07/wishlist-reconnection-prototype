@@ -65,8 +65,10 @@ describe("Exhaustive Air-Tight Wishlist Reconnection Verification", () => {
           {
             query,
             modality: "text",
-            pincode: "560034",
+            delivery_pincode: "560034",
             session_id: `sess_test_${query}`,
+            search_id: `search_${query}`,
+            filters: {},
           },
           true
         );
@@ -117,8 +119,10 @@ describe("Exhaustive Air-Tight Wishlist Reconnection Verification", () => {
         {
           query,
           modality: "text",
-          pincode: "560034",
+          delivery_pincode: "560034",
           session_id: `sess_${item.item_id}`,
+          search_id: `search_${item.item_id}`,
+          filters: {},
         },
         true
       );

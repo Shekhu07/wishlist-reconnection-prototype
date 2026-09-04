@@ -469,16 +469,29 @@ export default function App() {
               const matchesQuery = tokens.some((t) => haystack.includes(t));
               if (matchesQuery) {
                 localMatches.push({
+                  parent_product_id: item.parent_product_id,
                   sku: item.sku,
-                  score: 0.95,
-                  state: "exact",
-                  saved: { color: item.color, size: item.size },
+                  tier: 1,
+                  confidence: 0.95,
+                  identity_confidence: colourway.identity_confidence ?? 1.0,
+                  saved: {
+                    color: item.colour,
+                    size: item.size,
+                    saved_at: item.saved_at,
+                    price_at_save: item.price_at_save,
+                  },
+                  current: {
+                    available: true,
+                    price: colourway.price,
+                    seller: item.seller_at_save || "RetailNet",
+                    delivery_by: "Tomorrow",
+                    state: "purchasable",
+                  },
+                  copy_key: "exact_variant_available",
                   display: {
                     name: colourway.display_name,
                     brand: parent.brand,
                     imageId: colourway.product_id,
-                    basePrice: colourway.price,
-                    discountedPrice: colourway.price,
                   },
                 });
                 if (localMatches.length === 2) break;
@@ -1238,8 +1251,9 @@ export default function App() {
               />
             );
           })()
-        ) : (screen.name === "saved" || screen.name === "compare") && activeItem && revalidation ? (
-          screen.name === "saved" ? (
+        ) : screen.name === "saved" || screen.name === "compare" ? (
+          activeItem && revalidation ? (
+            screen.name === "saved" ? (
             <SavedProductScreen
               result={revalidation}
               pincode={pincode}
@@ -1464,7 +1478,10 @@ export default function App() {
               }}
             />
           )
-        ) : screen.name === "browse" ? (
+        ) : (
+          <StubScreen reason="This saved item is no longer available in the catalog." />
+        )
+      ) : screen.name === "browse" ? (
           <BrowseScreen
             catalog={catalog}
             filter={screen.filter}
@@ -1509,6 +1526,7 @@ export default function App() {
               // The same store call the heart on a grid tile makes, so a row
               // unsaved here and a tile unsaved there cannot disagree.
               wishlistStore.remove(productId);
+              client.setWishlist(wishlistStore.asWishlist());
               setWishlistVersion((version) => version + 1);
             }}
             onSelectItem={(itemId) => {

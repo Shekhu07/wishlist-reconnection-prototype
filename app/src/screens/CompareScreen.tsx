@@ -269,6 +269,14 @@ export function CompareScreen({
         </Pressable>
       ) : null}
 
+      {columns.length === 1 ? (
+        <View style={styles.singleColumnBanner} testID="compare-single-column-banner">
+          <Text style={styles.singleColumnBannerText}>
+            No other matching alternatives found in this category. Showing your saved item.
+          </Text>
+        </View>
+      ) : null}
+
       <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.table}>
         <View style={styles.axisColumn}>
           <View style={styles.headerCell} />
@@ -546,4 +554,19 @@ const styles = StyleSheet.create({
   outlined: { backgroundColor: color.surface, borderColor: color.brandPink },
   labelFilled: { fontSize: 13, fontWeight: "700", color: color.surface },
   labelOutlined: { fontSize: 13, fontWeight: "700", color: color.brandPink },
+  singleColumnBanner: {
+    marginHorizontal: space.lg,
+    marginBottom: space.md,
+    padding: space.md,
+    backgroundColor: color.surfaceMuted,
+    borderRadius: radius.card - 8,
+    borderWidth: 1,
+    borderColor: color.borderSubtle,
+  },
+  singleColumnBannerText: {
+    ...type.body,
+    fontSize: 13,
+    color: color.textSecondary,
+    textAlign: "center",
+  },
 });
