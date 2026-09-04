@@ -117,7 +117,7 @@ describe("SYSTEMATIC STRESS AUDIT SUITE", () => {
   describe("3. MatchClient & Reconnection Logic", () => {
     it("handles out of stock items and variant unavailability", async () => {
       const store = new WishlistStore(rawWishlist);
-      const events = new EventLog("test");
+      const events = new EventLog();
       const commerce = { bag: { items: [] }, savedForLater: { items: [] }, orders: { orders: [] } };
       const preferences = new PreferenceStore();
       const client = new MatchClient({
@@ -189,6 +189,7 @@ describe("SYSTEMATIC STRESS AUDIT SUITE", () => {
         size: "M",
         saved_at: "2026-09-01",
         price_at_save: 1000,
+        seller_at_save: "Fake Seller",
         role: "user_saved",
       };
 
@@ -335,6 +336,7 @@ describe("SYSTEMATIC STRESS AUDIT SUITE", () => {
         size: "L",
         saved_at: "2026-08-01",
         price_at_save: 1500,
+        seller_at_save: "Fake Seller",
         role: "user_saved",
       };
 
